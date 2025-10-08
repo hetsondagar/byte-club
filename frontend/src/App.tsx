@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { MatrixRain } from "@/components/ui/matrix-rain";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Home from "./pages/Home";
@@ -30,6 +31,8 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      {/* Matrix Rain Background - Falls behind all content */}
+      <MatrixRain color="hsl(140 100% 50%)" fontSize={16} speed={50} />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
