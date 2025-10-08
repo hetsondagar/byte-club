@@ -1,0 +1,102 @@
+[
+    {
+        "id": "node-001",
+        "title": "Cipher Vault",
+        "story": "You enter the Cipher Vault, a neon-lit chamber where holographic ciphers float like fireflies. Each code holds a part of the master key. The AI whispers: 'Decrypt to survive!' The first code is 'JXQRMK', encrypted using a dynamic Caesar shift where each character is shifted by its 1-based index modulo 26.",
+        "question": "Decrypt the string 'JXQRMK' using the dynamic Caesar shift. Return the full decrypted string.",
+        "answerFormat": "\"DYNAMIC\"",
+        "hint": "Subtract the character's position index from each letter (mod 26).",
+        "difficulty": "Medium",
+        "xp": 100
+    },
+    {
+        "id": "node-002",
+        "title": "Quantum Grid",
+        "story": "A massive 50x50 quantum grid floats before you. Pulses of neon energy leap from node to node. Some nodes vanish, others block your path. Your goal: navigate from the top-left to bottom-right using the shortest possible path without triggering a surge.",
+        "question": "Given a 50x50 grid of 0s (blocked) and 1s (open), implement BFS to find the shortest path. Return the coordinates of the exit node.",
+        "answerFormat": "\"(49,49)\"",
+        "hint": "Use BFS and track visited nodes; consider only open nodes.",
+        "difficulty": "Hard",
+        "xp": 150
+    },
+    {
+        "id": "node-003",
+        "title": "Labyrinth of Bits",
+        "story": "You enter the Labyrinth of Bits. Each corridor has walls that emit XOR pulses. One wrong move triggers a trap. You must traverse the path and compute the XOR of hidden codes along the way to unlock the exit.",
+        "question": "Given the array [13,7,2,8,5], compute the XOR of all numbers to get the exit key.",
+        "answerFormat": "\"5\"",
+        "hint": "XOR numbers sequentially from left to right.",
+        "difficulty": "Medium",
+        "xp": 120
+    },
+    {
+        "id": "node-004",
+        "title": "Temporal Maze",
+        "story": "Time bends in this maze. Each step shifts walls according to a secret algorithm. Compute the number of steps to reach the exit node. The walls whisper hints but only code can interpret them.",
+        "question": "Simulate a 30x30 dynamically changing grid according to a movement algorithm where walls shift every turn. Compute the exit node label after following the movement rules.",
+        "answerFormat": "\"T15\"",
+        "hint": "Simulate each step and perform BFS each turn to find the exit.",
+        "difficulty": "Very Hard",
+        "xp": 250
+    },
+    {
+        "id": "node-005",
+        "title": "Neon Firewall",
+        "story": "A rogue AI firewall has trapped a critical server behind layers of shifting encrypted walls. Each wall opens only when a sequence is decrypted. The sequence is 'MZKQ' encrypted with a pseudo-random shifting pattern.",
+        "question": "Decrypt 'MZKQ' using the pseudo-random shift function: shift(i) = (i^2 + 3) % 26. Return the decrypted string.",
+        "answerFormat": "\"LOCK\"",
+        "hint": "Reverse the shift for each character using modular arithmetic.",
+        "difficulty": "Hard",
+        "xp": 180
+    },
+    {
+        "id": "node-006",
+        "title": "Binary Bridge",
+        "story": "A bridge made entirely of glowing bits appears. Nodes vanish unpredictably. Only by computing the XOR of a specific path can you cross safely.",
+        "question": "Compute XOR of numbers [21,34,55,89,144] to get the bridge key.",
+        "answerFormat": "\"183\"",
+        "hint": "Sequential XOR from start to end.",
+        "difficulty": "Medium",
+        "xp": 130
+    },
+    {
+        "id": "node-007",
+        "title": "Encrypted Passage",
+        "story": "A neon passage is filled with scrambled letters. Solve the pattern to find the hidden key and proceed to the next chamber.",
+        "question": "Given string 'SCRAMBLE', find the first non-repeating character.",
+        "answerFormat": "\"S\"",
+        "hint": "Use a hash map to count occurrences and find the first unique character.",
+        "difficulty": "Medium",
+        "xp": 110
+    },
+    {
+        "id": "node-008",
+        "title": "Hologram Lock",
+        "story": "The hologram lock flashes digits that rearrange themselves every second. You must decode the sum modulo operation to proceed.",
+        "question": "Given numbers [7,14,21,28,35], compute sum modulo 7 to find the lock code.",
+        "answerFormat": "\"0\"",
+        "hint": "Sum all numbers and take modulo 7.",
+        "difficulty": "Medium",
+        "xp": 115
+    },
+    {
+        "id": "node-009",
+        "title": "Data Stream Rift",
+        "story": "You encounter a rift in the data stream. Neon currents split and merge chaotically. Only by simulating the flow through a 2D array can you recover the secret key.",
+        "question": "Simulate data flow through a 20x20 grid starting at (0,0) and following movement rules: move right if even, down if odd. Return final coordinates.",
+        "answerFormat": "\"(10,10)\"",
+        "hint": "Step through grid according to rules, track position.",
+        "difficulty": "Hard",
+        "xp": 160
+    },
+    {
+        "id": "node-010",
+        "title": "Code Reactor",
+        "story": "The Code Reactor overloads with input. Only by computing the correct product modulo a prime can you stabilize it. Fail, and the neon lab will explode.",
+        "question": "Compute product of [2,3,5,7,11] modulo 101.",
+        "answerFormat": "\"30\"",
+        "hint": "Multiply sequentially and apply modulo at each step to prevent overflow.",
+        "difficulty": "Hard",
+        "xp": 170
+    }
+]

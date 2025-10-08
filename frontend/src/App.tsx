@@ -19,6 +19,7 @@ import Tutorial from "./pages/Tutorial";
 import Settings from "./pages/Settings";
 import DailyChallenge from "./pages/DailyChallenge";
 import Quests from "./pages/Quests";
+import QuestDetailPage from "./pages/QuestDetailPage";
 import Notifications from "./pages/Notifications";
 import Archive from "./pages/Archive";
 import Rewards from "./pages/Rewards";
@@ -50,6 +51,7 @@ const App = () => (
           <Route path="/settings" element={<Settings />} />
           <Route path="/daily-challenge" element={<DailyChallenge />} />
           <Route path="/quests" element={<Quests />} />
+          <Route path="/quests/:id" element={<QuestDetailPage />} />
           <Route path="/quest/:id" element={<ChallengeDetail />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/archive" element={<Archive />} />

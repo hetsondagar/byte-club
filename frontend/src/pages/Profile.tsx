@@ -5,6 +5,7 @@ import { XPBar } from "@/components/ui/xp-bar";
 import { NeonBadge } from "@/components/ui/neon-badge";
 import { Button } from "@/components/ui/button";
 import { FloatingParticles } from "@/components/ui/floating-particles";
+import { Navbar } from "@/components/Navbar";
 import { ArrowLeft, User, Mail, Calendar, Flame, Target, Award } from "lucide-react";
 
 export default function Profile() {
@@ -17,19 +18,24 @@ export default function Profile() {
     { title: "Palindrome Checker", xp: 150, date: "1 week ago", status: "completed" },
   ];
 
+  const handleLogout = () => {
+    localStorage.removeItem("byteclub_user");
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       <FloatingParticles count={20} />
 
+      {/* Navbar */}
+      <Navbar username={username} level={12} xp={2450} onLogout={handleLogout} />
+
       <div className="relative z-10 container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="outline" onClick={() => navigate("/home")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
+        <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Profile
+            Your Profile
           </h1>
+          <p className="text-muted-foreground mt-2">Hacker stats and achievements</p>
         </div>
 
         <div className="max-w-4xl mx-auto space-y-6">

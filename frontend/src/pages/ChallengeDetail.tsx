@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { NeonCard } from "@/components/ui/neon-card";
 import { NeonBadge } from "@/components/ui/neon-badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { FloatingParticles } from "@/components/ui/floating-particles";
 import { ConfettiEffect } from "@/components/ui/confetti-effect";
 import { ArrowLeft, Zap, CheckCircle, XCircle } from "lucide-react";
@@ -24,20 +24,27 @@ export default function ChallengeDetail() {
   // Mock challenge data
   const challenge = {
     id: parseInt(id || "1"),
-    title: "Array Reversal Challenge",
-    description: "Write a function to reverse an array without using the built-in reverse() method. The function should modify the array in-place.",
+    title: id && parseInt(id) % 2 === 0 ? "Time Complexity Quiz" : "Binary Search Concept",
+    description: id && parseInt(id) % 2 === 0 
+      ? "Understanding algorithm complexity is crucial for writing efficient code." 
+      : "Binary search is a fundamental searching algorithm.",
     difficulty: "medium" as const,
     xp: 150,
-    type: id && parseInt(id) % 2 === 0 ? "mcq" : "coding",
-    question: "What is the time complexity of your solution?",
-    options: ["O(1)", "O(n)", "O(n²)", "O(log n)"],
-    correctAnswer: "O(n)",
+    type: id && parseInt(id) % 2 === 0 ? "mcq" : "text",
+    question: id && parseInt(id) % 2 === 0 
+      ? "What is the time complexity of binary search?" 
+      : "In which data structure does binary search work? (sorted/unsorted)",
+    options: ["O(1)", "O(log n)", "O(n)", "O(n²)"],
+    correctAnswer: id && parseInt(id) % 2 === 0 ? "O(log n)" : "sorted",
+    hint: id && parseInt(id) % 2 === 0 
+      ? "Binary search divides the search space in half each time" 
+      : "Binary search requires elements to be in order",
   };
 
   const handleSubmit = () => {
-    if (challenge.type === "coding" && !answer.trim()) {
-      toast.error("Empty Code", {
-        description: "Please write your solution first",
+    if (challenge.type === "text" && !answer.trim()) {
+      toast.error("Answer Required", {
+        description: "Please enter your answer",
       });
       return;
     }
@@ -51,7 +58,7 @@ export default function ChallengeDetail() {
 
     const isCorrect = challenge.type === "mcq" 
       ? mcqAnswer === challenge.correctAnswer
-      : answer.length > 10; // Mock validation
+      : answer.trim().toLowerCase() === challenge.correctAnswer.toLowerCase();
 
     setCorrect(isCorrect);
     setSubmitted(true);
@@ -59,11 +66,11 @@ export default function ChallengeDetail() {
     if (isCorrect) {
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 100);
-      toast.success("Bug Exterminated!", {
-        description: `You earned ${challenge.xp} XP`,
+      toast.success("Correct Answer!", {
+        description: `+${challenge.xp} XP earned`,
       });
     } else {
-      toast.error("Compilation Error", {
+      toast.error("Incorrect", {
         description: "Try again, hacker!",
       });
     }
@@ -106,16 +113,26 @@ export default function ChallengeDetail() {
             </div>
           </NeonCard>
 
-          {challenge.type === "coding" ? (
+          {challenge.type === "text" ? (
             <NeonCard variant="violet" glow>
-              <h3 className="text-lg font-semibold mb-4">Your Solution</h3>
-              <Textarea
-                placeholder="// Write your code here..."
-                className="min-h-[300px] font-mono bg-input border-secondary/30 focus:border-secondary"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                disabled={submitted && correct}
-              />
+              <h3 className="text-lg font-semibold mb-4">{challenge.question}</h3>
+              <div className="space-y-4">
+                <Input
+                  placeholder="Type your answer here (1-2 words)..."
+                  className="text-lg font-mono bg-input border-secondary/30 focus:border-secondary"
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  disabled={submitted && correct}
+                  maxLength={50}
+                />
+                {challenge.hint && (
+                  <div className="p-3 rounded-lg bg-muted/30 border border-primary/20">
+                    <p className="text-xs text-muted-foreground">
+                      💡 <span className="font-semibold">Hint:</span> {challenge.hint}
+                    </p>
+                  </div>
+                )}
+              </div>
             </NeonCard>
           ) : (
             <NeonCard variant="violet" glow>

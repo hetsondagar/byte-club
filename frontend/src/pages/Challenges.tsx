@@ -5,6 +5,7 @@ import { NeonCard } from "@/components/ui/neon-card";
 import { NeonBadge } from "@/components/ui/neon-badge";
 import { Button } from "@/components/ui/button";
 import { FloatingParticles } from "@/components/ui/floating-particles";
+import { Navbar } from "@/components/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Zap } from "lucide-react";
 
@@ -29,6 +30,7 @@ const challenges: Challenge[] = [
 export default function Challenges() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<"all" | "easy" | "medium" | "hard" | "completed">("all");
+  const username = localStorage.getItem("byteclub_user") || "Hacker";
 
   const filteredChallenges = challenges.filter((c) => {
     if (filter === "all") return true;
@@ -36,19 +38,24 @@ export default function Challenges() {
     return c.difficulty === filter;
   });
 
+  const handleLogout = () => {
+    localStorage.removeItem("byteclub_user");
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       <FloatingParticles count={20} />
 
+      {/* Navbar */}
+      <Navbar username={username} level={12} xp={2450} onLogout={handleLogout} />
+
       <div className="relative z-10 container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="outline" onClick={() => navigate("/home")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
+        <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Challenges
           </h1>
+          <p className="text-muted-foreground mt-2">Test your skills, earn XP</p>
         </div>
 
         <Tabs defaultValue="all" className="max-w-6xl mx-auto" onValueChange={(v) => setFilter(v as any)}>

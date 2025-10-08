@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { NeonCard } from "@/components/ui/neon-card";
 import { Button } from "@/components/ui/button";
 import { FloatingParticles } from "@/components/ui/floating-particles";
+import { Navbar } from "@/components/Navbar";
 import { ArrowLeft, TrendingUp, Target, Zap, Award } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 
@@ -26,20 +27,26 @@ const accuracyData = [
 
 export default function Stats() {
   const navigate = useNavigate();
+  const username = localStorage.getItem("byteclub_user") || "Hacker";
+
+  const handleLogout = () => {
+    localStorage.removeItem("byteclub_user");
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden">
       <FloatingParticles count={20} />
 
+      {/* Navbar */}
+      <Navbar username={username} level={12} xp={2450} onLogout={handleLogout} />
+
       <div className="relative z-10 container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="outline" onClick={() => navigate("/home")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
+        <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Statistics
           </h1>
+          <p className="text-muted-foreground mt-2">Your performance analytics</p>
         </div>
 
         <div className="max-w-6xl mx-auto space-y-6">
