@@ -13,11 +13,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { adventureNodes, getNodeById, isNodeUnlocked, AdventureNode } from "@/data/adventureMapData";
 import { Lock, Lightbulb, CheckCircle, XCircle, Zap, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { apiService } from "@/services/api";
 
 export default function AdventureMap() {
   const navigate = useNavigate();
   const [confetti, setConfetti] = useState(false);
-  const username = localStorage.getItem("byteclub_user") || "Hacker";
+  const getUserData = () => {
+    const user = localStorage.getItem("byteclub_user");
+    if (!user) return "Hacker";
+    try {
+      const userData = JSON.parse(user);
+      return userData.username || "Hacker";
+    } catch (error) {
+      return "Hacker";
+    }
+  };
+  
+  const username = getUserData();
   
   // Progress tracking
   const [completedNodes, setCompletedNodes] = useState<number[]>([]);
@@ -65,7 +77,7 @@ export default function AdventureMap() {
     setCorrect(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!activeNode) return;
 
     if (!answer.trim()) {
@@ -75,31 +87,49 @@ export default function AdventureMap() {
       return;
     }
 
-    const isCorrect = answer.trim().toLowerCase() === activeNode.correctAnswer.toLowerCase();
-    setCorrect(isCorrect);
-    setSubmitted(true);
-
-    if (isCorrect) {
-      // Add to completed nodes
-      const newCompleted = [...completedNodes, activeNode.id];
-      setCompletedNodes(newCompleted);
-      localStorage.setItem("byte_club_adventure_progress", JSON.stringify(newCompleted));
-
-      setConfetti(true);
-      setTimeout(() => setConfetti(false), 100);
+    try {
+      // Submit to backend API
+      const result = await apiService.submitChallenge(activeNode.slug, answer.trim());
       
-      toast.success("Node Conquered!", {
-        description: `+${activeNode.xp} XP earned!`,
-      });
+      setCorrect(result.isCorrect);
+      setSubmitted(true);
 
-      // Close modal after delay
-      setTimeout(() => {
-        setActiveNode(null);
-        setAnswer("");
-      }, 2000);
-    } else {
-      toast.error("Incorrect Answer", {
-        description: "Try again, hacker!",
+      if (result.isCorrect) {
+        // Add to completed nodes
+        const newCompleted = [...completedNodes, activeNode.id];
+        setCompletedNodes(newCompleted);
+        localStorage.setItem("byte_club_adventure_progress", JSON.stringify(newCompleted));
+
+        setConfetti(true);
+        setTimeout(() => setConfetti(false), 3000);
+        
+        toast.success("Node Conquered!", {
+          description: `+${result.xpEarned} XP earned! ${result.streak > 0 ? `• ${result.streak} day streak!` : ''}`,
+        });
+
+        // Update user data in localStorage
+        const user = localStorage.getItem("byteclub_user");
+        if (user) {
+          const userData = JSON.parse(user);
+          userData.totalXP = result.totalXP;
+          userData.currentStreak = result.streak;
+          localStorage.setItem("byteclub_user", JSON.stringify(userData));
+        }
+
+        // Close modal after delay
+        setTimeout(() => {
+          setActiveNode(null);
+          setAnswer("");
+        }, 2000);
+      } else {
+        toast.error("Incorrect Answer", {
+          description: "Try again, hacker!",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to submit challenge:', error);
+      toast.error("Submission Failed", {
+        description: "Please try again",
       });
     }
   };

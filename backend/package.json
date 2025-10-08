@@ -1,0 +1,41 @@
+{
+  "name": "byte-club-backend",
+  "version": "1.0.0",
+  "description": "Byte Club Backend API",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "seed": "tsx src/seed/index.ts",
+    "migrate": "tsx src/migrations/index.ts",
+    "setup": "node scripts/setup.js"
+  },
+  "keywords": ["byte-club", "backend", "api", "mongodb", "express"],
+  "author": "Byte Club Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^8.0.3",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "compression": "^1.7.4",
+    "dotenv": "^16.3.1",
+    "pino": "^8.16.2",
+    "pino-pretty": "^10.2.3",
+    "zod": "^3.22.4",
+    "vm2": "^3.9.19"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/compression": "^1.7.5",
+    "@types/node": "^20.10.0",
+    "@types/cors": "^2.8.17",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.2"
+  }
+}

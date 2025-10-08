@@ -7,6 +7,7 @@ import { NeonBadge } from "@/components/ui/neon-badge";
 import { FloatingParticles } from "@/components/ui/floating-particles";
 import { Navbar } from "@/components/Navbar";
 import { getDailyFact } from "@/data/cseFacts";
+import { apiService } from "@/services/api";
 import {
   Map,
   Target,
@@ -35,34 +36,113 @@ const navCards = [
   { title: "Quests", icon: Scroll, path: "/quests", color: "cyan", description: "Story missions" },
 ];
 
+interface UserData {
+  _id: string;
+  username: string;
+  email: string;
+  totalXP: number;
+  currentLevel: number;
+  currentStreak: number;
+  badges: string[];
+  rewards: string[];
+  role: string;
+}
+
 export default function Home() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("Hacker");
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [dailyFact, setDailyFact] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const user = localStorage.getItem("byteclub_user");
-    if (!user) {
-      navigate("/");
-    } else {
-      setUsername(user);
-    }
+    const loadUserData = () => {
+      try {
+        setLoading(true);
+        
+        // Get user data from localStorage
+        const localUser = localStorage.getItem("byteclub_user");
+        
+        if (localUser) {
+          try {
+            const userData = JSON.parse(localUser);
+            // Ensure required fields exist
+            const safeUserData = {
+              _id: userData._id || "unknown",
+              username: userData.username || "Hacker",
+              email: userData.email || "user@example.com",
+              totalXP: userData.totalXP || 0,
+              currentLevel: userData.currentLevel || 1,
+              currentStreak: userData.currentStreak || 0,
+              badges: userData.badges || [],
+              rewards: userData.rewards || [],
+              role: userData.role || "user"
+            };
+            setUserData(safeUserData);
+          } catch (parseError) {
+            navigate("/");
+            return;
+          }
+        } else {
+          navigate("/");
+          return;
+        }
+        
+        setDailyFact(getDailyFact());
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    // Get daily fact
-    setDailyFact(getDailyFact());
+    loadUserData();
   }, [navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("byteclub_user");
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await apiService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem("byteclub_user");
+      navigate("/");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        <FloatingParticles count={25} />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading your dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        <FloatingParticles count={25} />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-muted-foreground">Failed to load user data</p>
+            <button onClick={() => navigate("/")} className="mt-4 px-4 py-2 bg-primary text-white rounded">
+              Go to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
       <FloatingParticles count={25} />
 
       {/* Navbar */}
-      <Navbar username={username} level={12} xp={2450} onLogout={handleLogout} />
+      <Navbar username={userData.username} level={userData.currentLevel} xp={userData.totalXP} onLogout={handleLogout} />
 
       <div className="relative z-10 container mx-auto px-4 py-8">
         {/* Hero Section */}
@@ -77,7 +157,7 @@ export default function Home() {
               Welcome to the Digital Realm,
             </span>
             <br />
-            <span className="text-primary text-3xl md:text-4xl">{username}</span>
+            <span className="text-primary text-3xl md:text-4xl">{userData.username}</span>
           </h1>
           <p className="text-muted-foreground text-lg">Your hacker dashboard awaits</p>
         </motion.div>
@@ -90,11 +170,31 @@ export default function Home() {
           className="max-w-2xl mx-auto mb-12"
         >
           <NeonCard variant="cyan" glow>
-            <XPBar current={2450} max={5000} level={12} />
+            <XPBar 
+              current={userData.totalXP} 
+              max={userData.currentLevel * 500} 
+              level={userData.currentLevel} 
+            />
             <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
-              <NeonBadge variant="success">🔥 7 Day Streak</NeonBadge>
-              <NeonBadge variant="default">Loop Lord</NeonBadge>
-              <NeonBadge variant="secondary">Code Ninja</NeonBadge>
+              <NeonBadge variant="success" className="animate-pulse">
+                🔥 {userData.currentStreak} Day Streak
+              </NeonBadge>
+              {userData.badges.length > 0 ? (
+                userData.badges.slice(0, 2).map((badge, index) => (
+                  <NeonBadge key={index} variant="default" className="hover:scale-105 transition-transform">
+                    {badge.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </NeonBadge>
+                ))
+              ) : (
+                <NeonBadge variant="secondary" className="opacity-75">
+                  No badges yet
+                </NeonBadge>
+              )}
+              {userData.badges.length > 2 && (
+                <NeonBadge variant="secondary" className="text-xs">
+                  +{userData.badges.length - 2} more
+                </NeonBadge>
+              )}
             </div>
           </NeonCard>
         </motion.div>

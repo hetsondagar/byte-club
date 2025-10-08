@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Challenge Validation Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: white; 
+        }
+        .test-box { 
+            background: #333; 
+            padding: 20px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+        }
+        .challenge { 
+            background: #444; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            border-left: 4px solid #4CAF50; 
+        }
+        .result { 
+            background: #555; 
+            padding: 10px; 
+            margin: 5px 0; 
+            border-radius: 4px; 
+        }
+        .success { border-left: 4px solid #4CAF50; }
+        .error { border-left: 4px solid #f44336; }
+        button { 
+            background: #4CAF50; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        button:hover { background: #45a049; }
+        input, textarea { 
+            width: 100%; 
+            padding: 8px; 
+            margin: 5px 0; 
+            border: 1px solid #555; 
+            border-radius: 4px; 
+            background: #333; 
+            color: white; 
+        }
+    </style>
+</head>
+<body>
+    <h1>Challenge Validation Test</h1>
+    
+    <div class="test-box">
+        <h2>Current User Data</h2>
+        <div id="current-user"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>Test Challenge Submissions</h2>
+        <div class="challenge">
+            <h3>Challenge 1: Binary Search (Easy)</h3>
+            <p>What is the time complexity of binary search?</p>
+            <input type="text" id="challenge1-answer" placeholder="Your answer...">
+            <button onclick="submitChallenge('binary-search', 'challenge1-answer')">Submit</button>
+        </div>
+        
+        <div class="challenge">
+            <h3>Challenge 2: Data Structures (Medium)</h3>
+            <p>Which data structure uses LIFO principle?</p>
+            <input type="text" id="challenge2-answer" placeholder="Your answer...">
+            <button onclick="submitChallenge('data-structures', 'challenge2-answer')">Submit</button>
+        </div>
+        
+        <div class="challenge">
+            <h3>Challenge 3: Code Challenge (Hard)</h3>
+            <p>Write a function to reverse a string:</p>
+            <textarea id="challenge3-answer" placeholder="function reverseString(str) { ... }"></textarea>
+            <button onclick="submitChallenge('reverse-string', 'challenge3-answer')">Submit</button>
+        </div>
+    </div>
+    
+    <div class="test-box">
+        <h2>Submission Results</h2>
+        <div id="results"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>Navigation</h2>
+        <button onclick="goToChallenges()">Go to Challenges</button>
+        <button onclick="goToAdventureMap()">Go to Adventure Map</button>
+        <button onclick="goToProfile()">Go to Profile</button>
+    </div>
+
+    <script>
+        function displayCurrentUser() {
+            const user = localStorage.getItem('byteclub_user');
+            const result = document.getElementById('current-user');
+            
+            if (user) {
+                const userData = JSON.parse(user);
+                result.innerHTML = `
+                    <p><strong>Username:</strong> ${userData.username}</p>
+                    <p><strong>Level:</strong> ${userData.currentLevel}</p>
+                    <p><strong>XP:</strong> ${userData.totalXP}</p>
+                    <p><strong>Streak:</strong> ${userData.currentStreak} days</p>
+                    <p><strong>Badges:</strong> ${userData.badges.length}</p>
+                `;
+            } else {
+                result.innerHTML = '<p>No user data found</p>';
+            }
+        }
+        
+        async function submitChallenge(slug, inputId) {
+            const answer = document.getElementById(inputId).value;
+            const resultsDiv = document.getElementById('results');
+            
+            if (!answer.trim()) {
+                resultsDiv.innerHTML += '<div class="result error">❌ Please enter an answer</div>';
+                return;
+            }
+            
+            try {
+                resultsDiv.innerHTML += `<div class="result">🔄 Submitting challenge: ${slug}...</div>`;
+                
+                // Simulate API call (replace with real API call)
+                const response = await fetch(`http://localhost:3001/api/challenges/${slug}/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('byteclub_token')}`
+                    },
+                    body: JSON.stringify({ answer })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.data.isCorrect) {
+                        resultsDiv.innerHTML += `
+                            <div class="result success">
+                                ✅ <strong>Correct!</strong> 
+                                Earned ${result.data.xpEarned} XP
+                                ${result.data.streak > 0 ? `• ${result.data.streak} day streak!` : ''}
+                            </div>
+                        `;
+                        
+                        // Update user data
+                        const user = localStorage.getItem('byteclub_user');
+                        if (user) {
+                            const userData = JSON.parse(user);
+                            userData.totalXP = result.data.totalXP;
+                            userData.currentStreak = result.data.streak;
+                            localStorage.setItem('byteclub_user', JSON.stringify(userData));
+                            displayCurrentUser();
+                        }
+                    } else {
+                        resultsDiv.innerHTML += `
+                            <div class="result error">
+                                ❌ <strong>Incorrect!</strong> 
+                                Try again or check the hint
+                            </div>
+                        `;
+                    }
+                } else {
+                    resultsDiv.innerHTML += `
+                        <div class="result error">
+                            ❌ <strong>Error:</strong> ${result.message}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="result error">
+                        ❌ <strong>Network Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function goToChallenges() {
+            window.location.href = '/challenges';
+        }
+        
+        function goToAdventureMap() {
+            window.location.href = '/adventure-map';
+        }
+        
+        function goToProfile() {
+            window.location.href = '/profile';
+        }
+        
+        // Load current user on page load
+        displayCurrentUser();
+    </script>
+</body>
+</html>

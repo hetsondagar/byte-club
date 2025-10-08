@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badges & Streak Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: white; 
+        }
+        .test-box { 
+            background: #333; 
+            padding: 20px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+        }
+        .badge { 
+            display: inline-block; 
+            background: #4CAF50; 
+            color: white; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            margin: 2px; 
+            font-size: 12px; 
+        }
+        .streak { 
+            display: inline-block; 
+            background: #FF9800; 
+            color: white; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            margin: 2px; 
+            font-size: 12px; 
+        }
+    </style>
+</head>
+<body>
+    <h1>Badges & Streak Test</h1>
+    
+    <div class="test-box">
+        <h2>Current User Data</h2>
+        <div id="current-data"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>Test Scenarios</h2>
+        <button onclick="testNewUser()">New User (No badges, 0 streak)</button>
+        <button onclick="testActiveUser()">Active User (Some badges, 5 streak)</button>
+        <button onclick="testVeteranUser()">Veteran User (Many badges, 15 streak)</button>
+        <button onclick="goToHome()">Go to Home Page</button>
+    </div>
+    
+    <div class="test-box">
+        <h2>Badge Preview</h2>
+        <div id="badge-preview"></div>
+    </div>
+
+    <script>
+        function displayCurrentData() {
+            const user = localStorage.getItem('byteclub_user');
+            const result = document.getElementById('current-data');
+            
+            if (user) {
+                const userData = JSON.parse(user);
+                result.innerHTML = `
+                    <p><strong>Username:</strong> ${userData.username}</p>
+                    <p><strong>Level:</strong> ${userData.currentLevel}</p>
+                    <p><strong>XP:</strong> ${userData.totalXP}</p>
+                    <p><strong>Streak:</strong> ${userData.currentStreak} days</p>
+                    <p><strong>Badges:</strong> ${userData.badges.length}</p>
+                    <div>${userData.badges.map(badge => `<span class="badge">${badge}</span>`).join('')}</div>
+                `;
+            } else {
+                result.innerHTML = '<p>No user data found</p>';
+            }
+        }
+        
+        function testNewUser() {
+            const newUser = {
+                _id: "new123",
+                username: "newbie",
+                email: "new@example.com",
+                totalXP: 50,
+                currentLevel: 1,
+                currentStreak: 0,
+                badges: [],
+                rewards: [],
+                role: "user"
+            };
+            
+            localStorage.setItem('byteclub_user', JSON.stringify(newUser));
+            localStorage.setItem('byteclub_token', 'token-new123');
+            displayCurrentData();
+            updateBadgePreview(newUser.badges);
+        }
+        
+        function testActiveUser() {
+            const activeUser = {
+                _id: "active123",
+                username: "coder",
+                email: "coder@example.com",
+                totalXP: 750,
+                currentLevel: 2,
+                currentStreak: 5,
+                badges: ["first_solve", "five_solve"],
+                rewards: [],
+                role: "user"
+            };
+            
+            localStorage.setItem('byteclub_user', JSON.stringify(activeUser));
+            localStorage.setItem('byteclub_token', 'token-active123');
+            displayCurrentData();
+            updateBadgePreview(activeUser.badges);
+        }
+        
+        function testVeteranUser() {
+            const veteranUser = {
+                _id: "veteran123",
+                username: "master",
+                email: "master@example.com",
+                totalXP: 2500,
+                currentLevel: 6,
+                currentStreak: 15,
+                badges: ["first_solve", "five_solve", "ten_solve", "streak_5", "streak_10", "xp_1000"],
+                rewards: ["neon_frame"],
+                role: "user"
+            };
+            
+            localStorage.setItem('byteclub_user', JSON.stringify(veteranUser));
+            localStorage.setItem('byteclub_token', 'token-veteran123');
+            displayCurrentData();
+            updateBadgePreview(veteranUser.badges);
+        }
+        
+        function updateBadgePreview(badges) {
+            const preview = document.getElementById('badge-preview');
+            if (badges.length > 0) {
+                preview.innerHTML = badges.map(badge => 
+                    `<span class="badge">${badge.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>`
+                ).join('');
+            } else {
+                preview.innerHTML = '<span class="badge" style="background: #666;">No badges yet</span>';
+            }
+        }
+        
+        function goToHome() {
+            window.location.href = '/';
+        }
+        
+        // Load current data on page load
+        displayCurrentData();
+    </script>
+</body>
+</html>

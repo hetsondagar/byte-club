@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MatrixRain } from "@/components/ui/matrix-rain";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { config } from "@/config/env";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Home from "./pages/Home";
@@ -23,25 +25,30 @@ import QuestDetailPage from "./pages/QuestDetailPage";
 import Notifications from "./pages/Notifications";
 import Archive from "./pages/Archive";
 import Rewards from "./pages/Rewards";
+import Test from "./pages/Test";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      {/* Matrix Rain Background - Falls behind all content */}
-      <MatrixRain color="hsl(140 100% 50%)" fontSize={16} speed={50} />
-      <BrowserRouter>
-        <Routes>
+const App = () => {
+  // Configuration logging disabled
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          {/* Matrix Rain Background - Falls behind all content */}
+          <MatrixRain color="hsl(140 100% 50%)" fontSize={16} speed={50} />
+          <BrowserRouter>
+          <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/home" element={<Home />} />
           <Route path="/adventure-map" element={<AdventureMap />} />
           <Route path="/challenges" element={<Challenges />} />
-          <Route path="/challenge/:id" element={<ChallengeDetail />} />
+          <Route path="/challenges/:slug" element={<ChallengeDetail />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/leaderboard/:username" element={<LeaderboardDetail />} />
           <Route path="/profile" element={<Profile />} />
@@ -56,12 +63,15 @@ const App = () => (
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/archive" element={<Archive />} />
           <Route path="/rewards" element={<Rewards />} />
+          <Route path="/test" element={<Test />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+          </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

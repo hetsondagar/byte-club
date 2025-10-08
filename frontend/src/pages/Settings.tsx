@@ -13,7 +13,16 @@ import { toast } from "sonner";
 export default function Settings() {
   const navigate = useNavigate();
   const [settings, setSettings] = useState({
-    username: localStorage.getItem("byteclub_user") || "Hacker",
+    username: (() => {
+      const user = localStorage.getItem("byteclub_user");
+      if (!user) return "Hacker";
+      try {
+        const userData = JSON.parse(user);
+        return userData.username || "Hacker";
+      } catch (error) {
+        return "Hacker";
+      }
+    })(),
     email: "user@byteclub.dev",
     notifications: true,
     soundEffects: true,

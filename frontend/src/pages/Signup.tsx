@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NeonCard } from "@/components/ui/neon-card";
 import { FloatingParticles } from "@/components/ui/floating-particles";
-import { Lock, User, Mail, Terminal } from "lucide-react";
+import { Lock, User, Mail, Terminal, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { apiService } from "@/services/api";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -17,8 +18,9 @@ export default function Signup() {
     password: "",
     confirmPassword: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
@@ -42,12 +44,28 @@ export default function Signup() {
       return;
     }
 
-    // Mock signup
-    localStorage.setItem("byteclub_user", formData.username);
-    toast.success("Registration Complete", {
-      description: "Welcome to Byte Club!",
-    });
-    navigate("/home");
+    setIsLoading(true);
+
+    try {
+      const response = await apiService.signup(
+        formData.username,
+        formData.email,
+        formData.password
+      );
+      
+      toast.success("Registration Complete", {
+        description: `Welcome to Byte Club, ${response.user.username}!`,
+      });
+      
+      navigate("/home");
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      toast.error("Registration Failed", {
+        description: error.message || "Failed to create account",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -136,9 +154,13 @@ export default function Signup() {
               />
             </div>
 
-            <Button type="submit" variant="cyber" className="w-full" size="lg">
-              <Terminal className="mr-2 h-4 w-4" />
-              Create Account
+            <Button type="submit" variant="cyber" className="w-full" size="lg" disabled={isLoading}>
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Terminal className="mr-2 h-4 w-4" />
+              )}
+              {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
 
             <div className="text-center text-sm">

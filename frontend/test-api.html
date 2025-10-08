@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button onclick="testAPI()">Test API Connection</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Test basic connection
+                const response = await fetch('http://localhost:3001/health');
+                const data = await response.json();
+                resultDiv.innerHTML = `<p>✅ Health check: ${JSON.stringify(data)}</p>`;
+                
+                // Test auth endpoint
+                const authResponse = await fetch('http://localhost:3001/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('byteclub_token') || 'no-token'}`
+                    }
+                });
+                
+                if (authResponse.ok) {
+                    const authData = await authResponse.json();
+                    resultDiv.innerHTML += `<p>✅ Auth check: ${JSON.stringify(authData)}</p>`;
+                } else {
+                    resultDiv.innerHTML += `<p>❌ Auth failed: ${authResponse.status}</p>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -6,30 +6,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NeonCard } from "@/components/ui/neon-card";
 import { FloatingParticles } from "@/components/ui/floating-particles";
-import { Lock, User, Terminal } from "lucide-react";
+import { Lock, User, Terminal, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { apiService } from "@/services/api";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!username.trim() || !password.trim()) {
+    if (!email.trim() || !password.trim()) {
       toast.error("Access Denied", {
         description: "All fields must be compiled",
       });
       return;
     }
 
-    // Mock login - store username in localStorage
-    localStorage.setItem("byteclub_user", username);
-    toast.success("Access Granted", {
-      description: "Welcome to the digital realm",
-    });
-    navigate("/home");
+    setIsLoading(true);
+
+    try {
+      const response = await apiService.login(email, password);
+      
+      toast.success("Access Granted", {
+        description: `Welcome back, ${response.user.username}!`,
+      });
+      
+      navigate("/home");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error("Authentication Failed", {
+        description: error.message || "Invalid credentials",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -60,15 +74,16 @@ export default function Login() {
         <NeonCard variant="cyan" glow className="backdrop-blur-sm bg-card/80">
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-foreground">
+              <Label htmlFor="email" className="text-foreground">
                 <User className="inline w-4 h-4 mr-2" />
-                Username
+                Email
               </Label>
               <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your handle"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
                 className="bg-input border-primary/30 focus:border-primary transition-colors"
               />
             </div>
@@ -88,9 +103,13 @@ export default function Login() {
               />
             </div>
 
-            <Button type="submit" variant="cyber" className="w-full" size="lg">
-              <Terminal className="mr-2 h-4 w-4" />
-              Initialize Login Sequence
+            <Button type="submit" variant="cyber" className="w-full" size="lg" disabled={isLoading}>
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Terminal className="mr-2 h-4 w-4" />
+              )}
+              {isLoading ? "Authenticating..." : "Initialize Login Sequence"}
             </Button>
 
             <div className="text-center text-sm">

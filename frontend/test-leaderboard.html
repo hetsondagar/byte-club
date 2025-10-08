@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: white; 
+        }
+        .test-box { 
+            background: #333; 
+            padding: 20px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+        }
+        .leaderboard-entry {
+            background: #444;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .rank { font-weight: bold; }
+        .xp { color: #4CAF50; }
+    </style>
+</head>
+<body>
+    <h1>Leaderboard Test</h1>
+    
+    <div class="test-box">
+        <h2>Current User Data</h2>
+        <div id="current-user"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>Simulate Leaderboard Data</h2>
+        <button onclick="simulateLeaderboard()">Generate Mock Leaderboard</button>
+        <button onclick="goToLeaderboard()">Go to Leaderboard</button>
+    </div>
+    
+    <div class="test-box">
+        <h2>Mock Leaderboard Preview</h2>
+        <div id="leaderboard-preview"></div>
+    </div>
+
+    <script>
+        function displayCurrentUser() {
+            const user = localStorage.getItem('byteclub_user');
+            const result = document.getElementById('current-user');
+            
+            if (user) {
+                const userData = JSON.parse(user);
+                result.innerHTML = `
+                    <p><strong>Username:</strong> ${userData.username}</p>
+                    <p><strong>Level:</strong> ${userData.currentLevel}</p>
+                    <p><strong>XP:</strong> ${userData.totalXP}</p>
+                    <p><strong>Badges:</strong> ${userData.badges.length}</p>
+                `;
+            } else {
+                result.innerHTML = '<p>No user data found</p>';
+            }
+        }
+        
+        function simulateLeaderboard() {
+            // Create mock leaderboard data
+            const mockLeaderboard = [
+                { rank: 1, username: "CodeMaster", totalXP: 15000, currentLevel: 30, badges: ["first_solve", "ten_solve", "streak_10"], currentStreak: 12, _id: "user1" },
+                { rank: 2, username: "ByteNinja", totalXP: 12000, currentLevel: 25, badges: ["first_solve", "five_solve"], currentStreak: 8, _id: "user2" },
+                { rank: 3, username: "AlgoAce", totalXP: 10000, currentLevel: 22, badges: ["first_solve"], currentStreak: 5, _id: "user3" },
+                { rank: 4, username: "DataDruid", totalXP: 8500, currentLevel: 18, badges: ["first_solve", "five_solve", "xp_1000"], currentStreak: 3, _id: "user4" },
+                { rank: 5, username: "FunctionFury", totalXP: 7500, currentLevel: 16, badges: ["first_solve"], currentStreak: 1, _id: "user5" }
+            ];
+            
+            // Store in localStorage for testing
+            localStorage.setItem('mock_leaderboard', JSON.stringify(mockLeaderboard));
+            
+            // Update preview
+            updateLeaderboardPreview(mockLeaderboard);
+        }
+        
+        function updateLeaderboardPreview(leaderboard) {
+            const preview = document.getElementById('leaderboard-preview');
+            preview.innerHTML = leaderboard.map(entry => `
+                <div class="leaderboard-entry">
+                    <div>
+                        <span class="rank">#${entry.rank}</span> 
+                        <strong>${entry.username}</strong> 
+                        (Level ${entry.currentLevel}, ${entry.badges.length} badges, ${entry.currentStreak} day streak)
+                    </div>
+                    <div class="xp">${entry.totalXP.toLocaleString()} XP</div>
+                </div>
+            `).join('');
+        }
+        
+        function goToLeaderboard() {
+            window.location.href = '/leaderboard';
+        }
+        
+        // Load current user on page load
+        displayCurrentUser();
+    </script>
+</body>
+</html>

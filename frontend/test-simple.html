@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: white; 
+        }
+        .test-box { 
+            background: #333; 
+            padding: 20px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Test Page</h1>
+    
+    <div class="test-box">
+        <h2>LocalStorage Test</h2>
+        <button onclick="checkLocalStorage()">Check LocalStorage</button>
+        <div id="localStorage-result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>User Data Test</h2>
+        <button onclick="simulateUserData()">Simulate User Data</button>
+        <div id="user-data-result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>Navigation Test</h2>
+        <button onclick="goToHome()">Go to Home</button>
+    </div>
+
+    <script>
+        function checkLocalStorage() {
+            const result = document.getElementById('localStorage-result');
+            const user = localStorage.getItem('byteclub_user');
+            const token = localStorage.getItem('byteclub_token');
+            
+            result.innerHTML = `
+                <p><strong>User Data:</strong> ${user || 'None'}</p>
+                <p><strong>Token:</strong> ${token || 'None'}</p>
+            `;
+        }
+        
+        function simulateUserData() {
+            const mockUser = {
+                _id: "test123",
+                username: "testuser",
+                email: "test@example.com",
+                totalXP: 500,
+                currentLevel: 2,
+                currentStreak: 3,
+                badges: ["first_solve"],
+                rewards: [],
+                role: "user"
+            };
+            
+            localStorage.setItem('byteclub_user', JSON.stringify(mockUser));
+            localStorage.setItem('byteclub_token', 'mock-token-123');
+            
+            const result = document.getElementById('user-data-result');
+            result.innerHTML = `
+                <p><strong>Mock user data set!</strong></p>
+                <p>Username: ${mockUser.username}</p>
+                <p>Level: ${mockUser.currentLevel}</p>
+                <p>XP: ${mockUser.totalXP}</p>
+            `;
+        }
+        
+        function goToHome() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

@@ -53,7 +53,18 @@ export default function Quests() {
   const completedCount = completedQuests.size;
   const totalQuests = questsData.length;
 
-  const username = localStorage.getItem("byteclub_user") || "Hacker";
+  const getUserData = () => {
+    const user = localStorage.getItem("byteclub_user");
+    if (!user) return "Hacker";
+    try {
+      const userData = JSON.parse(user);
+      return userData.username || "Hacker";
+    } catch (error) {
+      return "Hacker";
+    }
+  };
+  
+  const username = getUserData();
 
   const handleLogout = () => {
     localStorage.removeItem("byteclub_user");
