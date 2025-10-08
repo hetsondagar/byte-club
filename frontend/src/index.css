@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Byte Club Neon Theme - Cyberpunk/Hacker Aesthetic */
+    --background: 240 100% 3%;  /* #0a0a0f - Deep space black */
+    --foreground: 180 100% 97%;  /* Bright cyan-white */
+
+    --card: 240 50% 6%;  /* Slightly lighter than background */
+    --card-foreground: 180 100% 97%;
+
+    --popover: 240 50% 6%;
+    --popover-foreground: 180 100% 97%;
+
+    /* Neon Cyan Primary */
+    --primary: 180 100% 50%;  /* #00f0ff - Neon cyan */
+    --primary-foreground: 240 100% 3%;
+
+    /* Electric Violet Secondary */
+    --secondary: 270 100% 62%;  /* #9d00ff - Electric violet */
+    --secondary-foreground: 180 100% 97%;
+
+    /* Muted dark tones */
+    --muted: 240 30% 12%;
+    --muted-foreground: 180 50% 70%;
+
+    /* Electric Blue Accent */
+    --accent: 220 100% 51%;  /* #0066ff - Electric blue */
+    --accent-foreground: 180 100% 97%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 180 100% 97%;
+
+    --border: 180 100% 50% / 0.2;  /* Subtle cyan border */
+    --input: 240 40% 12%;
+    --ring: 180 100% 50%;
+
+    --radius: 0.75rem;
+
+    /* Neon Glow Colors */
+    --neon-cyan: 180 100% 50%;
+    --neon-violet: 270 100% 62%;
+    --neon-blue: 220 100% 51%;
+    --neon-green: 140 100% 50%;
+    
+    /* Custom gradients */
+    --gradient-cyber: linear-gradient(135deg, hsl(180 100% 50%) 0%, hsl(270 100% 62%) 100%);
+    --gradient-electric: linear-gradient(135deg, hsl(220 100% 51%) 0%, hsl(180 100% 50%) 100%);
+    
+    /* Glow shadows */
+    --glow-cyan: 0 0 20px hsl(180 100% 50% / 0.5), 0 0 40px hsl(180 100% 50% / 0.3);
+    --glow-violet: 0 0 20px hsl(270 100% 62% / 0.5), 0 0 40px hsl(270 100% 62% / 0.3);
+    --glow-blue: 0 0 20px hsl(220 100% 51% / 0.5), 0 0 40px hsl(220 100% 51% / 0.3);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-mono;
+    overflow-x: hidden;
+  }
+}
+
+@layer utilities {
+  /* Neon glow effects */
+  .glow-cyan {
+    box-shadow: var(--glow-cyan);
+  }
+  
+  .glow-violet {
+    box-shadow: var(--glow-violet);
+  }
+  
+  .glow-blue {
+    box-shadow: var(--glow-blue);
+  }
+  
+  /* Hover glow animation */
+  .hover-glow-cyan {
+    transition: var(--transition-smooth);
+  }
+  
+  .hover-glow-cyan:hover {
+    box-shadow: var(--glow-cyan);
+    transform: translateY(-2px);
+  }
+  
+  /* Animated gradient background */
+  .gradient-cyber {
+    background: var(--gradient-cyber);
+  }
+  
+  .gradient-electric {
+    background: var(--gradient-electric);
+  }
+  
+  /* Neon border animation */
+  .neon-border {
+    position: relative;
+    border: 1px solid hsl(var(--primary) / 0.3);
+  }
+  
+  .neon-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: var(--gradient-cyber);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  
+  .neon-border:hover::before {
+    opacity: 1;
+  }
+}
+
+/* Custom animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.8;
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
