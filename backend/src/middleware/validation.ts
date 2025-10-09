@@ -89,6 +89,22 @@ export const challengeSubmissionSchema = z.object({
   })
 });
 
+export const codeRunSchema = z.object({
+  body: z.object({
+    code: z.string().min(1, 'Code cannot be empty')
+  })
+});
+
+export const genericCodeRunSchema = z.object({
+  body: z.object({
+    code: z.string().min(1, 'Code cannot be empty'),
+    testCases: z.array(z.object({
+      input: z.any(),
+      expected: z.any(),
+    })).optional()
+  })
+});
+
 export const userUpdateSchema = z.object({
   body: z.object({
     username: z.string()

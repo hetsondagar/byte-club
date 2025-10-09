@@ -6,6 +6,7 @@ import { XPBar } from "@/components/ui/xp-bar";
 import { NeonBadge } from "@/components/ui/neon-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CodeTerminal } from "@/components/CodeTerminal";
 import { FloatingParticles } from "@/components/ui/floating-particles";
 import { ConfettiEffect } from "@/components/ui/confetti-effect";
 import { Navbar } from "@/components/Navbar";
@@ -256,7 +257,7 @@ export default function AdventureMap() {
                     <div className="bg-card/95 backdrop-blur-sm border border-primary/30 rounded-lg p-3 text-sm shadow-lg">
                       <div className="font-semibold max-w-[250px] truncate text-primary">{node.title}</div>
                       <div className="flex items-center gap-2 mt-2">
-                        <NeonBadge variant={node.difficulty}>{node.difficulty}</NeonBadge>
+                        <NeonBadge variant={node.difficulty === 'expert' ? 'hard' : node.difficulty}>{node.difficulty}</NeonBadge>
                         <span className="text-primary font-bold">{node.xp} XP</span>
                       </div>
                     </div>
@@ -315,18 +316,10 @@ export default function AdventureMap() {
                       </span>
                     </div>
 
-                    <Input
-                      placeholder="Type your answer here..."
-                      className="text-lg font-mono bg-input border-secondary/30 focus:border-secondary"
-                      value={answer}
-                      onChange={(e) => setAnswer(e.target.value)}
+                    <CodeTerminal
+                      initialCode={answer}
+                      onCodeChange={setAnswer}
                       disabled={submitted && correct}
-                      maxLength={50}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !submitted) {
-                          handleSubmit();
-                        }
-                      }}
                     />
                   </NeonCard>
 
@@ -415,8 +408,10 @@ export default function AdventureMap() {
 
                   {/* Metadata */}
                   <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 border-t border-primary/20">
-                    <div className="flex items-center gap-2">
-                      <NeonBadge variant={activeNode.difficulty}>{activeNode.difficulty}</NeonBadge>
+                  <div className="flex items-center gap-2">
+                      <NeonBadge variant={activeNode.difficulty === 'expert' ? 'hard' : activeNode.difficulty}>
+                        {activeNode.difficulty}
+                      </NeonBadge>
                       <span>Node {activeNode.id}/100</span>
                     </div>
                     <div className="flex items-center gap-1">

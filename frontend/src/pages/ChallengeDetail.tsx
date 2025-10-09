@@ -5,6 +5,7 @@ import { NeonCard } from "@/components/ui/neon-card";
 import { NeonBadge } from "@/components/ui/neon-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CodeTerminal } from "@/components/CodeTerminal";
 import { FloatingParticles } from "@/components/ui/floating-particles";
 import { ConfettiEffect } from "@/components/ui/confetti-effect";
 import { ArrowLeft, Zap, CheckCircle, XCircle, Loader2 } from "lucide-react";
@@ -203,28 +204,27 @@ export default function ChallengeDetail() {
           </NeonCard>
 
           {challenge.type === "code" ? (
-            <NeonCard variant="violet" glow>
-              <h3 className="text-lg font-semibold mb-4">{challenge.content.question}</h3>
-              <div className="space-y-4">
-                <textarea
-                  placeholder="Write your code solution here..."
-                  className="w-full h-32 p-3 rounded-lg bg-input border-secondary/30 focus:border-secondary font-mono text-sm"
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  disabled={submitted && correct}
-                />
+            <div className="space-y-4">
+              <NeonCard variant="violet" glow>
+                <h3 className="text-lg font-semibold mb-4">{challenge.content.question}</h3>
                 {challenge.content.codeSnippet && (
-                  <div className="p-3 rounded-lg bg-muted/30 border border-primary/20">
+                  <div className="p-3 rounded-lg bg-muted/30 border border-primary/20 mb-3">
                     <p className="text-xs text-muted-foreground mb-2">
-                      💡 <span className="font-semibold">Code Template:</span>
+                      💡 <span className="font-semibold">Starter:</span>
                     </p>
-                    <pre className="text-xs font-mono text-muted-foreground">
+                    <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">
                       {challenge.content.codeSnippet}
                     </pre>
                   </div>
                 )}
-              </div>
-            </NeonCard>
+                <CodeTerminal
+                  slug={challenge.slug}
+                  initialCode={answer}
+                  onCodeChange={setAnswer}
+                  disabled={submitted && correct}
+                />
+              </NeonCard>
+            </div>
           ) : challenge.type === "mcq" ? (
             <NeonCard variant="violet" glow>
               <h3 className="text-lg font-semibold mb-4">{challenge.content.question}</h3>

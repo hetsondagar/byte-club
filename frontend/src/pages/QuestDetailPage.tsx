@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { NeonCard } from "@/components/ui/neon-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CodeTerminal } from "@/components/CodeTerminal";
 import { FloatingParticles } from "@/components/ui/floating-particles";
 import { ConfettiEffect } from "@/components/ui/confetti-effect";
 import { MissionCard } from "@/components/MissionCard";
@@ -286,18 +287,10 @@ export default function QuestDetailPage() {
                   {/* Challenge */}
                   <NeonCard variant="violet" glow>
                     <h4 className="font-semibold mb-3">{activeMission.challenge}</h4>
-                    <Input
-                      placeholder="Type your answer here (1-2 words)..."
-                      className="text-lg font-mono bg-input border-secondary/30 focus:border-secondary"
-                      value={answer}
-                      onChange={(e) => setAnswer(e.target.value)}
+                    <CodeTerminal
+                      initialCode={answer}
+                      onCodeChange={setAnswer}
                       disabled={submitted && correct}
-                      maxLength={50}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !submitted) {
-                          handleSubmit();
-                        }
-                      }}
                     />
                   </NeonCard>
 

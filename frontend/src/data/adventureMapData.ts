@@ -10,6 +10,7 @@ export interface AdventureNode {
   difficulty: "easy" | "medium" | "hard" | "expert";
   position: { x: number; y: number };
   connections: number[]; // IDs of connected nodes
+  slug?: string;
 }
 
 export const adventureNodes: AdventureNode[] = [

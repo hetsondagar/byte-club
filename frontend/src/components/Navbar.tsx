@@ -47,9 +47,8 @@ export function Navbar({ username = "Hacker", level = 12, xp = 2450, onLogout }:
               whileTap={{ scale: 0.95 }}
               className="relative"
             >
-              {/* Glowing Terminal Icon */}
-              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse-glow" />
-              <Terminal className="w-8 h-8 text-primary relative z-10" />
+              {/* Brand Logo - served from public, no background */}
+              <img src="/logo_byteclub.png" alt="Byte Club" className="w-8 h-8 relative z-10" />
             </motion.div>
             
             <div className="flex flex-col">

@@ -139,6 +139,22 @@ class ApiService {
     return response.data!;
   }
 
+  async runCode(slug: string, code: string): Promise<{ success: boolean; results: any[]; error?: string; }> {
+    const response = await this.request<{ success: boolean; results: any[]; error?: string }>(`/challenges/${slug}/run`, {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+    return response.data!;
+  }
+
+  async runCodeSandbox(code: string, testCases?: Array<{ input: any; expected: any; }>): Promise<{ success: boolean; results: any[]; error?: string; }> {
+    const response = await this.request<{ success: boolean; results: any[]; error?: string }>(`/challenges/run`, {
+      method: 'POST',
+      body: JSON.stringify({ code, testCases }),
+    });
+    return response.data!;
+  }
+
   // Daily challenge
   async getDailyChallenge(): Promise<any> {
     const response = await this.request('/daily');

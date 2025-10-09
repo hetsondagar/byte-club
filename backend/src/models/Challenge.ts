@@ -47,6 +47,13 @@ const challengeSchema = new Schema<IChallenge>({
     },
     codeSnippet: {
       type: String
+    },
+    testCases: [{
+      input: { type: Schema.Types.Mixed },
+      expected: { type: Schema.Types.Mixed }
+    }],
+    starterCode: {
+      type: String
     }
   },
   tags: [{

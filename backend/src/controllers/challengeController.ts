@@ -101,14 +101,14 @@ export const submitChallenge = async (req: any, res: Response) => {
 
     let isCorrect = false;
     let xpEarned = 0;
+    let runResults: any[] | undefined;
 
     // Check answer based on challenge type
     if (challenge.type === 'code') {
-      // For code challenges, we need test cases
-      // This is a simplified version - in reality you'd have test cases stored
-      const testCases = challenge.content.codeSnippet ? JSON.parse(challenge.content.codeSnippet) : [];
+      const testCases = Array.isArray((challenge as any).content?.testCases) ? (challenge as any).content.testCases : [];
       const result = executeCode(answer as string, testCases);
       isCorrect = result.success;
+      runResults = result.results;
     } else {
       // For MCQ and true/false
       isCorrect = answer === challenge.content.correctAnswer;
@@ -156,7 +156,8 @@ export const submitChallenge = async (req: any, res: Response) => {
         isCorrect,
         xpEarned,
         streak: user.currentStreak,
-        totalXP: user.totalXP + (isCorrect ? xpEarned : 0)
+        totalXP: user.totalXP + (isCorrect ? xpEarned : 0),
+        runResults
       }
     });
   } catch (error) {
@@ -165,5 +166,44 @@ export const submitChallenge = async (req: any, res: Response) => {
       success: false,
       message: 'Internal server error'
     });
+  }
+};
+
+export const runCodeForChallenge = async (req: any, res: Response) => {
+  try {
+    const { slug } = req.params;
+    const { code } = req.body as { code: string };
+
+    const challenge = await Challenge.findOne({ slug, isActive: true });
+    if (!challenge) {
+      return res.status(404).json({ success: false, message: 'Challenge not found' });
+    }
+
+    if (challenge.type !== 'code') {
+      return res.status(400).json({ success: false, message: 'Challenge is not a code challenge' });
+    }
+
+    const testCases = Array.isArray((challenge as any).content?.testCases) ? (challenge as any).content.testCases : [];
+    const result = executeCode(code, testCases);
+
+    return res.json({
+      success: true,
+      message: 'Code executed',
+      data: result
+    });
+  } catch (error) {
+    logger.error('Run code error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+export const runGenericCode = async (req: Request, res: Response) => {
+  try {
+    const { code, testCases = [] } = req.body as any;
+    const result = executeCode(code, testCases);
+    return res.json({ success: true, message: 'Code executed', data: result });
+  } catch (error) {
+    logger.error('Run generic code error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };

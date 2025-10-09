@@ -28,6 +28,11 @@ export interface Challenge {
     options?: string[];
     correctAnswer: string | number;
     codeSnippet?: string;
+    testCases?: Array<{
+      input: any;
+      expected: any;
+    }>;
+    starterCode?: string;
   };
   tags: string[];
   isDaily: boolean;
