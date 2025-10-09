@@ -46,7 +46,9 @@ export default function Achievements() {
           
           if (userData) {
             try {
-              const user = JSON.parse(userData);
+              const parsedData = JSON.parse(userData);
+              // Handle both nested and direct user data structures
+              const user = parsedData.user || parsedData;
               unlockedBadges = user.badges || [];
               console.log('User unlocked badges:', unlockedBadges);
             } catch (error) {
@@ -65,12 +67,15 @@ export default function Achievements() {
           
           if (userData) {
             try {
-              const parsedUser = JSON.parse(userData);
+              const parsedData = JSON.parse(userData);
+              // Handle both nested and direct user data structures
+              const parsedUser = parsedData.user || parsedData;
               userStats = {
                 challengesCompleted: parsedUser.completedChallenges?.length || 0,
                 totalXP: parsedUser.totalXP || 0,
                 currentStreak: parsedUser.currentStreak || 0,
               };
+              console.log('User stats for achievements:', userStats);
             } catch (error) {
               console.log('Error parsing user data for stats:', error);
             }
@@ -91,15 +96,16 @@ export default function Achievements() {
                   total: req.challengesCompleted
                 };
               } else if (req.loopChallengesCompleted) {
-                // Mock for now - would need to track specific challenge types
+                // For loop_lord, show 0 progress since no loop challenges exist yet
                 progress = {
-                  current: Math.min(userStats.challengesCompleted, req.loopChallengesCompleted),
+                  current: 0, // No loop challenges completed
                   total: req.loopChallengesCompleted
                 };
               } else if (req.syntaxErrorsFixed) {
-                // Mock for now - would need to track syntax error fixes
+                // For syntax_slayer, show progress based on syntax challenges completed
+                const syntaxChallengesCompleted = userStats.challengesCompleted; // Assuming first challenge is syntax
                 progress = {
-                  current: Math.min(userStats.challengesCompleted, req.syntaxErrorsFixed),
+                  current: Math.min(syntaxChallengesCompleted, req.syntaxErrorsFixed),
                   total: req.syntaxErrorsFixed
                 };
               } else if (req.speedChallenges) {
@@ -242,14 +248,36 @@ export default function Achievements() {
       <FloatingParticles count={20} />
 
       <div className="relative z-10 container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="outline" onClick={() => navigate("/home")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={() => navigate("/home")}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+              Achievements
+            </h1>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              try {
+                console.log('Refreshing user data...');
+                const userData = await apiService.getCurrentUser();
+                localStorage.setItem("byteclub_user", JSON.stringify(userData));
+                console.log('User data refreshed:', userData);
+                // Refresh achievements
+                window.location.reload();
+              } catch (error) {
+                console.error('Failed to refresh user data:', error);
+              }
+            }}
+            className="text-white border-white/20 hover:bg-white/10"
+          >
+            <Loader2 className="h-4 w-4 mr-2" />
+            Refresh Data
           </Button>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-            Achievements
-          </h1>
         </div>
 
         <div className="max-w-5xl mx-auto">

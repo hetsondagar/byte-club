@@ -54,6 +54,41 @@ export default function Home() {
   const [dailyFact, setDailyFact] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const refreshUserData = async () => {
+    try {
+      console.log('Refreshing user data from backend...');
+      const response = await apiService.getCurrentUser();
+      console.log('Fresh user data from backend:', response);
+      
+      // Handle nested response structure
+      const freshUserData = (response as any).user || response;
+      console.log('Extracted user data:', freshUserData);
+      
+      // Ensure required fields exist
+      const safeUserData = {
+        _id: freshUserData._id || "unknown",
+        username: freshUserData.username || "Hacker",
+        email: freshUserData.email || "user@example.com",
+        totalXP: freshUserData.totalXP || 0,
+        currentLevel: freshUserData.currentLevel || 1,
+        currentStreak: freshUserData.currentStreak || 0,
+        badges: freshUserData.badges || [],
+        rewards: freshUserData.rewards || [],
+        role: freshUserData.role || "user"
+      };
+      
+      // Update localStorage with fresh data
+      localStorage.setItem("byteclub_user", JSON.stringify(safeUserData));
+      
+      // Update state
+      setUserData(safeUserData);
+      
+      console.log('User data refreshed successfully:', safeUserData);
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+    }
+  };
+
   useEffect(() => {
     const loadUserData = () => {
       try {
@@ -64,7 +99,9 @@ export default function Home() {
         
         if (localUser) {
           try {
-            const userData = JSON.parse(localUser);
+            const parsedData = JSON.parse(localUser);
+            // Handle both nested and direct user data structures
+            const userData = parsedData.user || parsedData;
             // Ensure required fields exist
             const safeUserData = {
               _id: userData._id || "unknown",
@@ -77,8 +114,10 @@ export default function Home() {
               rewards: userData.rewards || [],
               role: userData.role || "user"
             };
+            console.log('Home page user data:', safeUserData);
             setUserData(safeUserData);
           } catch (parseError) {
+            console.error('Error parsing user data:', parseError);
             navigate("/");
             return;
           }
@@ -94,6 +133,26 @@ export default function Home() {
     };
     
     loadUserData();
+
+    // Listen for localStorage changes to refresh user data
+    const handleStorageChange = () => {
+      console.log('Storage changed, refreshing user data...');
+      loadUserData();
+    };
+
+    // Listen for our custom challenge completion event
+    const handleChallengeCompleted = () => {
+      console.log('Challenge completed, refreshing user data...');
+      loadUserData();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('challengeCompleted', handleChallengeCompleted);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('challengeCompleted', handleChallengeCompleted);
+    };
   }, [navigate]);
 
   const handleLogout = async () => {
@@ -179,7 +238,7 @@ export default function Home() {
               <NeonBadge variant="success" className="animate-pulse">
                 🔥 {userData.currentStreak} Day Streak
               </NeonBadge>
-              {userData.badges.length > 0 ? (
+              {userData.badges && userData.badges.length > 0 ? (
                 userData.badges.slice(0, 2).map((badge, index) => (
                   <NeonBadge key={index} variant="default" className="hover:scale-105 transition-transform">
                     {badge.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -190,7 +249,7 @@ export default function Home() {
                   No badges yet
                 </NeonBadge>
               )}
-              {userData.badges.length > 2 && (
+              {userData.badges && userData.badges.length > 2 && (
                 <NeonBadge variant="secondary" className="text-xs">
                   +{userData.badges.length - 2} more
                 </NeonBadge>

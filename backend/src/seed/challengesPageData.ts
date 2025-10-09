@@ -1,7 +1,7 @@
 import { Challenge } from '../models';
 import logger from '../config/logger';
 
-// Static challenges data from the Challenges page
+// Enriched challenges data for the Challenges page (code challenges with test cases)
 const challengesPageData = [
   { 
     id: 1, 
@@ -9,7 +9,12 @@ const challengesPageData = [
     difficulty: "easy", 
     xp: 50, 
     completed: true, 
-    description: "Fix the syntax error" 
+    description: "Fix the syntax error in the function so it returns 'Hello, Byte Club!'",
+    question: "Fix the syntax error so solution() returns the string 'Hello, Byte Club!'",
+    starterCode: `function solution() {\n  // Fix the syntax error below\n  return \"Hello, World!\"\n}`,
+    testCases: [
+      { input: null, expected: "Hello, Byte Club!" }
+    ]
   },
   { 
     id: 2, 
@@ -17,7 +22,15 @@ const challengesPageData = [
     difficulty: "easy", 
     xp: 75, 
     completed: false, 
-    description: "Reverse an array without built-in methods" 
+    description: "Reverse an array without built-in reverse()",
+    question: "Implement solution(arr) that returns the array reversed without using reverse().",
+    starterCode: `function solution(arr) {\n  // Write your code here\n  // Return a new array with elements in reverse order\n  // DO NOT use arr.reverse() or any built-in reverse method\n}`,
+    testCases: [
+      { input: [1,2,3], expected: [3,2,1] },
+      { input: [5], expected: [5] },
+      { input: [], expected: [] }
+    ],
+    forbiddenMethods: ["reverse()", ".reverse()", "arr.reverse()"]
   },
   { 
     id: 3, 
@@ -25,7 +38,14 @@ const challengesPageData = [
     difficulty: "medium", 
     xp: 150, 
     completed: false, 
-    description: "Check if a string is a palindrome" 
+    description: "Check if a string is a palindrome (ignore casing)",
+    question: "Implement solution(s) returning true if s is a palindrome (case-insensitive).",
+    starterCode: `function solution(s) {\n  // Normalize and check palindrome\n}`,
+    testCases: [
+      { input: "racecar", expected: true },
+      { input: "RaceCar", expected: true },
+      { input: "hello", expected: false }
+    ]
   },
   { 
     id: 4, 
@@ -33,23 +53,39 @@ const challengesPageData = [
     difficulty: "medium", 
     xp: 200, 
     completed: false, 
-    description: "Implement binary search algorithm" 
+    description: "Return index of target using binary search or -1 if not found",
+    question: "Implement solution({ arr, target }) returning the index of target in sorted arr or -1.",
+    starterCode: `function solution(input) {\n  const { arr, target } = input;\n  // Binary search here\n}`,
+    testCases: [
+      { input: { arr: [1,3,5,7,9], target: 5 }, expected: 2 },
+      { input: { arr: [1,3,5,7,9], target: 6 }, expected: -1 }
+    ]
   },
   { 
     id: 5, 
-    title: "Dynamic Programming", 
+    title: "Knapsack (0/1)", 
     difficulty: "hard", 
     xp: 350, 
     completed: false, 
-    description: "Solve the knapsack problem" 
+    description: "Compute maximum value for given capacity",
+    question: "Implement solution({ weights, values, capacity }) returning max achievable value (0/1 knapsack).",
+    starterCode: `function solution(input) {\n  const { weights, values, capacity } = input;\n  // DP solution here\n}`,
+    testCases: [
+      { input: { weights: [1,3,4], values: [15,20,30], capacity: 4 }, expected: 30 }
+    ]
   },
   { 
     id: 6, 
-    title: "Tree Traversal", 
+    title: "Tree Post-order Traversal", 
     difficulty: "hard", 
     xp: 400, 
     completed: false, 
-    description: "Implement post-order traversal" 
+    description: "Return nodes in post-order traversal of a binary tree",
+    question: "Implement solution(root) returning array of values in post-order (left, right, root).",
+    starterCode: `function solution(root) {\n  // root: { val, left, right } or null\n}`,
+    testCases: [
+      { input: { val: 1, left: { val: 2, left: null, right: null }, right: { val: 3, left: null, right: null } }, expected: [2,3,1] }
+    ]
   },
 ];
 
@@ -72,9 +108,11 @@ export const seedChallengesPageData = async () => {
         isDaily: false,
         isActive: true,
         content: {
-          question: `Solve the challenge: ${challengeData.description}`,
-          correctAnswer: `solution-${challengeData.id}`,
-          hint: `Think about the ${challengeData.difficulty} level approach for this problem.`
+          question: challengeData.question,
+          correctAnswer: 'code',
+          codeSnippet: challengeData.starterCode,
+          starterCode: challengeData.starterCode,
+          testCases: challengeData.testCases
         }
       };
 

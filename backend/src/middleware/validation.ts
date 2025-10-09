@@ -91,13 +91,15 @@ export const challengeSubmissionSchema = z.object({
 
 export const codeRunSchema = z.object({
   body: z.object({
-    code: z.string().min(1, 'Code cannot be empty')
+    code: z.string().min(1, 'Code cannot be empty'),
+    language: z.string().optional()
   })
 });
 
 export const genericCodeRunSchema = z.object({
   body: z.object({
     code: z.string().min(1, 'Code cannot be empty'),
+    language: z.string().optional(),
     testCases: z.array(z.object({
       input: z.any(),
       expected: z.any(),

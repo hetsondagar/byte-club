@@ -47,6 +47,9 @@ export default function ChallengeDetail() {
   const [xpEarned, setXpEarned] = useState(0);
   const [newStreak, setNewStreak] = useState(0);
   const [newBadges, setNewBadges] = useState<string[]>([]);
+  const [lastRunPassed, setLastRunPassed] = useState(false);
+  const [lastRunLanguage, setLastRunLanguage] = useState<string>('javascript');
+  const [isAlreadyCompleted, setIsAlreadyCompleted] = useState(false);
 
   useEffect(() => {
     const fetchChallenge = async () => {
@@ -55,6 +58,18 @@ export default function ChallengeDetail() {
         if (slug) {
           const challengeData = await apiService.getChallenge(slug);
           setChallenge(challengeData);
+          
+          // Check if user has already completed this challenge
+          const userData = localStorage.getItem("byteclub_user");
+          if (userData) {
+            const user = JSON.parse(userData);
+            const completedChallenges = user.completedChallenges || [];
+            if (completedChallenges.includes(slug)) {
+              setIsAlreadyCompleted(true);
+              setSubmitted(true);
+              setCorrect(true);
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to fetch challenge:', error);
@@ -78,6 +93,13 @@ export default function ChallengeDetail() {
       return;
     }
 
+    if (challenge.type === "code" && !lastRunPassed) {
+      toast.error("Run Your Code", {
+        description: "Please run your code and pass all tests before submitting",
+      });
+      return;
+    }
+
     if (challenge.type === "mcq" && !mcqAnswer) {
       toast.error("No Selection", {
         description: "Please select an answer",
@@ -97,6 +119,7 @@ export default function ChallengeDetail() {
       const userAnswer = challenge.type === "mcq" || challenge.type === "true/false" ? mcqAnswer : answer;
       
       const result = await apiService.submitChallenge(challenge.slug, userAnswer);
+      console.log('Challenge submission result:', result);
       
       setSubmitted(true);
       setCorrect(result.isCorrect);
@@ -110,24 +133,55 @@ export default function ChallengeDetail() {
           description: `You earned ${result.xpEarned} XP!`,
         });
         
-        // Update user data in localStorage
+        // Update user data in localStorage with latest badges and completions
         const user = localStorage.getItem("byteclub_user");
         if (user) {
           const userData = JSON.parse(user);
+          console.log('Before update - userData:', userData);
+          console.log('Result data:', {
+            totalXP: result.totalXP,
+            streak: result.streak,
+            completedChallenges: result.completedChallenges,
+            badges: result.badges
+          });
+          
           userData.totalXP = result.totalXP;
           userData.currentStreak = result.streak;
+          if (Array.isArray(result.completedChallenges)) userData.completedChallenges = result.completedChallenges;
+          if (Array.isArray(result.badges)) userData.badges = result.badges;
+          
+          console.log('After update - userData:', userData);
           localStorage.setItem("byteclub_user", JSON.stringify(userData));
+          console.log('localStorage updated successfully');
         }
+
+        if (Array.isArray(result.badgesUnlocked) && result.badgesUnlocked.length > 0) {
+          setNewBadges(result.badgesUnlocked);
+        }
+
+        // Dispatch custom event to notify other components of challenge completion
+        window.dispatchEvent(new CustomEvent('challengeCompleted', {
+          detail: { slug: challenge.slug, xpEarned: result.xpEarned, badgesUnlocked: result.badgesUnlocked }
+        }));
       } else {
         toast.error("Incorrect Answer", {
           description: "Try again or check the hint",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to submit challenge:', error);
-      toast.error("Submission Failed", {
-        description: "Please try again",
-      });
+      if (error.message && error.message.includes('already completed')) {
+        toast.info("Challenge Already Completed", {
+          description: "You've already solved this challenge!",
+        });
+        setIsAlreadyCompleted(true);
+        setSubmitted(true);
+        setCorrect(true);
+      } else {
+        toast.error("Submission Failed", {
+          description: "Please try again",
+        });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -184,7 +238,12 @@ export default function ChallengeDetail() {
           <NeonCard variant="cyan" glow>
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h1 className="text-3xl font-bold mb-2">{challenge.title}</h1>
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold">{challenge.title}</h1>
+                  {isAlreadyCompleted && (
+                    <span className="text-2xl text-green-400" title="Completed">✓</span>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <NeonBadge variant={challenge.difficulty}>{challenge.difficulty}</NeonBadge>
                   <NeonBadge variant="default">
@@ -193,6 +252,9 @@ export default function ChallengeDetail() {
                   </NeonBadge>
                   {challenge.isDaily && (
                     <NeonBadge variant="success">Daily Challenge</NeonBadge>
+                  )}
+                  {isAlreadyCompleted && (
+                    <NeonBadge variant="success">Completed</NeonBadge>
                   )}
                 </div>
               </div>
@@ -207,20 +269,12 @@ export default function ChallengeDetail() {
             <div className="space-y-4">
               <NeonCard variant="violet" glow>
                 <h3 className="text-lg font-semibold mb-4">{challenge.content.question}</h3>
-                {challenge.content.codeSnippet && (
-                  <div className="p-3 rounded-lg bg-muted/30 border border-primary/20 mb-3">
-                    <p className="text-xs text-muted-foreground mb-2">
-                      💡 <span className="font-semibold">Starter:</span>
-                    </p>
-                    <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">
-                      {challenge.content.codeSnippet}
-                    </pre>
-                  </div>
-                )}
                 <CodeTerminal
                   slug={challenge.slug}
-                  initialCode={answer}
+                  initialCode={challenge.content.starterCode || answer}
                   onCodeChange={setAnswer}
+                  onLanguageChange={setLastRunLanguage}
+                  onRunChange={({ allPassed }) => setLastRunPassed(allPassed)}
                   disabled={submitted && correct}
                 />
               </NeonCard>
@@ -266,10 +320,14 @@ export default function ChallengeDetail() {
                     <>
                       <CheckCircle className="w-12 h-12 text-green-400" />
                       <div>
-                        <h3 className="text-xl font-bold text-green-400">Success!</h3>
+                        <h3 className="text-xl font-bold text-green-400">
+                          {isAlreadyCompleted ? "Already Completed!" : "Success!"}
+                        </h3>
                         <p className="text-muted-foreground">
-                          Compile your destiny! +{xpEarned} XP earned
-                          {newStreak > 0 && ` • ${newStreak} day streak!`}
+                          {isAlreadyCompleted 
+                            ? "You've already solved this challenge! Great job!"
+                            : `Compile your destiny! +${xpEarned} XP earned${newStreak > 0 ? ` • ${newStreak} day streak!` : ''}`
+                          }
                         </p>
                         {newBadges.length > 0 && (
                           <div className="mt-2">
@@ -313,7 +371,7 @@ export default function ChallengeDetail() {
                   Submitting...
                 </>
               ) : submitted && correct ? (
-                "Completed"
+                isAlreadyCompleted ? "Already Completed" : "Completed"
               ) : (
                 "Submit Solution"
               )}

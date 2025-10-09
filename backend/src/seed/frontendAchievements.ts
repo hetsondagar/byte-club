@@ -14,6 +14,16 @@ export const frontendAchievementsData = [
     requirements: { challengesCompleted: 1 }
   },
   {
+    key: 'challenge_master',
+    type: 'badge',
+    name: 'Challenge Master',
+    description: 'Complete 2 challenges',
+    xpReward: 100,
+    icon: '🏆',
+    unlocked: false,
+    requirements: { challengesCompleted: 2 }
+  },
+  {
     key: 'loop_lord',
     type: 'badge',
     name: 'Loop Lord',

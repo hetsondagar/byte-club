@@ -42,47 +42,87 @@ export default function Challenges() {
   
   const username = getUserData();
 
+  // Function to fetch and update challenges
+  const fetchChallenges = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Fetching challenges from API...');
+      
+      const challengesData = await apiService.getChallenges();
+      console.log('Challenges data:', challengesData);
+      
+      // Get user's completed challenges to mark them
+      const userData = localStorage.getItem("byteclub_user");
+      let completedChallenges: string[] = [];
+      
+      if (userData) {
+        try {
+          const parsedData = JSON.parse(userData);
+          // Handle both nested and direct user data structures
+          const user = parsedData.user || parsedData;
+          completedChallenges = user.completedChallenges || [];
+          console.log('User completed challenges:', completedChallenges);
+          console.log('Full user data from localStorage:', parsedData);
+          console.log('Extracted user object:', user);
+          console.log('completedChallenges type:', typeof user.completedChallenges);
+          console.log('completedChallenges is array:', Array.isArray(user.completedChallenges));
+        } catch (error) {
+          console.log('Error parsing user data:', error);
+        }
+      } else {
+        console.log('No user data found in localStorage');
+      }
+      
+      // Mark challenges as completed if user has completed them
+      const challengesWithStatus = challengesData.map(challenge => {
+        const isCompleted = completedChallenges.includes(challenge.slug);
+        console.log(`Challenge ${challenge.slug} (${challenge.title}): completed = ${isCompleted}`);
+        return {
+          ...challenge,
+          completed: isCompleted
+        };
+      });
+      
+      setChallenges(challengesWithStatus);
+      console.log('Challenges loaded successfully:', challengesWithStatus.length);
+    } catch (error) {
+      console.error('Error fetching challenges:', error);
+      setError('Failed to load challenges. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch challenges from API
   useEffect(() => {
-    const fetchChallenges = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        console.log('Fetching challenges from API...');
-        
-        const challengesData = await apiService.getChallenges();
-        console.log('Challenges data:', challengesData);
-        
-        // Get user's completed challenges to mark them
-        const userData = localStorage.getItem("byteclub_user");
-        let completedChallenges: string[] = [];
-        
-        if (userData) {
-          try {
-            const user = JSON.parse(userData);
-            completedChallenges = user.completedChallenges || [];
-          } catch (error) {
-            console.log('Error parsing user data:', error);
-          }
-        }
-        
-        // Mark challenges as completed if user has completed them
-        const challengesWithStatus = challengesData.map(challenge => ({
-          ...challenge,
-          completed: completedChallenges.includes(challenge.slug)
-        }));
-        
-        setChallenges(challengesWithStatus);
-        console.log('Challenges loaded successfully:', challengesWithStatus.length);
-      } catch (error) {
-        console.error('Error fetching challenges:', error);
-        setError('Failed to load challenges. Please try again.');
-      } finally {
-        setLoading(false);
-      }
+    fetchChallenges();
+  }, []);
+
+  // Listen for challenge completion events
+  useEffect(() => {
+    const handleChallengeCompleted = (event: any) => {
+      console.log('Challenge completed event received:', event.detail);
+      console.log('Refreshing challenges list...');
+      // Add a small delay to ensure localStorage is updated
+      setTimeout(() => {
+        fetchChallenges();
+      }, 100);
     };
 
-    fetchChallenges();
+    // Also refresh when window regains focus (user comes back from challenge page)
+    const handleWindowFocus = () => {
+      console.log('Window focused, refreshing challenges...');
+      fetchChallenges();
+    };
+
+    window.addEventListener('challengeCompleted', handleChallengeCompleted);
+    window.addEventListener('focus', handleWindowFocus);
+    
+    return () => {
+      window.removeEventListener('challengeCompleted', handleChallengeCompleted);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
   }, []);
 
   const filteredChallenges = challenges.filter((c) => {
@@ -149,23 +189,56 @@ export default function Challenges() {
       <Navbar />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(-1)}
-            className="text-white hover:bg-white/10"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              Challenges
-            </h1>
-            <p className="text-gray-400 mt-2">
-              Welcome back, {username}! Choose your next challenge.
-            </p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(-1)}
+              className="text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                Challenges
+              </h1>
+              <p className="text-gray-400 mt-2">
+                Welcome back, {username}! Choose your next challenge.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchChallenges}
+              className="text-white border-white/20 hover:bg-white/10"
+            >
+              <Loader2 className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  console.log('Refreshing user data...');
+                  const userData = await apiService.getCurrentUser();
+                  localStorage.setItem("byteclub_user", JSON.stringify(userData));
+                  console.log('User data refreshed:', userData);
+                  // Refresh challenges
+                  fetchChallenges();
+                } catch (error) {
+                  console.error('Failed to refresh user data:', error);
+                }
+              }}
+              className="text-white border-white/20 hover:bg-white/10"
+            >
+              <Loader2 className="h-4 w-4 mr-2" />
+              Refresh User
+            </Button>
           </div>
         </div>
 

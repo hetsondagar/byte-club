@@ -33,6 +33,7 @@ export interface Challenge {
       expected: any;
     }>;
     starterCode?: string;
+    forbiddenMethods?: string[];
   };
   tags: string[];
   isDaily: boolean;

@@ -9,5 +9,9 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || 'fallback-secret-key',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '30d',
-  logLevel: process.env.LOG_LEVEL || 'info'
+  logLevel: process.env.LOG_LEVEL || 'info',
+  judge0: {
+    rapidApiKey: process.env.RAPIDAPI_JUDGE0_KEY,
+    host: process.env.RAPIDAPI_JUDGE0_HOST || 'judge0-ce.p.rapidapi.com'
+  }
 };

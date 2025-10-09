@@ -6,7 +6,6 @@ import { XPBar } from "@/components/ui/xp-bar";
 import { NeonBadge } from "@/components/ui/neon-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CodeTerminal } from "@/components/CodeTerminal";
 import { FloatingParticles } from "@/components/ui/floating-particles";
 import { ConfettiEffect } from "@/components/ui/confetti-effect";
 import { Navbar } from "@/components/Navbar";
@@ -316,10 +315,18 @@ export default function AdventureMap() {
                       </span>
                     </div>
 
-                    <CodeTerminal
-                      initialCode={answer}
-                      onCodeChange={setAnswer}
+                    <Input
+                      placeholder="Type your answer here..."
+                      className="text-lg font-mono bg-input border-secondary/30 focus:border-secondary"
+                      value={answer}
+                      onChange={(e) => setAnswer(e.target.value)}
                       disabled={submitted && correct}
+                      maxLength={50}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !submitted) {
+                          handleSubmit();
+                        }
+                      }}
                     />
                   </NeonCard>
 

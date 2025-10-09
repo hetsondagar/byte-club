@@ -139,18 +139,18 @@ class ApiService {
     return response.data!;
   }
 
-  async runCode(slug: string, code: string): Promise<{ success: boolean; results: any[]; error?: string; }> {
-    const response = await this.request<{ success: boolean; results: any[]; error?: string }>(`/challenges/${slug}/run`, {
+  async runCode(slug: string, code: string, language?: string): Promise<{ success: boolean; results: any[]; error?: string; stderr?: string; compile_output?: string; }> {
+    const response = await this.request<{ success: boolean; results: any[]; error?: string; stderr?: string; compile_output?: string }>(`/challenges/${slug}/run`, {
       method: 'POST',
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, language }),
     });
     return response.data!;
   }
 
-  async runCodeSandbox(code: string, testCases?: Array<{ input: any; expected: any; }>): Promise<{ success: boolean; results: any[]; error?: string; }> {
-    const response = await this.request<{ success: boolean; results: any[]; error?: string }>(`/challenges/run`, {
+  async runCodeSandbox(code: string, testCases?: Array<{ input: any; expected: any; }>, language?: string): Promise<{ success: boolean; results: any[]; error?: string; stderr?: string; compile_output?: string; }> {
+    const response = await this.request<{ success: boolean; results: any[]; error?: string; stderr?: string; compile_output?: string }>(`/challenges/run`, {
       method: 'POST',
-      body: JSON.stringify({ code, testCases }),
+      body: JSON.stringify({ code, testCases, language }),
     });
     return response.data!;
   }

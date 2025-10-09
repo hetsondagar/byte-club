@@ -54,7 +54,10 @@ const challengeSchema = new Schema<IChallenge>({
     }],
     starterCode: {
       type: String
-    }
+    },
+    forbiddenMethods: [{
+      type: String
+    }]
   },
   tags: [{
     type: String,
