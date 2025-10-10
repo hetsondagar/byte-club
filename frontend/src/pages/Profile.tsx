@@ -12,15 +12,15 @@ import { apiService } from "@/services/api";
 import { toast } from "sonner";
 
 interface UserData {
-  _id: string;
-  username: string;
-  email: string;
-  totalXP: number;
-  currentLevel: number;
-  currentStreak: number;
-  badges: string[];
-  rewards: string[];
-  role: string;
+  _id?: string;
+  username?: string;
+  email?: string;
+  totalXP?: number;
+  currentLevel?: number;
+  currentStreak?: number;
+  badges?: string[];
+  rewards?: string[];
+  role?: string;
   completedChallenges?: string[];
 }
 
@@ -56,6 +56,10 @@ export default function Profile() {
         if (localUser) {
           try {
             const userData = JSON.parse(localUser);
+            // Ensure arrays exist
+            if (!userData.badges) userData.badges = [];
+            if (!userData.rewards) userData.rewards = [];
+            if (!userData.completedChallenges) userData.completedChallenges = [];
             setUserData(userData);
           } catch (parseError) {
             console.error('Failed to parse local user data:', parseError);
@@ -126,7 +130,7 @@ export default function Profile() {
       <FloatingParticles count={20} />
 
       {/* Navbar */}
-      <Navbar username={userData.username} level={userData.currentLevel} xp={userData.totalXP} onLogout={handleLogout} />
+      <Navbar username={userData.username || 'Hacker'} level={userData.currentLevel || 0} xp={userData.totalXP || 0} onLogout={handleLogout} />
 
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="mb-8 text-center">
@@ -145,26 +149,26 @@ export default function Profile() {
             <NeonCard variant="cyan" glow>
               <div className="flex items-start gap-6">
                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-4xl font-bold border-4 border-primary/30">
-                  {userData.username[0].toUpperCase()}
+                  {userData.username && userData.username.length > 0 ? userData.username[0].toUpperCase() : 'U'}
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-3xl font-bold mb-2">{userData.username}</h2>
+                  <h2 className="text-3xl font-bold mb-2">{userData.username || 'Hacker'}</h2>
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4" />
-                      {userData.email}
+                      {userData.email || 'No email'}
                     </div>
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4" />
-                      Level {userData.currentLevel} • {userData.totalXP} XP
+                      Level {userData.currentLevel || 0} • {userData.totalXP || 0} XP
                     </div>
                   </div>
                   <div className="flex gap-2 mt-4 flex-wrap">
                     <NeonBadge variant="success" className="animate-pulse">
                       <Flame className="w-3 h-3 mr-1" />
-                      {userData.currentStreak} Day Streak
+                      {userData.currentStreak || 0} Day Streak
                     </NeonBadge>
-                    {userData.badges.length > 0 ? (
+                    {userData.badges && userData.badges.length > 0 ? (
                       userData.badges.slice(0, 3).map((badge, index) => (
                         <NeonBadge key={index} variant="default" className="hover:scale-105 transition-transform">
                           {badge.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -175,7 +179,7 @@ export default function Profile() {
                         No badges yet
                       </NeonBadge>
                     )}
-                    {userData.badges.length > 3 && (
+                    {userData.badges && userData.badges.length > 3 && (
                       <NeonBadge variant="secondary" className="text-xs">
                         +{userData.badges.length - 3} more
                       </NeonBadge>
@@ -220,13 +224,13 @@ export default function Profile() {
             </NeonCard>
             <NeonCard variant="violet">
               <div className="text-center">
-                <div className="text-4xl font-bold text-secondary mb-2">{userData.badges.length}</div>
+                <div className="text-4xl font-bold text-secondary mb-2">{userData.badges?.length || 0}</div>
                 <div className="text-sm text-muted-foreground">Badges Unlocked</div>
               </div>
             </NeonCard>
             <NeonCard variant="blue">
               <div className="text-center">
-                <div className="text-4xl font-bold text-accent mb-2">{userData.currentStreak}</div>
+                <div className="text-4xl font-bold text-accent mb-2">{userData.currentStreak || 0}</div>
                 <div className="text-sm text-muted-foreground">Day Streak</div>
               </div>
             </NeonCard>
