@@ -83,3 +83,6 @@ export const validateEnv = () => {
 if (config.shouldLog) {
   validateEnv();
 }
+
+// Export API_URL for compatibility
+export const API_URL = config.apiBaseUrl;

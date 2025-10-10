@@ -2,13 +2,24 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import { config } from './config';
 import connectDB from './config/database';
 import logger from './config/logger';
 import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
+import { initializeCodeHeistSocket } from './socket/codeHeistSocket';
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST']
+  }
+});
 
 // Security middleware
 app.use(helmet());
@@ -159,12 +170,17 @@ const startServer = async () => {
     // Check if migrations and seeds need to be run
     logger.info('🔍 Checking database state...');
     
+    // Initialize Socket.IO for Code Heist
+    initializeCodeHeistSocket(io);
+    logger.info('🎮 Code Heist Socket.IO initialized');
+    
     // Start server
-    app.listen(config.port, () => {
+    httpServer.listen(config.port, () => {
       console.log(`🚀 Byte Club API server running on port ${config.port}`);
       console.log(`📊 Environment: ${config.nodeEnv}`);
       console.log(`🔗 Health check: http://localhost:${config.port}/health`);
       console.log(`📚 API Documentation: http://localhost:${config.port}/api`);
+      console.log(`🎮 Code Heist WebSocket: ws://localhost:${config.port}/code-heist`);
       console.log('');
       console.log('💡 To run migrations: npm run migrate');
       console.log('💡 To seed database: npm run seed');
@@ -174,6 +190,7 @@ const startServer = async () => {
       logger.info(`📊 Environment: ${config.nodeEnv}`);
       logger.info(`🔗 Health check: http://localhost:${config.port}/health`);
       logger.info(`📚 API Documentation: http://localhost:${config.port}/api`);
+      logger.info(`🎮 Code Heist WebSocket: ws://localhost:${config.port}/code-heist`);
       logger.info('');
       logger.info('💡 To run migrations: npm run migrate');
       logger.info('💡 To seed database: npm run seed');
