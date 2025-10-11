@@ -2,15 +2,18 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface XPBarProps {
-  current: number;
-  max: number;
+  current?: number;
+  max?: number;
   level?: number;
   className?: string;
   showLabel?: boolean;
 }
 
-export function XPBar({ current, max, level, className, showLabel = true }: XPBarProps) {
-  const percentage = Math.min((current / max) * 100, 100);
+export function XPBar({ current = 0, max = 100, level, className, showLabel = true }: XPBarProps) {
+  // Ensure values are numbers and not undefined
+  const safeMax = max || 100;
+  const safeCurrent = current || 0;
+  const percentage = Math.min((safeCurrent / safeMax) * 100, 100);
 
   return (
     <div className={cn("w-full space-y-2", className)}>
@@ -18,7 +21,7 @@ export function XPBar({ current, max, level, className, showLabel = true }: XPBa
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">
             {level !== undefined && `Level ${level} • `}
-            {current.toLocaleString()} / {max.toLocaleString()} XP
+            {safeCurrent.toLocaleString()} / {safeMax.toLocaleString()} XP
           </span>
           <span className="text-primary font-semibold">{percentage.toFixed(0)}%</span>
         </div>

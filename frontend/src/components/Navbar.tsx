@@ -83,21 +83,21 @@ export function Navbar({ username = "Hacker", level = 12, xp = 2450, onLogout }:
             <motion.div
               whileHover={{ scale: 1.1, rotate: 5 }}
               whileTap={{ scale: 0.95 }}
-              className="relative"
+              className="relative flex-shrink-0"
             >
               {/* Brand Logo - served from public, no background */}
-              <img src="/logo_byteclub.png" alt="Byte Club" className="w-8 h-8 relative z-10" />
+              <img src="/logo_byteclub.png" alt="byte_club" className="w-10 h-10 md:w-12 md:h-12 relative z-10" />
             </motion.div>
             
-            <div className="flex flex-col">
+            <div className="flex flex-col justify-center">
               <motion.h1
-                className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent"
+                className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent leading-tight"
                 whileHover={{ scale: 1.05 }}
               >
-                BYTE CLUB
+                byte_club
               </motion.h1>
-              <span className="text-[10px] text-muted-foreground tracking-widest font-mono hidden md:block">
-                WHERE EVERY BYTE COUNTS
+              <span className="text-[9px] md:text-[10px] text-muted-foreground tracking-wider font-mono mt-0.5">
+                &lt;/where every byte counts&gt;
               </span>
             </div>
           </Link>

@@ -22,15 +22,15 @@ export function CodeHeistCard({
   className
 }: CardProps) {
   const sizeClasses = {
-    small: 'w-24 h-36',
-    medium: 'w-32 h-48',
-    large: 'w-40 h-60'
+    small: 'w-28 h-40',
+    medium: 'w-40 h-56',
+    large: 'w-64 h-96'
   };
 
   const textSizeClasses = {
-    small: 'text-xs',
-    medium: 'text-sm',
-    large: 'text-base'
+    small: 'text-[10px]',
+    medium: 'text-xs',
+    large: 'text-sm'
   };
 
   return (
@@ -98,48 +98,53 @@ export function CodeHeistCard({
             selected ? 'border-yellow-400 shadow-lg shadow-yellow-400/50' : 'border-primary/50'
           )}
         >
-          <div className={cn('w-full h-full bg-gradient-to-br p-3 relative', getCardColor(card))}>
-            {/* Card type icon and name */}
-            <div className="flex items-center justify-between mb-2">
-              <div className={cn('font-bold text-white', textSizeClasses[size])}>
+          <div className={cn('w-full h-full bg-gradient-to-br p-4 relative flex flex-col', getCardColor(card))}>
+            {/* Card Header - Icon and Name */}
+            <div className="flex items-start justify-between mb-3">
+              <div className={cn('font-bold text-white leading-tight pr-2', size === 'large' ? 'text-lg' : size === 'medium' ? 'text-sm' : 'text-xs')}>
                 {card.name}
               </div>
-              <div className="text-2xl">{getCardIcon(card)}</div>
+              <div className={size === 'large' ? 'text-3xl' : size === 'medium' ? 'text-2xl' : 'text-xl'}>
+                {getCardIcon(card)}
+              </div>
             </div>
 
-            {/* Card type badge */}
-            <div className="mb-2">
-              <div className="inline-block px-2 py-0.5 bg-black/40 rounded text-xs text-white backdrop-blur-sm">
+            {/* Card Type Badge */}
+            <div className="mb-3">
+              <div className={cn('inline-block px-2 py-1 bg-black/50 rounded-md font-semibold text-white/90 backdrop-blur-sm border border-white/20', size === 'large' ? 'text-xs' : 'text-[10px]')}>
                 {card.type}
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="w-full h-px bg-white/30 mb-2" />
+            {/* Divider Line */}
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-white/40 to-transparent mb-3" />
 
-            {/* Effect description */}
-            <div className={cn('text-white/90 mb-3', textSizeClasses[size])}>
+            {/* Effect Description - Main Content */}
+            <div className={cn('text-white font-medium leading-relaxed mb-auto', size === 'large' ? 'text-sm' : 'text-[11px]')}>
               {card.effect}
             </div>
 
-            {/* Flavor text */}
-            <div className="absolute bottom-3 left-3 right-3">
-              <div className={cn('text-white/70 italic', textSizeClasses[size])}>
+            {/* Spacer */}
+            <div className="flex-grow min-h-[12px]" />
+
+            {/* Flavor Text - Bottom */}
+            <div className="mt-4 pt-3 border-t border-white/20">
+              <div className={cn('text-white/60 italic leading-snug', size === 'large' ? 'text-xs' : 'text-[10px]')}>
                 "{card.flavorText}"
               </div>
             </div>
 
-            {/* Decorative corner elements */}
-            <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-white/50" />
-            <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-white/50" />
-            <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-white/50" />
-            <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-white/50" />
+            {/* Decorative Corner Elements */}
+            <div className="absolute top-1.5 left-1.5 w-4 h-4 border-t-2 border-l-2 border-white/60 rounded-tl" />
+            <div className="absolute top-1.5 right-1.5 w-4 h-4 border-t-2 border-r-2 border-white/60 rounded-tr" />
+            <div className="absolute bottom-1.5 left-1.5 w-4 h-4 border-b-2 border-l-2 border-white/60 rounded-bl" />
+            <div className="absolute bottom-1.5 right-1.5 w-4 h-4 border-b-2 border-r-2 border-white/60 rounded-br" />
 
-            {/* Glow effect overlay */}
+            {/* Selection Glow Effect */}
             {selected && (
               <motion.div
-                className="absolute inset-0 bg-yellow-400/20 rounded-lg"
-                animate={{ opacity: [0.2, 0.4, 0.2] }}
+                className="absolute inset-0 bg-yellow-400/20 rounded-lg pointer-events-none"
+                animate={{ opacity: [0.2, 0.5, 0.2] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               />
             )}

@@ -2,7 +2,7 @@
 
 ## ✅ **ADVENTURE MAP: FULLY OPTIMIZED**
 
-The Adventure Map is now **properly spaced, beautifully designed, and ready for 100 nodes**!
+The Adventure Map is now **properly spaced, beautifully designed, and ready for 33 nodes** from the Byte Club question bank!
 
 ---
 
@@ -11,10 +11,10 @@ The Adventure Map is now **properly spaced, beautifully designed, and ready for 
 ### **Map Canvas Size:**
 ```
 Before: 100% width × 1600px height
-After:  200% width × 3000px height (mobile)
-        250% width × 3500px height (desktop)
+After:  200% width × 1200px height (mobile)
+        250% width × 1400px height (desktop)
 
-Result: 2.5x MORE SPACE! 🎉
+Result: Optimized for 33 nodes! 🎉
 ```
 
 ### **Node Button Size:**

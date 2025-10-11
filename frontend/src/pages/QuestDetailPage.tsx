@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { questsData, Mission } from "@/data/questsData";
 import { ArrowLeft, Scroll, Zap, CheckCircle, XCircle, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
+import { apiService } from "@/services/api";
 
 export default function QuestDetailPage() {
   const navigate = useNavigate();
@@ -24,17 +25,32 @@ export default function QuestDetailPage() {
   const [submitted, setSubmitted] = useState(false);
   const [correct, setCorrect] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Load completed missions from localStorage
-    const saved = localStorage.getItem(`byte_club_quest_${id}_missions`);
-    if (saved) {
+    // Load completed missions from backend
+    const loadProgress = async () => {
+      if (!id) return;
+      
       try {
-        setCompletedMissions(new Set(JSON.parse(saved)));
-      } catch (e) {
-        console.error("Failed to load mission progress", e);
+        const completed = await apiService.getCompletedMissions(id);
+        setCompletedMissions(new Set(completed));
+      } catch (error) {
+        console.error("Failed to load mission progress", error);
+        // Fallback to localStorage
+        const saved = localStorage.getItem(`byte_club_quest_${id}_missions`);
+        if (saved) {
+          try {
+            setCompletedMissions(new Set(JSON.parse(saved)));
+          } catch (e) {
+            console.error("Failed to parse localStorage", e);
+          }
+        }
       }
-    }
+    };
+
+    loadProgress();
 
     // Reveal story with delay
     const timer = setTimeout(() => setStoryRevealed(true), 500);
@@ -46,10 +62,11 @@ export default function QuestDetailPage() {
     setAnswer("");
     setSubmitted(false);
     setCorrect(false);
+    setShowHint(false);
   };
 
-  const handleSubmit = () => {
-    if (!activeMission) return;
+  const handleSubmit = async () => {
+    if (!activeMission || !quest || !id) return;
 
     if (!answer.trim()) {
       toast.error("Answer Required", {
@@ -58,57 +75,64 @@ export default function QuestDetailPage() {
       return;
     }
 
-    const isCorrect = answer.trim().toLowerCase() === activeMission.correctAnswer.toLowerCase();
-    setCorrect(isCorrect);
-    setSubmitted(true);
+    setIsLoading(true);
 
-    if (isCorrect) {
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 100);
-      toast.success("Correct Answer!", {
-        description: `+${activeMission.xp} XP earned`,
-      });
-      handleMissionComplete(activeMission);
-    } else {
-      toast.error("Incorrect", {
-        description: "Try again, hacker!",
-      });
-    }
-  };
+    try {
+      const result = await apiService.submitMission(quest.id, activeMission.id, answer.trim());
+      
+      setCorrect(result.isCorrect);
+      setSubmitted(true);
 
-  const handleMissionComplete = (mission: Mission) => {
-    const newCompleted = new Set(completedMissions);
-    newCompleted.add(mission.id);
-    setCompletedMissions(newCompleted);
+      if (result.isCorrect) {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
+        
+        // Update completed missions
+        const newCompleted = new Set(completedMissions);
+        newCompleted.add(activeMission.id);
+        setCompletedMissions(newCompleted);
+        
+        // Save to localStorage as backup
+        localStorage.setItem(`byte_club_quest_${id}_missions`, JSON.stringify(Array.from(newCompleted)));
+        
+        toast.success("Mission Completed!", {
+          description: result.successText || `+${result.xpEarned} XP earned!`,
+        });
 
-    // Save to localStorage
-    localStorage.setItem(`byte_club_quest_${id}_missions`, JSON.stringify(Array.from(newCompleted)));
+        if (result.questCompleted) {
+          toast.success("Quest Complete!", {
+            description: `You've earned ${quest.xp} total XP! 🎉`,
+          });
+        }
 
-    // Update quest progress
-    const progress = (newCompleted.size / (quest?.missions.length || 1)) * 100;
-    const savedProgress = localStorage.getItem("byte_club_quest_progress");
-    const progressData = savedProgress ? JSON.parse(savedProgress) : { progress: {}, completed: [] };
-    
-    progressData.progress[id!] = progress;
-    
-    // Mark quest as completed if all missions done
-    if (newCompleted.size === quest?.missions.length) {
-      if (!progressData.completed.includes(id)) {
-        progressData.completed.push(id);
-        toast.success("Quest Complete!", {
-          description: `You've earned ${quest.xp} XP! 🎉`,
+        // Update user data in localStorage
+        const user = localStorage.getItem("byteclub_user");
+        if (user) {
+          const userData = JSON.parse(user);
+          userData.totalXP = result.totalXP;
+          localStorage.setItem("byteclub_user", JSON.stringify(userData));
+        }
+
+        // Close modal after delay
+        setTimeout(() => {
+          setActiveMission(null);
+          setAnswer("");
+          setSubmitted(false);
+          setShowHint(false);
+        }, 2000);
+      } else {
+        toast.error("Incorrect Answer", {
+          description: "Try again, hacker!",
         });
       }
+    } catch (error) {
+      console.error('Failed to submit mission:', error);
+      toast.error("Submission Failed", {
+        description: "Please try again",
+      });
+    } finally {
+      setIsLoading(false);
     }
-    
-    localStorage.setItem("byte_club_quest_progress", JSON.stringify(progressData));
-
-    // Close modal after delay
-    setTimeout(() => {
-      setActiveMission(null);
-      setAnswer("");
-      setSubmitted(false);
-    }, 1500);
   };
 
   const isMissionLocked = (index: number) => {
@@ -266,6 +290,7 @@ export default function QuestDetailPage() {
           setActiveMission(null);
           setAnswer("");
           setSubmitted(false);
+          setShowHint(false);
         }}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-lg border-primary/30">
             {activeMission && (
@@ -301,13 +326,31 @@ export default function QuestDetailPage() {
                     />
                   </NeonCard>
 
-                  {/* Hint */}
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/30 border border-primary/20">
-                    <Lightbulb className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="text-xs font-semibold text-primary">Hint:</span>
-                      <p className="text-xs text-muted-foreground mt-1">{activeMission.hint}</p>
-                    </div>
+                  {/* Hint System */}
+                  <div className="space-y-3">
+                    {!showHint ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowHint(true)}
+                        className="border-primary/30 hover:border-primary"
+                      >
+                        <Lightbulb className="w-4 h-4 mr-2" />
+                        Show Hint
+                      </Button>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 border border-primary/30"
+                      >
+                        <Lightbulb className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="text-xs font-semibold text-primary">Hint:</span>
+                          <p className="text-xs text-muted-foreground mt-1">{activeMission.hint}</p>
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
 
                   {/* Result */}
@@ -348,9 +391,9 @@ export default function QuestDetailPage() {
                       size="lg"
                       className="flex-1"
                       onClick={handleSubmit}
-                      disabled={submitted && correct}
+                      disabled={(submitted && correct) || isLoading}
                     >
-                      {submitted && correct ? "Completed" : "Submit Answer"}
+                      {isLoading ? "Submitting..." : submitted && correct ? "Completed" : "Submit Answer"}
                     </Button>
                     {submitted && !correct && (
                       <Button

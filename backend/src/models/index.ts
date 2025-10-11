@@ -4,3 +4,4 @@ export { default as Attempt } from './Attempt';
 export { default as Meta } from './Meta';
 export { default as Session } from './Session';
 export { default as Migration } from './Migration';
+export { Quest } from './Quest';

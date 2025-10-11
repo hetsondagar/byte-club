@@ -299,6 +299,81 @@ export const logout = async (req: Request, res: Response) => {
   }
 };
 
+export const updateProfile = async (req: any, res: Response) => {
+  const startTime = Date.now();
+  
+  try {
+    const user = req.user;
+    const { username, email, password } = req.body;
+    
+    logger.info(`🔄 Profile update for user: ${user.username}`, {
+      userId: user._id,
+      updatingFields: { username: !!username, email: !!email, password: !!password }
+    });
+
+    // Check if username or email already taken (by another user)
+    if (username && username !== user.username) {
+      const existingUser = await User.findOne({ username, _id: { $ne: user._id } });
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Username already taken'
+        });
+      }
+    }
+
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ email, _id: { $ne: user._id } });
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email already taken'
+        });
+      }
+    }
+
+    // Update user fields
+    if (username) user.username = username;
+    if (email) user.email = email;
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user.password = hashedPassword;
+    }
+
+    await user.save();
+
+    logger.info(`✅ Profile updated for ${user.username}`);
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        totalXP: user.totalXP,
+        currentLevel: user.currentLevel,
+        currentStreak: user.currentStreak,
+        badges: user.badges,
+        rewards: user.rewards,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    logger.error(`❌ Profile update error: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      duration: `${duration}ms`
+    });
+    
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update profile'
+    });
+  }
+};
+
 export const getMe = async (req: any, res: Response) => {
   const startTime = Date.now();
   

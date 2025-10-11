@@ -81,4 +81,4 @@ challengeSchema.index({ type: 1 });
 challengeSchema.index({ isDaily: 1, isActive: 1 });
 challengeSchema.index({ tags: 1 });
 
-export default mongoose.model<IChallenge & Document>('Challenge', challengeSchema);
+export default mongoose.model<IChallenge>('Challenge', challengeSchema);

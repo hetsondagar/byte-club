@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { signup, login, logout, getMe } from '../controllers/authController';
+import { signup, login, logout, getMe, updateProfile } from '../controllers/authController';
 import { authenticateToken } from '../middleware/auth';
 import { validateRequest, signupSchema, loginSchema } from '../middleware/validation';
 import logger from '../config/logger';
@@ -21,5 +21,6 @@ router.post('/signup', validateRequest(signupSchema), signup);
 router.post('/login', validateRequest(loginSchema), login);
 router.post('/logout', authenticateToken, logout);
 router.get('/me', authenticateToken, getMe);
+router.put('/profile', authenticateToken, updateProfile);
 
 export default router;

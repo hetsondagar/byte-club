@@ -133,24 +133,21 @@ export default function AdventureMap() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div className="text-center md:text-left">
-            <h1 className="text-4xl md:text-5xl font-bold mb-2 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-              🗺️ ByteNet Adventure
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              Adventure Map
             </h1>
-            <p className="text-lg text-primary/80 mb-2 font-medium">
-              Navigate the digital realm, solve CSE mysteries, and unlock the secrets of byte_club
-            </p>
             <p className="text-muted-foreground">
-              {completedNodes.length} / {adventureNodes.length} nodes conquered • {Math.round((completedNodes.length / adventureNodes.length) * 100)}% complete
+              {completedNodes.length} / {adventureNodes.length} nodes completed
             </p>
           </div>
           <XPBar className="w-full md:w-auto" />
         </div>
 
-        {/* Map Container - Full Width, No Card */}
-        <div className="relative min-h-screen w-full overflow-x-auto overflow-y-auto pb-20">
+        {/* Map Container */}
+        <NeonCard variant="cyan" glow className="relative min-h-[800px] overflow-auto">
           {/* Matrix-Style Background */}
-          <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-br from-black via-slate-950 to-black" />
             <div className="absolute inset-0 opacity-[0.03]" style={{
               backgroundImage: `repeating-linear-gradient(
@@ -170,7 +167,7 @@ export default function AdventureMap() {
             }} />
           </div>
           
-          <div className="relative w-full min-w-[1400px] h-[4000px] z-10">
+          <div className="relative w-[200%] h-[3000px] md:w-[250%] md:h-[3500px]">
           
           {/* Connection Lines */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ overflow: 'visible' }}>
@@ -265,7 +262,7 @@ export default function AdventureMap() {
           );
         })}
           </div>
-        </div>
+        </NeonCard>
       </div>
 
       {/* Challenge Modal */}

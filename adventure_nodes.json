@@ -1,102 +1,1032 @@
-[
+{
+  "byteclub_questions": [
     {
-        "id": "node-001",
-        "title": "Cipher Vault",
-        "story": "You enter the Cipher Vault, a neon-lit chamber where holographic ciphers float like fireflies. Each code holds a part of the master key. The AI whispers: 'Decrypt to survive!' The first code is 'JXQRMK', encrypted using a dynamic Caesar shift where each character is shifted by its 1-based index modulo 26.",
-        "question": "Decrypt the string 'JXQRMK' using the dynamic Caesar shift. Return the full decrypted string.",
-        "answerFormat": "\"DYNAMIC\"",
-        "hint": "Subtract the character's position index from each letter (mod 26).",
-        "difficulty": "Medium",
-        "xp": 100
+      "id": 1,
+      "type": "one-word",
+      "title": "The Shimmering Gateway",
+      "question": "You arrive at a shimmering gate where a spectral guardian whispers: 'I traverse each branch and node carefully, always exploring neighbors before diving deeper. Solve my path to open the portal.'",
+      "answer": "BFS",
+      "story_effect": "The gate pulses and opens, revealing a glowing forest path."
     },
     {
-        "id": "node-002",
-        "title": "Quantum Grid",
-        "story": "A massive 50x50 quantum grid floats before you. Pulses of neon energy leap from node to node. Some nodes vanish, others block your path. Your goal: navigate from the top-left to bottom-right using the shortest possible path without triggering a surge.",
-        "question": "Given a 50x50 grid of 0s (blocked) and 1s (open), implement BFS to find the shortest path. Return the coordinates of the exit node.",
-        "answerFormat": "\"(49,49)\"",
-        "hint": "Use BFS and track visited nodes; consider only open nodes.",
-        "difficulty": "Hard",
-        "xp": 150
+      "id": 2,
+      "type": "one-word",
+      "title": "The Floating Citadel",
+      "question": "In a floating tower of shifting platforms, a voice echoes: 'Take the last ladder you climbed to proceed, always removing the top step first. Which structure am I describing?'",
+      "answer": "Stack",
+      "story_effect": "The platforms align, forming a safe path upward."
     },
     {
-        "id": "node-003",
-        "title": "Labyrinth of Bits",
-        "story": "You enter the Labyrinth of Bits. Each corridor has walls that emit XOR pulses. One wrong move triggers a trap. You must traverse the path and compute the XOR of hidden codes along the way to unlock the exit.",
-        "question": "Given the array [13,7,2,8,5], compute the XOR of all numbers to get the exit key.",
-        "answerFormat": "\"5\"",
-        "hint": "XOR numbers sequentially from left to right.",
-        "difficulty": "Medium",
-        "xp": 120
+      "id": 3,
+      "type": "MCQ",
+      "title": "The Cryptic Vault",
+      "question": "A vault hums with encrypted energy. A hologram asks: 'Which method transforms information irreversibly, protecting it from reverse engineering?'",
+      "options": [
+        "SHA-256",
+        "AES",
+        "RSA",
+        "MD5"
+      ],
+      "answer": "SHA-256",
+      "story_effect": "The vault doors shimmer and slide open."
     },
     {
-        "id": "node-004",
-        "title": "Temporal Maze",
-        "story": "Time bends in this maze. Each step shifts walls according to a secret algorithm. Compute the number of steps to reach the exit node. The walls whisper hints but only code can interpret them.",
-        "question": "Simulate a 30x30 dynamically changing grid according to a movement algorithm where walls shift every turn. Compute the exit node label after following the movement rules.",
-        "answerFormat": "\"T15\"",
-        "hint": "Simulate each step and perform BFS each turn to find the exit.",
-        "difficulty": "Very Hard",
-        "xp": 250
+      "id": 4,
+      "type": "one-word",
+      "title": "The Ancient Sentinel",
+      "question": "An ancient sentinel presents an array [3,1,4,2] and murmurs: 'Arrange me in ascending order using my simplest known method.' Identify the algorithm in one word or acronym.",
+      "answer": "Bubble",
+      "story_effect": "The array visually sorts itself and a bridge emerges."
     },
     {
-        "id": "node-005",
-        "title": "Neon Firewall",
-        "story": "A rogue AI firewall has trapped a critical server behind layers of shifting encrypted walls. Each wall opens only when a sequence is decrypted. The sequence is 'MZKQ' encrypted with a pseudo-random shifting pattern.",
-        "question": "Decrypt 'MZKQ' using the pseudo-random shift function: shift(i) = (i^2 + 3) % 26. Return the decrypted string.",
-        "answerFormat": "\"LOCK\"",
-        "hint": "Reverse the shift for each character using modular arithmetic.",
-        "difficulty": "Hard",
-        "xp": 180
+      "id": 5,
+      "type": "one-word",
+      "title": "The Crumbling Passage",
+      "question": "Crossing a rickety bridge, an inscription reads: 'I always pick the path with the smallest total weight, never ignoring previous distances. Who am I?'",
+      "answer": "Dijkstra",
+      "story_effect": "The bridge solidifies beneath your feet."
     },
     {
-        "id": "node-006",
-        "title": "Binary Bridge",
-        "story": "A bridge made entirely of glowing bits appears. Nodes vanish unpredictably. Only by computing the XOR of a specific path can you cross safely.",
-        "question": "Compute XOR of numbers [21,34,55,89,144] to get the bridge key.",
-        "answerFormat": "\"183\"",
-        "hint": "Sequential XOR from start to end.",
-        "difficulty": "Medium",
-        "xp": 130
+      "id": 6,
+      "type": "MCQ",
+      "title": "The Quantum Timekeeper",
+      "question": "A colossal clock in the CPU cavern ticks: 'Which algorithm divides time slices fairly but may preempt processes for the shortest remaining time?'",
+      "options": [
+        "FCFS",
+        "SJF",
+        "RR",
+        "Priority"
+      ],
+      "answer": "SJF",
+      "story_effect": "The clock hands spin and reveal the hidden staircase."
     },
     {
-        "id": "node-007",
-        "title": "Encrypted Passage",
-        "story": "A neon passage is filled with scrambled letters. Solve the pattern to find the hidden key and proceed to the next chamber.",
-        "question": "Given string 'SCRAMBLE', find the first non-repeating character.",
-        "answerFormat": "\"S\"",
-        "hint": "Use a hash map to count occurrences and find the first unique character.",
-        "difficulty": "Medium",
-        "xp": 110
+      "id": 7,
+      "type": "one-word",
+      "title": "The Mystical Procession",
+      "question": "You encounter an endless line of magical creatures and a sign says: 'Enter from the front and exit from the rear, but order is preserved. Name me.'",
+      "answer": "Queue",
+      "story_effect": "The line parts respectfully, revealing the next chamber."
     },
     {
-        "id": "node-008",
-        "title": "Hologram Lock",
-        "story": "The hologram lock flashes digits that rearrange themselves every second. You must decode the sum modulo operation to proceed.",
-        "question": "Given numbers [7,14,21,28,35], compute sum modulo 7 to find the lock code.",
-        "answerFormat": "\"0\"",
-        "hint": "Sum all numbers and take modulo 7.",
-        "difficulty": "Medium",
-        "xp": 115
+      "id": 8,
+      "type": "one-word",
+      "title": "The Eternal Loop",
+      "question": "In the labyrinth, a spectral chain whispers: 'Find if the linked path loops back to itself. Which detection method is known for revealing cycles efficiently?'",
+      "answer": "Floyd",
+      "story_effect": "The chains realign, opening a secret door."
     },
     {
-        "id": "node-009",
-        "title": "Data Stream Rift",
-        "story": "You encounter a rift in the data stream. Neon currents split and merge chaotically. Only by simulating the flow through a 2D array can you recover the secret key.",
-        "question": "Simulate data flow through a 20x20 grid starting at (0,0) and following movement rules: move right if even, down if odd. Return final coordinates.",
-        "answerFormat": "\"(10,10)\"",
-        "hint": "Step through grid according to rules, track position.",
-        "difficulty": "Hard",
-        "xp": 160
+      "id": 9,
+      "type": "MCQ",
+      "title": "The Fractured Chamber",
+      "question": "A vault room shimmers with memory blocks. A riddle asks: 'Which allocation may leave gaps between blocks, risking fragmentation?'",
+      "options": [
+        "Contiguous",
+        "Paging",
+        "Segmentation",
+        "Both B and C"
+      ],
+      "answer": "Contiguous",
+      "story_effect": "Memory blocks shift to reveal a passage."
     },
     {
-        "id": "node-010",
-        "title": "Code Reactor",
-        "story": "The Code Reactor overloads with input. Only by computing the correct product modulo a prime can you stabilize it. Fail, and the neon lab will explode.",
-        "question": "Compute product of [2,3,5,7,11] modulo 101.",
-        "answerFormat": "\"30\"",
-        "hint": "Multiply sequentially and apply modulo at each step to prevent overflow.",
-        "difficulty": "Hard",
-        "xp": 170
+      "id": 10,
+      "type": "one-word",
+      "title": "The Volatile Sanctum",
+      "question": "A glowing chamber holds volatile energy: 'I store temporary artifacts for quick access. Identify me in one word.'",
+      "answer": "Cache",
+      "story_effect": "The chamber illuminates, revealing hidden treasure."
+    },
+    {
+      "id": 11,
+      "type": "one-word",
+      "title": "The Mirror of Reversal",
+      "question": "A mystical array [1,2,3,4,5] floats above a pit. A voice says: 'Reverse me in place. What concept allows this magical flip?'",
+      "answer": "In-place",
+      "story_effect": "The array flips and a safe path appears."
+    },
+    {
+      "id": 12,
+      "type": "MCQ",
+      "title": "The Turbulent Waters",
+      "question": "At the river crossing, a guardian asks: 'Which protocol ensures that every message reaches safely across turbulent waters?'",
+      "options": [
+        "TCP",
+        "UDP",
+        "IP",
+        "ICMP"
+      ],
+      "answer": "TCP",
+      "story_effect": "The river parts, forming stepping stones."
+    },
+    {
+      "id": 13,
+      "type": "one-word",
+      "title": "The Luminous Network",
+      "question": "A glowing neural nexus pulses: 'I adjust invisible weights to reduce prediction error across layers. Name my process.'",
+      "answer": "Backpropagation",
+      "story_effect": "Neuron pathways illuminate, revealing a bridge."
+    },
+    {
+      "id": 14,
+      "type": "MCQ",
+      "title": "The Arcane Manuscript",
+      "question": "An ancient scroll asks: 'Which theoretical machine can recognize all patterns of regular languages?'",
+      "options": [
+        "Turing Machine",
+        "DFA",
+        "PDA",
+        "NPDA"
+      ],
+      "answer": "DFA",
+      "story_effect": "The scroll opens, revealing a path forward."
+    },
+    {
+      "id": 15,
+      "type": "one-word",
+      "title": "The Hall of Echoes",
+      "question": "In the Hall of Pages, a voice whispers: 'I discard the least recently used memory when full. Who am I?'",
+      "answer": "LRU",
+      "story_effect": "The hall glows, illuminating a secret path."
+    },
+    {
+      "id": 16,
+      "type": "one-word",
+      "title": "The Numeric Prophecy",
+      "question": "A wall displays numbers: [1,-2,3,5,-1]. 'Find the largest contiguous sum. Which algorithm achieves this efficiently?'",
+      "answer": "Kadane",
+      "story_effect": "Numbers align to form steps across a pit."
+    },
+    {
+      "id": 17,
+      "type": "MCQ",
+      "title": "The Twin Seal Gate",
+      "question": "A locked gate shimmers: 'Which encryption method uses two keys, one public and one private?'",
+      "options": [
+        "Symmetric",
+        "Asymmetric",
+        "Hashing",
+        "Steganography"
+      ],
+      "answer": "Asymmetric",
+      "story_effect": "The gate opens with a golden glow."
+    },
+    {
+      "id": 18,
+      "type": "one-word",
+      "title": "The Living Library",
+      "question": "A library of animated objects asks: 'I define shared behavior among objects. Who am I?'",
+      "answer": "Class",
+      "story_effect": "Objects align to form a bridge."
+    },
+    {
+      "id": 19,
+      "type": "MCQ",
+      "title": "The Crystalline Archive",
+      "question": "A database lock asks: 'Which normal form eliminates transitive dependencies among fields?'",
+      "options": [
+        "1NF",
+        "2NF",
+        "3NF",
+        "BCNF"
+      ],
+      "answer": "3NF",
+      "story_effect": "Tables rearrange, unlocking a door."
+    },
+    {
+      "id": 20,
+      "type": "one-word",
+      "title": "The Translation Conduit",
+      "question": "A network tunnel hums: 'I translate human-readable names to numerical addresses. Who am I?'",
+      "answer": "DNS",
+      "story_effect": "The tunnel stabilizes, allowing passage."
+    },
+    {
+      "id": 21,
+      "type": "one-word",
+      "title": "The Equilibrium Forest",
+      "question": "A forest of nodes asks: 'Verify if I am height-balanced. Which traversal is essential?'",
+      "answer": "Post-order",
+      "story_effect": "Branches shift to reveal the next path."
+    },
+    {
+      "id": 22,
+      "type": "MCQ",
+      "title": "The Frozen Corridor",
+      "question": "Two spectral processes block the corridor. 'Which problem describes both waiting indefinitely for each other?'",
+      "options": [
+        "Deadlock",
+        "Starvation",
+        "Race Condition",
+        "Livelock"
+      ],
+      "answer": "Deadlock",
+      "story_effect": "The processes step aside, clearing the path."
+    },
+    {
+      "id": 23,
+      "type": "one-word",
+      "title": "The Ascending Spiral",
+      "question": "An endless staircase warns: 'Follow LIFO principles to ascend safely. Name the structure.'",
+      "answer": "Stack",
+      "story_effect": "The staircase shifts upward."
+    },
+    {
+      "id": 24,
+      "type": "one-word",
+      "title": "The Infinite Descent",
+      "question": "A spiral staircase shows numbers. 'Find factorial of n recursively. What is the key concept?'",
+      "answer": "Recursion",
+      "story_effect": "The spiral extends safely."
+    },
+    {
+      "id": 25,
+      "type": "MCQ",
+      "title": "The Omniscient Cartographer",
+      "question": "A glowing map asks: 'Which algorithm finds shortest paths between all nodes?'",
+      "options": [
+        "Dijkstra",
+        "Bellman-Ford",
+        "Floyd-Warshall",
+        "Prim"
+      ],
+      "answer": "Floyd-Warshall",
+      "story_effect": "Paths light up to reveal new areas."
+    },
+    {
+      "id": 26,
+      "type": "one-word",
+      "title": "The Enchanted Coffer",
+      "question": "A magical chest whispers: 'I store items for constant lookup via unique keys. Who am I?'",
+      "answer": "HashMap",
+      "story_effect": "Chest opens, revealing a hidden passage."
+    },
+    {
+      "id": 27,
+      "type": "one-word",
+      "title": "The Phantom Array",
+      "question": "A line of glowing artifacts appears: 'Remove duplicates in-place. What method is used?'",
+      "answer": "Two-pointer",
+      "story_effect": "Artifacts shift, opening a doorway."
+    },
+    {
+      "id": 28,
+      "type": "MCQ",
+      "title": "The Eternal Hourglass",
+      "question": "A spinning clock says: 'Which scheduling divides CPU time evenly among tasks with preemption?'",
+      "options": [
+        "FCFS",
+        "SJF",
+        "Round Robin",
+        "Priority"
+      ],
+      "answer": "Round Robin",
+      "story_effect": "Clock hands align, revealing stairs."
+    },
+    {
+      "id": 29,
+      "type": "one-word",
+      "title": "The Guardian of Integrity",
+      "question": "A memory chamber warns: 'I detect and correct data errors. Who am I?'",
+      "answer": "ECC",
+      "story_effect": "Memory glows safely."
+    },
+    {
+      "id": 30,
+      "type": "one-word",
+      "title": "The Ethereal Platform",
+      "question": "A queue of ethereal platforms asks: 'Implement using two stacks. Which concept governs complexity?'",
+      "answer": "Amortized",
+      "story_effect": "Platforms align, forming a bridge."
+    },
+    {
+      "id": 31,
+      "type": "MCQ",
+      "title": "The Minimum Pathway",
+      "question": "A forest of paths asks: 'Which algorithm finds a minimal spanning tree?'",
+      "options": [
+        "Prim",
+        "Dijkstra",
+        "Kruskal",
+        "Floyd-Warshall"
+      ],
+      "answer": "Prim",
+      "story_effect": "Forest paths rearrange to reveal the exit."
+    },
+    {
+      "id": 32,
+      "type": "one-word",
+      "title": "The Tome of Validation",
+      "question": "A giant book opens: 'I check your code for structure and correctness. Who am I?'",
+      "answer": "Parser",
+      "story_effect": "Book glows, path forward revealed."
+    },
+    {
+      "id": 33,
+      "type": "one-word",
+      "title": "The Reflective Passage",
+      "question": "A corridor mirrors your movements: 'Check if a string reads the same backward. Which approach is used?'",
+      "answer": "Two-pointer",
+      "story_effect": "The corridor shifts to reveal a new path."
+    },
+    {
+      "id": 34,
+      "type": "MCQ",
+      "title": "The Illusory Labyrinth",
+      "question": "In a labyrinth of shifting walls, a phantom whispers: 'When physical RAM is full, I extend memory using disk space, swapping pages in and out. Process addresses become illusions, mapped through tables. What am I called when translating virtual to physical addresses?'",
+      "options": [
+        "TLB",
+        "Page Table",
+        "Segmentation",
+        "MMU"
+      ],
+      "answer": "MMU",
+      "story_effect": "The maze walls solidify, creating a clear passage through memory space."
+    },
+    {
+      "id": 35,
+      "type": "one-word",
+      "title": "The Royal Chambers",
+      "question": "You enter a royal chamber where child thrones inherit powers from a grand parent throne. A mystical voice declares: 'When a child class inherits and overrides a parent method with the same signature but different behavior, invoking it at runtime based on object type, not reference type, what principle am I demonstrating?'",
+      "answer": "Polymorphism",
+      "story_effect": "The thrones merge and split, demonstrating their shared bloodline."
+    },
+    {
+      "id": 36,
+      "type": "one-word",
+      "title": "The Crystal Cascade",
+      "question": "A massive crystal array hovers before you, splitting itself repeatedly into halves, conquering each piece, then merging them back in perfect order. An ancient algorithm speaks: 'I divide, I conquer, I merge with logarithmic depth and linear work at each level. Name me in one word.'",
+      "answer": "Mergesort",
+      "story_effect": "The crystal array reconstructs itself in perfect ascending order, forming a staircase."
+    },
+    {
+      "id": 37,
+      "type": "MCQ",
+      "title": "The Orbiting Enigma",
+      "question": "In a chamber with four glowing orbs representing processes, they orbit a central resource. A riddle echoes: 'Deadlock requires four conditions: mutual exclusion, hold and wait, no preemption, and which fourth condition involving waiting chains?'",
+      "options": [
+        "Circular wait",
+        "Starvation",
+        "Priority inversion",
+        "Busy waiting"
+      ],
+      "answer": "Circular wait",
+      "story_effect": "The orbs break their circular pattern and orbit freely, resource unlocked."
+    },
+    {
+      "id": 38,
+      "type": "one-word",
+      "title": "The Lighthouse of Logic",
+      "question": "A lighthouse splits the searching darkness in half with each flash, eliminating half the ocean of possibilities with every beam. On a sorted coastline of values, it finds treasures in logarithmic time. What algorithm am I describing in one word?",
+      "answer": "Binary",
+      "story_effect": "The lighthouse beam locks onto your target, illuminating the exact location."
+    },
+    {
+      "id": 39,
+      "type": "one-word",
+      "title": "The Mountain of Supremacy",
+      "question": "A magical mountain of elements rearranges itself where every parent stone weighs more than its children stones. Insertion and extraction of the peak occur in logarithmic time. This structure, often used for priority queues, is called what in one word?",
+      "answer": "Heap",
+      "story_effect": "The mountain peak glows and a stone path forms down its face."
+    },
+    {
+      "id": 40,
+      "type": "MCQ",
+      "title": "The Seven Layers",
+      "question": "Seven ethereal layers form a tower before you, each handling different network functions. At the very bottom, dealing with physical transmission of raw bits over cables and signals, which layer resides?",
+      "options": [
+        "Physical",
+        "Data Link",
+        "Network",
+        "Transport"
+      ],
+      "answer": "Physical",
+      "story_effect": "The bottom layer pulses with electric energy, grounding the entire tower."
+    },
+    {
+      "id": 41,
+      "type": "one-word",
+      "title": "The Temple of Indices",
+      "question": "In a temple of databases, carved tablets with pointers dramatically speed up query searches by creating auxiliary structures. These structures, sacrificing space for time, allowing O(log n) lookups instead of full table scans, are called what?",
+      "answer": "Index",
+      "story_effect": "The altar activates, revealing hidden pointers to all records instantly."
+    },
+    {
+      "id": 42,
+      "type": "MCQ",
+      "title": "The Four Pillars",
+      "question": "Four sacred pillars uphold the temple of reliable databases: Atomicity, Consistency, Isolation, and which fourth pillar ensures that committed transactions survive system crashes permanently?",
+      "options": [
+        "Durability",
+        "Reliability",
+        "Persistence",
+        "Integrity"
+      ],
+      "answer": "Durability",
+      "story_effect": "The fourth pillar solidifies with eternal stone, making the temple indestructible."
+    },
+    {
+      "id": 43,
+      "type": "one-word",
+      "title": "The Abyssal Depths",
+      "question": "Unlike your friend who explores neighbors first, I dive deep into the abyss, following each path to its darkest end before backtracking. In graphs, I use a stack implicitly through recursion or explicitly. What three-letter traversal am I?",
+      "answer": "DFS",
+      "story_effect": "You plunge into the depths, discovering every hidden corner before resurfacing."
+    },
+    {
+      "id": 44,
+      "type": "one-word",
+      "title": "The Garden of Choices",
+      "question": "In a garden of choices, an algorithm picks the locally optimal fruit at each step, hoping it leads to a globally optimal harvest. This short-sighted but fast strategy, used in Huffman coding and Dijkstra's algorithm, is called what approach?",
+      "answer": "Greedy",
+      "story_effect": "You grab the ripest fruit each time, and miraculously find the best total harvest."
+    },
+    {
+      "id": 45,
+      "type": "MCQ",
+      "title": "The Divided Realm",
+      "question": "A vast network sprawls before you, divided into smaller sub-networks using masks. To represent the network 192.168.1.0 with 256 addresses, which CIDR notation do you use?",
+      "options": [
+        "/24",
+        "/16",
+        "/32",
+        "/8"
+      ],
+      "answer": "/24",
+      "story_effect": "The network splits into perfect sub-realms, each with 254 usable hosts."
+    },
+    {
+      "id": 46,
+      "type": "one-word",
+      "title": "The Singular Shrine",
+      "question": "A mystical pattern ensures only one instance of a class exists throughout the entire application lifetime, with global access. This design pattern, often used for configuration managers and loggers, is named what?",
+      "answer": "Singleton",
+      "story_effect": "The shrine reveals its singular, irreplaceable artifact that powers everything."
+    },
+    {
+      "id": 47,
+      "type": "MCQ",
+      "title": "The Dependency Nexus",
+      "question": "In a realm of database design, you eliminate partial dependencies on composite keys, ensuring non-key attributes depend on the entire primary key. You've achieved which normal form?",
+      "options": [
+        "1NF",
+        "2NF",
+        "3NF",
+        "BCNF"
+      ],
+      "answer": "2NF",
+      "story_effect": "Dependencies align perfectly, and redundant data evaporates from your tables."
+    },
+    {
+      "id": 48,
+      "type": "one-word",
+      "title": "The Branching Spire",
+      "question": "A tree-like structure where each node represents a character, forming words along paths from root to leaves. Efficient for autocomplete and spell-checking with prefix searches, this data structure shares its name with a word meaning 'to retrieve.' What is it?",
+      "answer": "Trie",
+      "story_effect": "Letter nodes light up in sequence, spelling out the path to your destination."
+    },
+    {
+      "id": 49,
+      "type": "one-word",
+      "title": "The Pivot Point",
+      "question": "A partitioning algorithm chooses a pivot, placing smaller elements left and larger elements right, then recursively conquering both sides. With average O(n log n) but worst-case O(n²), which famous sorting algorithm am I describing?",
+      "answer": "Quicksort",
+      "story_effect": "Elements scatter and regroup around pivots until perfect order emerges."
+    },
+    {
+      "id": 50,
+      "type": "MCQ",
+      "title": "The Flame Barrier",
+      "question": "A digital barrier inspects incoming and outgoing network traffic, blocking or allowing packets based on security rules. Operating between networks, this protective system is called what?",
+      "options": [
+        "Firewall",
+        "Router",
+        "Switch",
+        "Gateway"
+      ],
+      "answer": "Firewall",
+      "story_effect": "Walls of fire spring up, filtering malicious packets while allowing safe traffic."
+    },
+    {
+      "id": 51,
+      "type": "one-word",
+      "title": "The Multi-Branch Citadel",
+      "question": "A self-balancing tree structure optimized for systems that read and write large blocks of data, commonly used in databases and file systems. Unlike binary trees, each node can have multiple children. Name this structure starting with 'B'?",
+      "answer": "B-Tree",
+      "story_effect": "A massive balanced tree unfolds, each node holding multiple keys efficiently."
+    },
+    {
+      "id": 52,
+      "type": "MCQ",
+      "title": "The Shadow Injection",
+      "question": "A malicious hacker whispers evil commands into your input fields, attempting to manipulate database queries by injecting SQL code. Which technique protects against this attack by separating code from data?",
+      "options": [
+        "Prepared Statements",
+        "Encryption",
+        "Hashing",
+        "Authentication"
+      ],
+      "answer": "Prepared Statements",
+      "story_effect": "Your defenses activate, parameterizing queries and banishing the shadows."
+    },
+    {
+      "id": 53,
+      "type": "one-word",
+      "title": "The Rotation Sanctum",
+      "question": "A self-balancing binary search tree maintains height difference between left and right subtrees of at most one, using rotations to rebalance. Named after two inventors, this structure ensures O(log n) operations. What is it?",
+      "answer": "AVL",
+      "story_effect": "The tree rotates elegantly, balancing itself with perfect height harmony."
+    },
+    {
+      "id": 54,
+      "type": "one-word",
+      "title": "The Negative Chasm",
+      "question": "Unlike Dijkstra who fails with negative weights, I can handle negative edge weights and detect negative cycles, though I'm slower at O(V×E). Which single-source shortest path algorithm am I?",
+      "answer": "Bellman-Ford",
+      "story_effect": "The bridge extends across negative chasms, detecting impossible loops."
+    },
+    {
+      "id": 55,
+      "type": "MCQ",
+      "title": "The Concurrent Gateway",
+      "question": "Multiple threads attempt to access a shared variable simultaneously. To prevent race conditions, you use a synchronization mechanism that allows only one thread to access the critical section at a time. What is this mechanism?",
+      "options": [
+        "Mutex",
+        "Semaphore",
+        "Spinlock",
+        "Barrier"
+      ],
+      "answer": "Mutex",
+      "story_effect": "A magical lock appears, granting exclusive access to one thread at a time."
+    },
+    {
+      "id": 56,
+      "type": "one-word",
+      "title": "The Token Chamber",
+      "question": "The first phase of compilation reads source code and groups characters into meaningful tokens like identifiers, keywords, and operators. This scanning phase is called what?",
+      "answer": "Lexical",
+      "story_effect": "Characters merge into glowing tokens, recognized and categorized perfectly."
+    },
+    {
+      "id": 57,
+      "type": "MCQ",
+      "title": "The Stateless Domain",
+      "question": "An architectural style for web services that uses HTTP methods, is stateless, and treats everything as resources with URIs. What does REST stand for (first two words)?",
+      "options": [
+        "Representational State",
+        "Remote Service",
+        "Reliable System",
+        "Resource Standard"
+      ],
+      "answer": "Representational State",
+      "story_effect": "Services arrange themselves as resources, accessible through clean HTTP paths."
+    },
+    {
+      "id": 58,
+      "type": "one-word",
+      "title": "The Crystal Memory",
+      "question": "Instead of solving overlapping subproblems repeatedly, you store their solutions in a table for reuse, transforming exponential recursion into polynomial time. This optimization technique is called what?",
+      "answer": "Memoization",
+      "story_effect": "A crystalline table materializes, caching solutions and accelerating computations."
+    },
+    {
+      "id": 59,
+      "type": "one-word",
+      "title": "The Minimum Weight Forest",
+      "question": "Another minimal spanning tree algorithm that sorts all edges by weight and adds them one by one if they don't form a cycle, using union-find. Named after a mathematician, what algorithm?",
+      "answer": "Kruskal",
+      "story_effect": "Edges arrange themselves by weight, building the lightest connected tree."
+    },
+    {
+      "id": 60,
+      "type": "MCQ",
+      "title": "The Encrypted Tunnel",
+      "question": "A cryptographic protocol providing secure communication over networks by encrypting data between client and server, now succeeded by TLS. What does SSL stand for?",
+      "options": [
+        "Secure Sockets Layer",
+        "System Security Level",
+        "Standard Socket Link",
+        "Safe Server Login"
+      ],
+      "answer": "Secure Sockets Layer",
+      "story_effect": "An encrypted tunnel forms, securing all data flowing through golden channels."
+    },
+    {
+      "id": 61,
+      "type": "one-word",
+      "title": "The Crimson Eclipse",
+      "question": "A self-balancing binary search tree where each node is colored red or black, following specific rules to maintain approximate balance. This structure guarantees O(log n) operations. What is it called?",
+      "answer": "Red-Black",
+      "story_effect": "Nodes pulse with crimson and ebony hues, self-organizing into perfect balance."
+    },
+    {
+      "id": 62,
+      "type": "MCQ",
+      "title": "The Triangle of Trade-offs",
+      "question": "In distributed systems, a theorem states you can achieve at most two of three properties: Consistency, Availability, and which third property related to network failures?",
+      "options": [
+        "Partition Tolerance",
+        "Performance",
+        "Persistence",
+        "Privacy"
+      ],
+      "answer": "Partition Tolerance",
+      "story_effect": "Three stars form a triangle, but you can only light two at once."
+    },
+    {
+      "id": 63,
+      "type": "one-word",
+      "title": "The Compression Vault",
+      "question": "A compression algorithm that assigns variable-length codes to characters based on frequency, with frequent characters getting shorter codes. This optimal prefix-free encoding is called what?",
+      "answer": "Huffman",
+      "story_effect": "Text compresses beautifully, with common letters shrinking to tiny codes."
+    },
+    {
+      "id": 64,
+      "type": "one-word",
+      "title": "The Veil of Simplicity",
+      "question": "An OOP principle where you hide complex implementation details and expose only essential features through interfaces. This simplification concept, showing 'what' rather than 'how,' is called what?",
+      "answer": "Abstraction",
+      "story_effect": "Complexity melts away, revealing only the clean, essential interfaces."
+    },
+    {
+      "id": 65,
+      "type": "MCQ",
+      "title": "The Mirrored Disks",
+      "question": "Multiple disks working together for redundancy and performance, with various levels providing different balances of speed, space, and safety. What does RAID stand for?",
+      "options": [
+        "Redundant Array of Independent Disks",
+        "Rapid Access Integrated Drive",
+        "Remote Array In Database",
+        "Reliable Automatic Information Device"
+      ],
+      "answer": "Redundant Array of Independent Disks",
+      "story_effect": "Disks spin in perfect harmony, mirroring and striping data for protection."
+    },
+    {
+      "id": 66,
+      "type": "one-word",
+      "title": "The Slope of Descent",
+      "question": "An optimization algorithm that iteratively moves in the direction of steepest descent of a cost function, updating parameters to minimize error. Used in training machine learning models, what is this method?",
+      "answer": "Gradient",
+      "story_effect": "You slide down the error surface, finding the valley of minimum loss."
+    },
+    {
+      "id": 67,
+      "type": "MCQ",
+      "title": "The Portable Realm",
+      "question": "A platform that packages applications with their dependencies into lightweight, portable units that run consistently across environments. These units are called what?",
+      "options": [
+        "Containers",
+        "Virtual Machines",
+        "Images",
+        "Pods"
+      ],
+      "answer": "Containers",
+      "story_effect": "Applications seal themselves in portable boxes, deployable anywhere instantly."
+    },
+    {
+      "id": 68,
+      "type": "one-word",
+      "title": "The Linear Sequence",
+      "question": "A linear ordering of vertices in a directed acyclic graph where for every edge u→v, u comes before v. This ordering, impossible in graphs with cycles, is called what sort?",
+      "answer": "Topological",
+      "story_effect": "The graph unfolds into a perfect linear sequence, dependencies resolved."
+    },
+    {
+      "id": 69,
+      "type": "one-word",
+      "title": "The Protective Shell",
+      "question": "An OOP principle bundling data and methods that operate on that data within a single unit, restricting direct access to internal state. This protective wrapping is called what?",
+      "answer": "Encapsulation",
+      "story_effect": "Data seals itself within protective capsules, accessible only through methods."
+    },
+    {
+      "id": 70,
+      "type": "MCQ",
+      "title": "The Message Highway",
+      "question": "The stateless application protocol underlying the World Wide Web, defining how messages are formatted and transmitted. Version 2.0 introduced multiplexing. What does HTTP stand for?",
+      "options": [
+        "HyperText Transfer Protocol",
+        "High Transmission Text Protocol",
+        "Hybrid Transport Transfer Process",
+        "Host Terminal Text Program"
+      ],
+      "answer": "HyperText Transfer Protocol",
+      "story_effect": "Requests and responses flow through hyperspace, connecting the web."
+    },
+    {
+      "id": 71,
+      "type": "one-word",
+      "title": "The Counting Gate",
+      "question": "A synchronization primitive that maintains a count, allowing a specified number of threads to access a resource simultaneously. More flexible than a mutex, controlling access to a resource pool, what is it?",
+      "answer": "Semaphore",
+      "story_effect": "A counting mechanism appears, allowing controlled concurrent access."
+    },
+    {
+      "id": 72,
+      "type": "MCQ",
+      "title": "The Complexity Observatory",
+      "question": "You analyze an algorithm that has nested loops where the outer loop runs n times and the inner loop runs n times for each outer iteration. What is the time complexity?",
+      "options": [
+        "O(n²)",
+        "O(n log n)",
+        "O(2n)",
+        "O(n)"
+      ],
+      "answer": "O(n²)",
+      "story_effect": "A quadratic curve appears, showing how work grows with input size."
+    },
+    {
+      "id": 73,
+      "type": "one-word",
+      "title": "The Chained Path",
+      "question": "A data structure where each element contains data and a pointer to the next element, forming a chain. Efficient insertions and deletions but slow random access. What structure?",
+      "answer": "LinkedList",
+      "story_effect": "Chains of nodes materialize, each pointing to the next in sequence."
+    },
+    {
+      "id": 74,
+      "type": "one-word",
+      "title": "The Verification Nightmare",
+      "question": "Problems where solutions can be verified in polynomial time but finding solutions may require exponential time. The class of these 'nondeterministic polynomial' problems is abbreviated how?",
+      "answer": "NP",
+      "story_effect": "A monstrous complexity class reveals itself, filled with hard problems."
+    },
+    {
+      "id": 75,
+      "type": "MCQ",
+      "title": "The Layer of Illusions",
+      "question": "Software that creates and manages virtual machines, allowing multiple operating systems to run on a single physical machine. This layer between hardware and OS is called what?",
+      "options": [
+        "Hypervisor",
+        "Kernel",
+        "BIOS",
+        "Bootloader"
+      ],
+      "answer": "Hypervisor",
+      "story_effect": "A master controller materializes, orchestrating multiple virtual realms."
+    },
+    {
+      "id": 76,
+      "type": "one-word",
+      "title": "The Probabilistic Filter",
+      "question": "A space-efficient probabilistic data structure that tests whether an element is a member of a set, with possible false positives but no false negatives. Named after Burton Bloom, what is it?",
+      "answer": "Bloom",
+      "story_effect": "A filter appears, quickly checking membership with tiny memory footprint."
+    },
+    {
+      "id": 77,
+      "type": "MCQ",
+      "title": "The Address Resolver",
+      "question": "A protocol that maps IP addresses to MAC addresses in local networks, enabling devices to discover each other's physical addresses. What does ARP stand for?",
+      "options": [
+        "Address Resolution Protocol",
+        "Automatic Routing Process",
+        "Access Request Procedure",
+        "Application Response Protocol"
+      ],
+      "answer": "Address Resolution Protocol",
+      "story_effect": "Addresses resolve, linking logical IPs to physical MAC locations."
+    },
+    {
+      "id": 78,
+      "type": "one-word",
+      "title": "The Forged Request",
+      "question": "An attack where unauthorized commands are transmitted from a user that a website trusts, exploiting authenticated sessions. This 'Cross-Site Request' attack is abbreviated how?",
+      "answer": "CSRF",
+      "story_effect": "Malicious requests vanish as your defenses recognize forged origins."
+    },
+    {
+      "id": 79,
+      "type": "one-word",
+      "title": "The Vertical Express",
+      "question": "A probabilistic data structure that uses multiple layers of linked lists with shortcuts, allowing O(log n) search time like balanced trees but with simpler implementation. What structure?",
+      "answer": "Skip",
+      "story_effect": "Lists stack vertically with express lanes, enabling logarithmic leaps."
+    },
+    {
+      "id": 80,
+      "type": "MCQ",
+      "title": "The Iterative Cycle",
+      "question": "An iterative software development methodology emphasizing collaboration, customer feedback, and rapid iterations. Which framework uses sprints, daily standups, and retrospectives?",
+      "options": [
+        "Scrum",
+        "Waterfall",
+        "V-Model",
+        "Spiral"
+      ],
+      "answer": "Scrum",
+      "story_effect": "Your team forms a circle, planning sprints and adapting with agility."
+    },
+    {
+      "id": 81,
+      "type": "one-word",
+      "title": "The Script Infiltration",
+      "question": "An attack injecting malicious scripts into web pages viewed by other users, stealing cookies or session tokens. This 'Cross-Site Scripting' attack is abbreviated how (three letters)?",
+      "answer": "XSS",
+      "story_effect": "Script injections dissolve as output is properly escaped and sanitized."
+    },
+    {
+      "id": 82,
+      "type": "MCQ",
+      "title": "The Distribution Maze",
+      "question": "A system distributing incoming network traffic across multiple servers to ensure no single server bears too much load. Which algorithm sends requests to the server with the least current connections?",
+      "options": [
+        "Least Connections",
+        "Round Robin",
+        "IP Hash",
+        "Random"
+      ],
+      "answer": "Least Connections",
+      "story_effect": "Traffic flows intelligently, balancing perfectly across all servers."
+    },
+    {
+      "id": 83,
+      "type": "one-word",
+      "title": "The Infinite Tape",
+      "question": "A theoretical computing machine with an infinite tape and a head that can read, write, and move, capable of simulating any algorithm. Named after Alan Turing, what machine?",
+      "answer": "Turing",
+      "story_effect": "An infinite tape unfolds, proving computational universality."
+    },
+    {
+      "id": 84,
+      "type": "one-word",
+      "title": "The Parallel Mountains",
+      "question": "A programming model for processing large data sets across distributed clusters, consisting of two phases: mapping key-value pairs and reducing them by key. What is this paradigm?",
+      "answer": "MapReduce",
+      "story_effect": "Data splits across mountains, processed in parallel then combined."
+    },
+    {
+      "id": 85,
+      "type": "MCQ",
+      "title": "The Address Expansion",
+      "question": "The successor to IPv4, using 128-bit addresses to solve address exhaustion. How many bits are in an IPv6 address?",
+      "options": [
+        "128",
+        "64",
+        "256",
+        "32"
+      ],
+      "answer": "128",
+      "story_effect": "Address space expands to near-infinite capacity with hexadecimal glory."
+    },
+    {
+      "id": 86,
+      "type": "one-word",
+      "title": "The Unique Identifier",
+      "question": "In databases, a unique identifier for each record in a table, ensuring no duplicates and enabling fast lookups. This constraint is called what kind of key?",
+      "answer": "Primary",
+      "story_effect": "A glowing key materializes, uniquely identifying every record."
+    },
+    {
+      "id": 87,
+      "type": "MCQ",
+      "title": "The Fragmented Metropolis",
+      "question": "An architectural style structuring applications as collections of loosely coupled, independently deployable services. Opposed to which monolithic architecture?",
+      "options": [
+        "Monolithic",
+        "Distributed",
+        "Centralized",
+        "Layered"
+      ],
+      "answer": "Monolithic",
+      "story_effect": "A massive application splits into nimble, independent services."
+    },
+    {
+      "id": 88,
+      "type": "one-word",
+      "title": "The Reference Chain",
+      "question": "In relational databases, a field in one table that refers to the primary key in another table, establishing relationships. What type of key is this?",
+      "answer": "Foreign",
+      "story_effect": "Tables link together through referential chains, enforcing integrity."
+    },
+    {
+      "id": 89,
+      "type": "one-word",
+      "title": "The Nameless Function",
+      "question": "Anonymous functions without names, often used in functional programming for short callbacks and higher-order functions. Named after lambda calculus, what functions?",
+      "answer": "Lambda",
+      "story_effect": "Nameless functions materialize and vanish, serving their purpose inline."
+    },
+    {
+      "id": 90,
+      "type": "MCQ",
+      "title": "The Branching Timeline",
+      "question": "A distributed version control system tracking changes in source code during development. Which command creates a new branch?",
+      "options": [
+        "git branch",
+        "git commit",
+        "git push",
+        "git clone"
+      ],
+      "answer": "git branch",
+      "story_effect": "A parallel timeline splits off, preserving the original while exploring new paths."
+    },
+    {
+      "id": 91,
+      "type": "one-word",
+      "title": "The Flood of Chaos",
+      "question": "An attack overwhelming a system with massive traffic from multiple sources, making services unavailable. This 'Distributed Denial of Service' attack abbreviation?",
+      "answer": "DDoS",
+      "story_effect": "The flood recedes as distributed defenses filter malicious swarms."
+    },
+    {
+      "id": 92,
+      "type": "MCQ",
+      "title": "The Immutable Ledger",
+      "question": "A distributed ledger technology where records are stored in blocks cryptographically linked in a chain. What consensus mechanism does Bitcoin use?",
+      "options": [
+        "Proof of Work",
+        "Proof of Stake",
+        "Proof of Authority",
+        "Proof of Burn"
+      ],
+      "answer": "Proof of Work",
+      "story_effect": "Miners solve puzzles, securing blocks with computational proof."
+    },
+    {
+      "id": 93,
+      "type": "one-word",
+      "title": "The Isolated Realm",
+      "question": "A container providing scope to identifiers, preventing naming conflicts in large projects. In C++, this organizational feature is called what?",
+      "answer": "Namespace",
+      "story_effect": "Names organize into hierarchical containers, eliminating conflicts."
+    },
+    {
+      "id": 94,
+      "type": "one-word",
+      "title": "The Firing Neurons",
+      "question": "In neural networks, a function that introduces non-linearity, determining whether a neuron fires. Common ones include ReLU, sigmoid, and tanh. What type of function?",
+      "answer": "Activation",
+      "story_effect": "Neurons fire selectively, their outputs transformed by non-linear magic."
+    },
+    {
+      "id": 95,
+      "type": "MCQ",
+      "title": "The Edge Network",
+      "question": "A geographically distributed network of servers delivering content to users from the nearest location, reducing latency. What does CDN stand for?",
+      "options": [
+        "Content Delivery Network",
+        "Central Data Network",
+        "Cloud Distribution Node",
+        "Cached Domain Network"
+      ],
+      "answer": "Content Delivery Network",
+      "story_effect": "Content replicates globally, served from the closest edge location."
+    },
+    {
+      "id": 96,
+      "type": "one-word",
+      "title": "The Bridge Between Worlds",
+      "question": "Software that sits between applications, facilitating communication and data management. This intermediary layer connecting different systems is called what?",
+      "answer": "Middleware",
+      "story_effect": "A bridge materializes between applications, enabling seamless integration."
+    },
+    {
+      "id": 97,
+      "type": "MCQ",
+      "title": "The Token of Authority",
+      "question": "An authorization framework allowing third-party applications to access user data without exposing passwords. In the OAuth flow, what represents the user's permission?",
+      "options": [
+        "Token",
+        "Password",
+        "Cookie",
+        "Session"
+      ],
+      "answer": "Token",
+      "story_effect": "A secure token materializes, granting limited access without revealing credentials."
+    },
+    {
+      "id": 98,
+      "type": "one-word",
+      "title": "The Shattered Database",
+      "question": "A database architecture pattern splitting large datasets horizontally across multiple servers, with each server holding a subset of data. This partitioning technique is called what?",
+      "answer": "Sharding",
+      "story_effect": "The massive database fractures into manageable shards, distributed efficiently."
+    },
+    {
+      "id": 99,
+      "type": "one-word",
+      "title": "The Persistent Channel",
+      "question": "A protocol providing full-duplex communication channels over a single TCP connection, enabling real-time bidirectional data flow. What protocol?",
+      "answer": "WebSocket",
+      "story_effect": "A persistent tunnel opens, enabling instant two-way communication."
+    },
+    {
+      "id": 100,
+      "type": "MCQ",
+      "title": "The Ultimate Trial",
+      "question": "You stand before the ultimate challenge. In software testing, which level tests the complete integrated system to verify it meets requirements?",
+      "options": [
+        "System Testing",
+        "Unit Testing",
+        "Integration Testing",
+        "Acceptance Testing"
+      ],
+      "answer": "System Testing",
+      "story_effect": "The fortress gates swing open as you prove mastery of the entire system. The adventure is complete, and you emerge victorious as a true ByteClub legend!"
     }
-]
+  ]
+}

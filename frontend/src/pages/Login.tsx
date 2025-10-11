@@ -66,9 +66,9 @@ export default function Login() {
             <Terminal className="w-16 h-16 text-primary animate-pulse-glow" />
           </motion.div>
           <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            BYTE CLUB
+            byte_club
           </h1>
-          <p className="text-muted-foreground">Where every byte counts</p>
+          <p className="text-muted-foreground">&lt;/where every byte counts&gt;</p>
         </div>
 
         <NeonCard variant="cyan" glow className="backdrop-blur-sm bg-card/80">

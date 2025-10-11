@@ -98,7 +98,7 @@ export default function Quests() {
             transition={{ type: "spring", delay: 0.2 }}
           >
             <span className="bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 bg-clip-text text-transparent">
-              🔥 Byte Club Missions
+              🔥 byte_club missions
             </span>
           </motion.h1>
           <motion.p

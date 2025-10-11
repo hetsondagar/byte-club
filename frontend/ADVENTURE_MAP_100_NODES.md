@@ -1,38 +1,37 @@
-# 🗺️ 100-Node Adventure Map - Complete System
+# 🗺️ 33-Node Adventure Map - Complete System
 
 ## 🎮 Overview
 
-An **epic 100-node coding journey** where each node presents a challenging question that requires **actual coding in an IDE** but can be answered in **1-2 words**. Progressive difficulty from beginner to legendary!
+An **epic 33-node coding journey** where each node presents a challenging question from the Byte Club question bank. Progressive difficulty with three question types: one-word, MCQ, and coding challenges!
 
 ---
 
 ## ✨ Key Features
 
-### **🎯 100 Unique Nodes**
-- **Level 1-10**: Beginner Realm (Easy)
-- **Level 11-25**: Novice Nexus (Easy-Medium)
-- **Level 26-40**: Intermediate Isles (Medium)
-- **Level 41-60**: Advanced Arena (Medium-Hard)
-- **Level 61-70**: Expert Expanse (Hard)
-- **Level 71-85**: Grandmaster Grounds (Expert)
-- **Level 86-100**: Legendary Lair (Expert+++)
+### **🎯 33 Unique Nodes**
+- **Nodes 1-10**: Easy Level - Foundation concepts (BFS, Stack, Queue, etc.)
+- **Nodes 11-20**: Medium Level - Intermediate topics (TCP, Backpropagation, LRU, etc.)
+- **Nodes 21-33**: Hard Level - Advanced concepts (Deadlock, Floyd-Warshall, Parsing, etc.)
 
 ### **💡 Question System**
-- ✅ **Story-driven** - Each node has immersive narrative
-- ✅ **Coding required** - User must code in IDE
-- ✅ **Short answers** - 1-2 word answers only
+- ✅ **Story-driven** - Each node has immersive narrative and story effects
+- ✅ **Three question types**:
+  - **One-word**: Single word answers (e.g., "BFS", "Stack", "Cache")
+  - **MCQ**: Multiple choice questions with 4 options
+  - **Coding**: Algorithm and coding concept questions
 - ✅ **Demo format** - Shows expected answer format
 - ✅ **Hint system** - Optional hints via button
-- ✅ **Progressive difficulty** - Gets harder every 10 nodes
+- ✅ **Progressive difficulty** - Gets harder as you progress
 
 ### **🎨 UI Features**
-- ✅ **Connected nodes** - Visual path through 100 nodes
+- ✅ **Connected nodes** - Visual path through 33 nodes
 - ✅ **Lock/unlock system** - Sequential progression
 - ✅ **Completion tracking** - Green checkmarks on completed
 - ✅ **Modal dialogs** - Clean challenge interface
 - ✅ **Hint button** - Reveals helpful clues
 - ✅ **Progress HUD** - Shows nodes completed & total XP
 - ✅ **Confetti** - Celebration on completion
+- ✅ **Question types** - Visual indication of question type
 
 ---
 

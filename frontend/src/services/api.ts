@@ -107,6 +107,28 @@ class ApiService {
     }
   }
 
+  async updateProfile(data: { username?: string; email?: string; password?: string }): Promise<User> {
+    const response = await this.request<User>('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+
+    if (response.success && response.data) {
+      // Update localStorage with new user data
+      const currentUser = localStorage.getItem('byteclub_user');
+      if (currentUser) {
+        const parsedUser = JSON.parse(currentUser);
+        const updatedUser = {
+          ...parsedUser,
+          ...response.data
+        };
+        localStorage.setItem('byteclub_user', JSON.stringify(updatedUser));
+      }
+    }
+
+    return response.data!;
+  }
+
   async getCurrentUser(): Promise<User> {
     const response = await this.request<User>('/auth/me');
     return response.data!;
@@ -200,6 +222,46 @@ class ApiService {
     const response = await this.request(`/rewards/purchase/${rewardKey}`, {
       method: 'POST',
     });
+    return response.data!;
+  }
+
+  // Quest methods
+  async getQuests(): Promise<any[]> {
+    const response = await this.request<any>('/quests');
+    if (response.data?.quests) {
+      return response.data.quests;
+    }
+    return response.data || [];
+  }
+
+  async getQuest(questId: string): Promise<any> {
+    const response = await this.request<any>(`/quests/${questId}`);
+    return response.data!;
+  }
+
+  async getQuestProgress(questId: string): Promise<any> {
+    const response = await this.request<any>(`/quests/${questId}/progress`);
+    return response.data!;
+  }
+
+  async getCompletedMissions(questId: string): Promise<string[]> {
+    const response = await this.request<any>(`/quests/${questId}/missions/completed`);
+    if (response.data?.completedMissions) {
+      return response.data.completedMissions;
+    }
+    return response.data || [];
+  }
+
+  async submitMission(questId: string, missionId: string, answer: string): Promise<any> {
+    const response = await this.request(`/quests/${questId}/missions/${missionId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ answer }),
+    });
+    return response.data!;
+  }
+
+  async getQuestStats(): Promise<any> {
+    const response = await this.request<any>('/quests/stats/overview');
     return response.data!;
   }
 }

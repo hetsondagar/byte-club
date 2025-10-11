@@ -54,7 +54,7 @@ export default function Signup() {
       );
       
       toast.success("Registration Complete", {
-        description: `Welcome to Byte Club, ${response.user.username}!`,
+        description: `Welcome to byte_club, ${response.user.username}!`,
       });
       
       navigate("/home");
@@ -88,9 +88,9 @@ export default function Signup() {
             <Terminal className="w-16 h-16 text-secondary animate-pulse-glow" />
           </motion.div>
           <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
-            JOIN THE CLUB
+            byte_club
           </h1>
-          <p className="text-muted-foreground">Create your hacker profile</p>
+          <p className="text-muted-foreground">&lt;/where every byte counts&gt;</p>
         </div>
 
         <NeonCard variant="violet" glow className="backdrop-blur-sm bg-card/80">
