@@ -16,6 +16,7 @@ export interface AdventureNode {
 }
 
 export const adventureNodes: AdventureNode[] = [
+  // Starting Zone - Center Bottom
   {
     id: 1,
     type: "one-word",
@@ -27,9 +28,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "BFS",
     xp: 150,
     difficulty: "easy",
-    position: { x: 5, y: 90 },
-    connections: [2],
+    position: { x: 50, y: 95 },
+    connections: [2, 3],
   },
+  
+  // Left Path Start
   {
     id: 2,
     type: "one-word",
@@ -41,9 +44,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Stack",
     xp: 150,
     difficulty: "easy",
-    position: { x: 8, y: 85 },
-    connections: [3],
+    position: { x: 25, y: 88 },
+    connections: [4, 5],
   },
+  
+  // Right Path Start
   {
     id: 3,
     type: "MCQ",
@@ -56,9 +61,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "SHA-256",
     xp: 200,
     difficulty: "easy",
-    position: { x: 12, y: 80 },
-    connections: [4],
+    position: { x: 75, y: 88 },
+    connections: [6, 7],
   },
+  
+  // Far Left Branch
   {
     id: 4,
     type: "one-word",
@@ -70,9 +77,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Bubble",
     xp: 150,
     difficulty: "easy",
-    position: { x: 16, y: 75 },
-    connections: [5],
+    position: { x: 10, y: 80 },
+    connections: [8],
   },
+  
+  // Left-Center Branch
   {
     id: 5,
     type: "one-word",
@@ -84,9 +93,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Dijkstra",
     xp: 150,
     difficulty: "easy",
-    position: { x: 20, y: 70 },
-    connections: [6],
+    position: { x: 30, y: 78 },
+    connections: [9, 10],
   },
+  
+  // Right-Center Branch
   {
     id: 6,
     type: "MCQ",
@@ -99,9 +110,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "SJF",
     xp: 200,
     difficulty: "easy",
-    position: { x: 24, y: 65 },
-    connections: [7],
+    position: { x: 70, y: 78 },
+    connections: [11, 12],
   },
+  
+  // Far Right Branch
   {
     id: 7,
     type: "one-word",
@@ -113,9 +126,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Queue",
     xp: 150,
     difficulty: "easy",
-    position: { x: 28, y: 60 },
-    connections: [8],
+    position: { x: 90, y: 80 },
+    connections: [13],
   },
+  
   {
     id: 8,
     type: "one-word",
@@ -127,9 +141,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Floyd",
     xp: 150,
     difficulty: "easy",
-    position: { x: 32, y: 55 },
-    connections: [9],
+    position: { x: 5, y: 70 },
+    connections: [14],
   },
+  
   {
     id: 9,
     type: "MCQ",
@@ -142,9 +157,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Contiguous",
     xp: 200,
     difficulty: "easy",
-    position: { x: 36, y: 50 },
-    connections: [10],
+    position: { x: 20, y: 68 },
+    connections: [15],
   },
+  
   {
     id: 10,
     type: "one-word",
@@ -156,9 +172,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Cache",
     xp: 150,
     difficulty: "easy",
-    position: { x: 40, y: 45 },
-    connections: [11],
+    position: { x: 38, y: 68 },
+    connections: [16],
   },
+  
   {
     id: 11,
     type: "one-word",
@@ -170,9 +187,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "In-place",
     xp: 150,
     difficulty: "easy",
-    position: { x: 44, y: 40 },
-    connections: [12],
+    position: { x: 62, y: 68 },
+    connections: [17],
   },
+  
   {
     id: 12,
     type: "MCQ",
@@ -185,9 +203,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "TCP",
     xp: 200,
     difficulty: "easy",
-    position: { x: 48, y: 35 },
-    connections: [13],
+    position: { x: 80, y: 68 },
+    connections: [18],
   },
+  
   {
     id: 13,
     type: "one-word",
@@ -199,9 +218,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Backpropagation",
     xp: 150,
     difficulty: "easy",
-    position: { x: 52, y: 30 },
-    connections: [14],
+    position: { x: 95, y: 70 },
+    connections: [19],
   },
+  
+  // Middle Section - Converging paths
   {
     id: 14,
     type: "MCQ",
@@ -214,9 +235,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "DFA",
     xp: 200,
     difficulty: "easy",
-    position: { x: 56, y: 25 },
-    connections: [15],
+    position: { x: 8, y: 58 },
+    connections: [20],
   },
+  
   {
     id: 15,
     type: "one-word",
@@ -228,9 +250,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "LRU",
     xp: 150,
     difficulty: "easy",
-    position: { x: 60, y: 20 },
-    connections: [16],
+    position: { x: 18, y: 56 },
+    connections: [21],
   },
+  
   {
     id: 16,
     type: "one-word",
@@ -242,9 +265,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Kadane",
     xp: 150,
     difficulty: "easy",
-    position: { x: 64, y: 15 },
-    connections: [17],
+    position: { x: 42, y: 56 },
+    connections: [22, 23],
   },
+  
   {
     id: 17,
     type: "MCQ",
@@ -257,9 +281,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Asymmetric",
     xp: 200,
     difficulty: "easy",
-    position: { x: 68, y: 10 },
-    connections: [18],
+    position: { x: 58, y: 56 },
+    connections: [22, 24],
   },
+  
   {
     id: 18,
     type: "one-word",
@@ -271,9 +296,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Class",
     xp: 150,
     difficulty: "easy",
-    position: { x: 72, y: 8 },
-    connections: [19],
+    position: { x: 82, y: 56 },
+    connections: [25],
   },
+  
   {
     id: 19,
     type: "MCQ",
@@ -286,9 +312,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "3NF",
     xp: 200,
     difficulty: "easy",
-    position: { x: 76, y: 12 },
-    connections: [20],
+    position: { x: 92, y: 58 },
+    connections: [26],
   },
+  
+  // Convergence Point
   {
     id: 20,
     type: "one-word",
@@ -300,9 +328,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "DNS",
     xp: 150,
     difficulty: "easy",
-    position: { x: 80, y: 16 },
-    connections: [21],
+    position: { x: 15, y: 48 },
+    connections: [27],
   },
+  
   {
     id: 21,
     type: "one-word",
@@ -314,9 +343,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Post-order",
     xp: 150,
     difficulty: "easy",
-    position: { x: 84, y: 20 },
-    connections: [22],
+    position: { x: 28, y: 46 },
+    connections: [28],
   },
+  
   {
     id: 22,
     type: "MCQ",
@@ -329,9 +359,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Deadlock",
     xp: 200,
     difficulty: "easy",
-    position: { x: 88, y: 24 },
-    connections: [23],
+    position: { x: 50, y: 46 },
+    connections: [29, 30],
   },
+  
   {
     id: 23,
     type: "one-word",
@@ -343,9 +374,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Stack",
     xp: 150,
     difficulty: "easy",
-    position: { x: 92, y: 28 },
-    connections: [24],
+    position: { x: 42, y: 42 },
+    connections: [31],
   },
+  
   {
     id: 24,
     type: "one-word",
@@ -357,9 +389,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Recursion",
     xp: 150,
     difficulty: "easy",
-    position: { x: 95, y: 32 },
-    connections: [25],
+    position: { x: 58, y: 42 },
+    connections: [32],
   },
+  
   {
     id: 25,
     type: "MCQ",
@@ -372,9 +405,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Floyd-Warshall",
     xp: 200,
     difficulty: "easy",
-    position: { x: 93, y: 36 },
-    connections: [26],
+    position: { x: 72, y: 46 },
+    connections: [33],
   },
+  
   {
     id: 26,
     type: "one-word",
@@ -386,9 +420,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "HashMap",
     xp: 150,
     difficulty: "medium",
-    position: { x: 90, y: 40 },
-    connections: [27],
+    position: { x: 85, y: 48 },
+    connections: [34],
   },
+  
+  // Third Level - Medium Difficulty
   {
     id: 27,
     type: "one-word",
@@ -400,9 +436,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Two-pointer",
     xp: 150,
     difficulty: "medium",
-    position: { x: 86, y: 44 },
-    connections: [28],
+    position: { x: 12, y: 38 },
+    connections: [35],
   },
+  
   {
     id: 28,
     type: "MCQ",
@@ -415,9 +452,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Round Robin",
     xp: 200,
     difficulty: "medium",
-    position: { x: 82, y: 48 },
-    connections: [29],
+    position: { x: 25, y: 36 },
+    connections: [36],
   },
+  
   {
     id: 29,
     type: "one-word",
@@ -429,9 +467,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "ECC",
     xp: 150,
     difficulty: "medium",
-    position: { x: 78, y: 52 },
-    connections: [30],
+    position: { x: 45, y: 34 },
+    connections: [37],
   },
+  
   {
     id: 30,
     type: "one-word",
@@ -443,9 +482,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Amortized",
     xp: 150,
     difficulty: "medium",
-    position: { x: 74, y: 56 },
-    connections: [31],
+    position: { x: 55, y: 34 },
+    connections: [38],
   },
+  
   {
     id: 31,
     type: "MCQ",
@@ -458,9 +498,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Prim",
     xp: 200,
     difficulty: "medium",
-    position: { x: 70, y: 60 },
-    connections: [32],
+    position: { x: 38, y: 30 },
+    connections: [39],
   },
+  
   {
     id: 32,
     type: "one-word",
@@ -472,9 +513,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Parser",
     xp: 150,
     difficulty: "medium",
-    position: { x: 66, y: 64 },
-    connections: [33],
+    position: { x: 62, y: 30 },
+    connections: [40],
   },
+  
   {
     id: 33,
     type: "one-word",
@@ -486,9 +528,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Two-pointer",
     xp: 150,
     difficulty: "medium",
-    position: { x: 62, y: 68 },
-    connections: [34],
+    position: { x: 75, y: 36 },
+    connections: [41],
   },
+  
   {
     id: 34,
     type: "MCQ",
@@ -501,9 +544,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "MMU",
     xp: 200,
     difficulty: "medium",
-    position: { x: 58, y: 72 },
-    connections: [35],
+    position: { x: 88, y: 38 },
+    connections: [42],
   },
+  
   {
     id: 35,
     type: "one-word",
@@ -515,9 +559,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Polymorphism",
     xp: 150,
     difficulty: "medium",
-    position: { x: 54, y: 76 },
-    connections: [36],
+    position: { x: 8, y: 28 },
+    connections: [43],
   },
+  
   {
     id: 36,
     type: "one-word",
@@ -529,9 +574,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Mergesort",
     xp: 150,
     difficulty: "medium",
-    position: { x: 50, y: 80 },
-    connections: [37],
+    position: { x: 22, y: 26 },
+    connections: [44],
   },
+  
   {
     id: 37,
     type: "MCQ",
@@ -544,9 +590,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Circular wait",
     xp: 200,
     difficulty: "medium",
-    position: { x: 46, y: 84 },
-    connections: [38],
+    position: { x: 50, y: 24 },
+    connections: [45, 46],
   },
+  
   {
     id: 38,
     type: "one-word",
@@ -558,9 +605,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Binary",
     xp: 150,
     difficulty: "medium",
-    position: { x: 42, y: 88 },
-    connections: [39],
+    position: { x: 65, y: 24 },
+    connections: [47],
   },
+  
   {
     id: 39,
     type: "one-word",
@@ -572,9 +620,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Heap",
     xp: 150,
     difficulty: "medium",
-    position: { x: 38, y: 92 },
-    connections: [40],
+    position: { x: 35, y: 20 },
+    connections: [48],
   },
+  
   {
     id: 40,
     type: "MCQ",
@@ -587,9 +636,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Physical",
     xp: 200,
     difficulty: "medium",
-    position: { x: 34, y: 95 },
-    connections: [41],
+    position: { x: 78, y: 26 },
+    connections: [49],
   },
+  
   {
     id: 41,
     type: "one-word",
@@ -601,9 +651,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Index",
     xp: 150,
     difficulty: "medium",
-    position: { x: 30, y: 90 },
-    connections: [42],
+    position: { x: 92, y: 28 },
+    connections: [50],
   },
+  
   {
     id: 42,
     type: "MCQ",
@@ -616,9 +667,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Durability",
     xp: 200,
     difficulty: "medium",
-    position: { x: 26, y: 85 },
-    connections: [43],
+    position: { x: 95, y: 20 },
+    connections: [51],
   },
+  
+  // Fourth Level - Hard Difficulty
   {
     id: 43,
     type: "one-word",
@@ -630,9 +683,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "DFS",
     xp: 150,
     difficulty: "medium",
-    position: { x: 22, y: 80 },
-    connections: [44],
+    position: { x: 5, y: 18 },
+    connections: [52],
   },
+  
   {
     id: 44,
     type: "one-word",
@@ -644,9 +698,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Greedy",
     xp: 150,
     difficulty: "medium",
-    position: { x: 18, y: 75 },
-    connections: [45],
+    position: { x: 18, y: 16 },
+    connections: [53],
   },
+  
   {
     id: 45,
     type: "MCQ",
@@ -659,9 +714,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "/24",
     xp: 200,
     difficulty: "medium",
-    position: { x: 14, y: 70 },
-    connections: [46],
+    position: { x: 42, y: 14 },
+    connections: [54],
   },
+  
   {
     id: 46,
     type: "one-word",
@@ -673,9 +729,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Singleton",
     xp: 150,
     difficulty: "medium",
-    position: { x: 10, y: 65 },
-    connections: [47],
+    position: { x: 58, y: 14 },
+    connections: [55],
   },
+  
   {
     id: 47,
     type: "MCQ",
@@ -688,9 +745,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "2NF",
     xp: 200,
     difficulty: "medium",
-    position: { x: 6, y: 60 },
-    connections: [48],
+    position: { x: 70, y: 16 },
+    connections: [56],
   },
+  
   {
     id: 48,
     type: "one-word",
@@ -702,9 +760,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Trie",
     xp: 150,
     difficulty: "medium",
-    position: { x: 8, y: 55 },
-    connections: [49],
+    position: { x: 32, y: 10 },
+    connections: [57],
   },
+  
   {
     id: 49,
     type: "one-word",
@@ -716,9 +775,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Quicksort",
     xp: 150,
     difficulty: "medium",
-    position: { x: 12, y: 50 },
-    connections: [50],
+    position: { x: 82, y: 18 },
+    connections: [58],
   },
+  
   {
     id: 50,
     type: "MCQ",
@@ -731,9 +791,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Firewall",
     xp: 200,
     difficulty: "medium",
-    position: { x: 16, y: 45 },
-    connections: [51],
+    position: { x: 95, y: 12 },
+    connections: [59],
   },
+  
+  // Fifth Level - Hard Difficulty 
   {
     id: 51,
     type: "one-word",
@@ -745,9 +807,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "B-Tree",
     xp: 150,
     difficulty: "hard",
-    position: { x: 20, y: 40 },
-    connections: [52],
+    position: { x: 85, y: 15 },
+    connections: [60],
   },
+  
   {
     id: 52,
     type: "MCQ",
@@ -760,9 +823,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Prepared Statements",
     xp: 200,
     difficulty: "hard",
-    position: { x: 24, y: 35 },
-    connections: [53],
+    position: { x: 15, y: 15 },
+    connections: [61],
   },
+  
   {
     id: 53,
     type: "one-word",
@@ -774,9 +838,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "AVL",
     xp: 150,
     difficulty: "hard",
-    position: { x: 28, y: 30 },
-    connections: [54],
+    position: { x: 35, y: 15 },
+    connections: [62],
   },
+  
   {
     id: 54,
     type: "one-word",
@@ -788,9 +853,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Bellman-Ford",
     xp: 150,
     difficulty: "hard",
-    position: { x: 32, y: 25 },
-    connections: [55],
+    position: { x: 55, y: 15 },
+    connections: [63, 64],
   },
+  
   {
     id: 55,
     type: "MCQ",
@@ -803,9 +869,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Mutex",
     xp: 200,
     difficulty: "hard",
-    position: { x: 36, y: 20 },
-    connections: [56],
+    position: { x: 75, y: 15 },
+    connections: [64, 65],
   },
+  
   {
     id: 56,
     type: "one-word",
@@ -817,9 +884,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Lexical",
     xp: 150,
     difficulty: "hard",
-    position: { x: 40, y: 15 },
-    connections: [57],
+    position: { x: 95, y: 15 },
+    connections: [66],
   },
+  
   {
     id: 57,
     type: "MCQ",
@@ -832,9 +900,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Representational State",
     xp: 200,
     difficulty: "hard",
-    position: { x: 44, y: 12 },
-    connections: [58],
+    position: { x: 25, y: 10 },
+    connections: [67],
   },
+  
   {
     id: 58,
     type: "one-word",
@@ -846,9 +915,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Memoization",
     xp: 150,
     difficulty: "hard",
-    position: { x: 48, y: 16 },
-    connections: [59],
+    position: { x: 65, y: 10 },
+    connections: [68],
   },
+  
   {
     id: 59,
     type: "one-word",
@@ -860,9 +930,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Kruskal",
     xp: 150,
     difficulty: "hard",
-    position: { x: 52, y: 20 },
-    connections: [60],
+    position: { x: 90, y: 10 },
+    connections: [69],
   },
+  
   {
     id: 60,
     type: "MCQ",
@@ -875,9 +946,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Secure Sockets Layer",
     xp: 200,
     difficulty: "hard",
-    position: { x: 56, y: 24 },
-    connections: [61],
+    position: { x: 80, y: 5 },
+    connections: [70],
   },
+  
+  // Sixth Level - Expert Difficulty
   {
     id: 61,
     type: "one-word",
@@ -889,9 +962,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Red-Black",
     xp: 150,
     difficulty: "hard",
-    position: { x: 60, y: 28 },
-    connections: [62],
+    position: { x: 10, y: 8 },
+    connections: [71],
   },
+  
   {
     id: 62,
     type: "MCQ",
@@ -904,9 +978,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Partition Tolerance",
     xp: 200,
     difficulty: "hard",
-    position: { x: 64, y: 32 },
-    connections: [63],
+    position: { x: 30, y: 8 },
+    connections: [72],
   },
+  
   {
     id: 63,
     type: "one-word",
@@ -918,9 +993,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Huffman",
     xp: 150,
     difficulty: "hard",
-    position: { x: 68, y: 36 },
-    connections: [64],
+    position: { x: 50, y: 8 },
+    connections: [73],
   },
+  
   {
     id: 64,
     type: "one-word",
@@ -932,9 +1008,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Abstraction",
     xp: 150,
     difficulty: "hard",
-    position: { x: 72, y: 40 },
-    connections: [65],
+    position: { x: 70, y: 8 },
+    connections: [74],
   },
+  
   {
     id: 65,
     type: "MCQ",
@@ -947,9 +1024,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Redundant Array of Independent Disks",
     xp: 200,
     difficulty: "hard",
-    position: { x: 76, y: 44 },
-    connections: [66],
+    position: { x: 90, y: 8 },
+    connections: [75],
   },
+  
   {
     id: 66,
     type: "one-word",
@@ -961,9 +1039,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Gradient",
     xp: 150,
     difficulty: "hard",
-    position: { x: 80, y: 48 },
-    connections: [67],
+    position: { x: 5, y: 5 },
+    connections: [76],
   },
+  
   {
     id: 67,
     type: "MCQ",
@@ -976,9 +1055,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Containers",
     xp: 200,
     difficulty: "hard",
-    position: { x: 84, y: 52 },
-    connections: [68],
+    position: { x: 25, y: 5 },
+    connections: [77],
   },
+  
   {
     id: 68,
     type: "one-word",
@@ -990,9 +1070,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Topological",
     xp: 150,
     difficulty: "hard",
-    position: { x: 88, y: 56 },
-    connections: [69],
+    position: { x: 45, y: 5 },
+    connections: [79],
   },
+  
   {
     id: 69,
     type: "one-word",
@@ -1004,9 +1085,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Encapsulation",
     xp: 150,
     difficulty: "hard",
-    position: { x: 92, y: 60 },
-    connections: [70],
+    position: { x: 65, y: 5 },
+    connections: [80],
   },
+  
   {
     id: 70,
     type: "MCQ",
@@ -1019,9 +1101,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "HyperText Transfer Protocol",
     xp: 200,
     difficulty: "hard",
-    position: { x: 95, y: 64 },
-    connections: [71],
+    position: { x: 85, y: 5 },
+    connections: [81],
   },
+  
+  // Seventh Level - Expert Difficulty
   {
     id: 71,
     type: "one-word",
@@ -1033,9 +1117,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Semaphore",
     xp: 150,
     difficulty: "hard",
-    position: { x: 90, y: 68 },
-    connections: [72],
+    position: { x: 5, y: 3 },
+    connections: [82],
   },
+  
   {
     id: 72,
     type: "MCQ",
@@ -1048,9 +1133,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "O(n²)",
     xp: 200,
     difficulty: "hard",
-    position: { x: 85, y: 72 },
-    connections: [73],
+    position: { x: 25, y: 3 },
+    connections: [83],
   },
+  
   {
     id: 73,
     type: "one-word",
@@ -1062,9 +1148,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "LinkedList",
     xp: 150,
     difficulty: "hard",
-    position: { x: 80, y: 76 },
-    connections: [74],
+    position: { x: 45, y: 3 },
+    connections: [84],
   },
+  
   {
     id: 74,
     type: "one-word",
@@ -1076,9 +1163,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "NP",
     xp: 150,
     difficulty: "hard",
-    position: { x: 75, y: 80 },
-    connections: [75],
+    position: { x: 65, y: 3 },
+    connections: [85],
   },
+  
   {
     id: 75,
     type: "MCQ",
@@ -1091,9 +1179,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Hypervisor",
     xp: 200,
     difficulty: "hard",
-    position: { x: 70, y: 84 },
-    connections: [76],
+    position: { x: 85, y: 3 },
+    connections: [86],
   },
+  
   {
     id: 76,
     type: "one-word",
@@ -1105,9 +1194,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Bloom",
     xp: 150,
     difficulty: "expert",
-    position: { x: 65, y: 88 },
-    connections: [77],
+    position: { x: 5, y: 1 },
+    connections: [87],
   },
+  
   {
     id: 77,
     type: "MCQ",
@@ -1120,9 +1210,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Address Resolution Protocol",
     xp: 200,
     difficulty: "expert",
-    position: { x: 60, y: 92 },
-    connections: [78],
+    position: { x: 25, y: 1 },
+    connections: [88],
   },
+  
   {
     id: 78,
     type: "one-word",
@@ -1134,9 +1225,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "CSRF",
     xp: 150,
     difficulty: "expert",
-    position: { x: 55, y: 95 },
-    connections: [79],
+    position: { x: 45, y: 1 },
+    connections: [89],
   },
+  
   {
     id: 79,
     type: "one-word",
@@ -1148,9 +1240,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Skip",
     xp: 150,
     difficulty: "expert",
-    position: { x: 50, y: 92 },
-    connections: [80],
+    position: { x: 65, y: 1 },
+    connections: [90],
   },
+  
   {
     id: 80,
     type: "MCQ",
@@ -1163,9 +1256,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Scrum",
     xp: 200,
     difficulty: "expert",
-    position: { x: 45, y: 88 },
-    connections: [81],
+    position: { x: 85, y: 1 },
+    connections: [91],
   },
+  
   {
     id: 81,
     type: "one-word",
@@ -1177,9 +1271,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "XSS",
     xp: 150,
     difficulty: "expert",
-    position: { x: 40, y: 84 },
-    connections: [82],
+    position: { x: 95, y: 3 },
+    connections: [92],
   },
+  
   {
     id: 82,
     type: "MCQ",
@@ -1192,9 +1287,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Least Connections",
     xp: 200,
     difficulty: "expert",
-    position: { x: 35, y: 80 },
-    connections: [83],
+    position: { x: 15, y: 1 },
+    connections: [93],
   },
+  
   {
     id: 83,
     type: "one-word",
@@ -1206,9 +1302,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Turing",
     xp: 150,
     difficulty: "expert",
-    position: { x: 30, y: 76 },
-    connections: [84],
+    position: { x: 35, y: 1 },
+    connections: [94],
   },
+  
   {
     id: 84,
     type: "one-word",
@@ -1220,9 +1317,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "MapReduce",
     xp: 150,
     difficulty: "expert",
-    position: { x: 25, y: 72 },
-    connections: [85],
+    position: { x: 55, y: 1 },
+    connections: [95],
   },
+  
   {
     id: 85,
     type: "MCQ",
@@ -1235,9 +1333,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "128",
     xp: 200,
     difficulty: "expert",
-    position: { x: 20, y: 68 },
-    connections: [86],
+    position: { x: 75, y: 1 },
+    connections: [96],
   },
+  
   {
     id: 86,
     type: "one-word",
@@ -1249,9 +1348,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Primary",
     xp: 150,
     difficulty: "expert",
-    position: { x: 15, y: 64 },
-    connections: [87],
+    position: { x: 95, y: 1 },
+    connections: [97],
   },
+  
   {
     id: 87,
     type: "MCQ",
@@ -1264,9 +1364,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Monolithic",
     xp: 200,
     difficulty: "expert",
-    position: { x: 10, y: 60 },
-    connections: [88],
+    position: { x: 10, y: 0 },
+    connections: [98],
   },
+  
   {
     id: 88,
     type: "one-word",
@@ -1278,9 +1379,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Foreign",
     xp: 150,
     difficulty: "expert",
-    position: { x: 8, y: 55 },
-    connections: [89],
+    position: { x: 30, y: 0 },
+    connections: [99],
   },
+  
   {
     id: 89,
     type: "one-word",
@@ -1292,9 +1394,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Lambda",
     xp: 150,
     difficulty: "expert",
-    position: { x: 12, y: 50 },
-    connections: [90],
+    position: { x: 50, y: 0 },
+    connections: [100],
   },
+  
   {
     id: 90,
     type: "MCQ",
@@ -1307,9 +1410,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "git branch",
     xp: 200,
     difficulty: "expert",
-    position: { x: 16, y: 45 },
-    connections: [91],
+    position: { x: 70, y: 0 },
+    connections: [100],
   },
+  
+  // Final Level - Expert Difficulty
   {
     id: 91,
     type: "one-word",
@@ -1321,9 +1426,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "DDoS",
     xp: 150,
     difficulty: "expert",
-    position: { x: 20, y: 40 },
-    connections: [92],
+    position: { x: 90, y: 0 },
+    connections: [100],
   },
+  
   {
     id: 92,
     type: "MCQ",
@@ -1336,9 +1442,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Proof of Work",
     xp: 200,
     difficulty: "expert",
-    position: { x: 25, y: 35 },
-    connections: [93],
+    position: { x: 10, y: -2 },
+    connections: [100],
   },
+  
   {
     id: 93,
     type: "one-word",
@@ -1350,9 +1457,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Namespace",
     xp: 150,
     difficulty: "expert",
-    position: { x: 30, y: 30 },
-    connections: [94],
+    position: { x: 30, y: -2 },
+    connections: [96],
   },
+  
   {
     id: 94,
     type: "one-word",
@@ -1364,9 +1472,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Activation",
     xp: 150,
     difficulty: "expert",
-    position: { x: 35, y: 25 },
-    connections: [95],
+    position: { x: 50, y: -2 },
+    connections: [96],
   },
+  
   {
     id: 95,
     type: "MCQ",
@@ -1379,9 +1488,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Content Delivery Network",
     xp: 200,
     difficulty: "expert",
-    position: { x: 40, y: 20 },
-    connections: [96],
+    position: { x: 70, y: -2 },
+    connections: [100],
   },
+  
   {
     id: 96,
     type: "one-word",
@@ -1393,9 +1503,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Middleware",
     xp: 150,
     difficulty: "expert",
-    position: { x: 45, y: 15 },
-    connections: [97],
+    position: { x: 90, y: -2 },
+    connections: [100],
   },
+  
   {
     id: 97,
     type: "MCQ",
@@ -1408,9 +1519,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Token",
     xp: 200,
     difficulty: "expert",
-    position: { x: 50, y: 10 },
-    connections: [98],
+    position: { x: 10, y: -4 },
+    connections: [100],
   },
+  
   {
     id: 98,
     type: "one-word",
@@ -1422,9 +1534,10 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "Sharding",
     xp: 150,
     difficulty: "expert",
-    position: { x: 55, y: 8 },
-    connections: [99],
+    position: { x: 30, y: -4 },
+    connections: [100],
   },
+  
   {
     id: 99,
     type: "one-word",
@@ -1436,9 +1549,11 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "WebSocket",
     xp: 150,
     difficulty: "expert",
-    position: { x: 60, y: 12 },
+    position: { x: 50, y: -4 },
     connections: [100],
   },
+  
+  // Final Boss Node
   {
     id: 100,
     type: "MCQ",
@@ -1451,7 +1566,7 @@ export const adventureNodes: AdventureNode[] = [
     correctAnswer: "System Testing",
     xp: 200,
     difficulty: "expert",
-    position: { x: 65, y: 16 },
+    position: { x: 50, y: -6 },
     connections: [],
   }
 ];

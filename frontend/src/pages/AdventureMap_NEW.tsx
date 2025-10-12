@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { adventureNodes, getNodeById, isNodeUnlocked, AdventureNode } from "@/data/adventureMapData";
 import { Lock, Lightbulb, CheckCircle, XCircle, Zap, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { apiService } from "@/services/api";
 
 export default function AdventureMap() {
   const navigate = useNavigate();
@@ -87,39 +86,46 @@ export default function AdventureMap() {
       return;
     }
 
-    try {
-      // Submit to backend API
-      const result = await apiService.submitChallenge(activeNode.slug, answer.trim());
-      
-      setCorrect(result.isCorrect);
-      setSubmitted(true);
+    // Check answer locally (Adventure Map works independently)
+    const userAnswer = answer.trim().toLowerCase();
+    const correctAnswer = activeNode.correctAnswer.toLowerCase();
+    const isCorrect = userAnswer === correctAnswer;
+    
+    setCorrect(isCorrect);
+    setSubmitted(true);
 
-      if (result.isCorrect) {
-        // Add to completed nodes
-        const newCompleted = [...completedNodes, activeNode.id];
-        setCompletedNodes(newCompleted);
-        localStorage.setItem("byte_club_adventure_progress", JSON.stringify(newCompleted));
+    if (isCorrect) {
+      // Add to completed nodes
+      const newCompleted = [...completedNodes, activeNode.id];
+      setCompletedNodes(newCompleted);
+      localStorage.setItem("byte_club_adventure_progress", JSON.stringify(newCompleted));
 
-        toast.success("Challenge Completed!", {
-          description: `+${activeNode.xp} XP earned!`,
-        });
-
-        setConfetti(true);
-        setTimeout(() => setConfetti(false), 3000);
-
-        // Close modal after a short delay
-        setTimeout(() => {
-          setActiveNode(null);
-        }, 2000);
-      } else {
-        toast.error("Incorrect Answer", {
-          description: "Try again or use a hint",
-        });
+      // Update user XP in localStorage
+      try {
+        const userData = localStorage.getItem("byteclub_user");
+        if (userData) {
+          const user = JSON.parse(userData);
+          user.totalXP = (user.totalXP || 0) + activeNode.xp;
+          localStorage.setItem("byteclub_user", JSON.stringify(user));
+        }
+      } catch (e) {
+        console.error("Failed to update XP:", e);
       }
-    } catch (error) {
-      console.error("Submit error:", error);
-      toast.error("Submission Failed", {
-        description: "Please try again",
+
+      toast.success("Challenge Completed!", {
+        description: `+${activeNode.xp} XP earned!`,
+      });
+
+      setConfetti(true);
+      setTimeout(() => setConfetti(false), 3000);
+
+      // Close modal after a short delay
+      setTimeout(() => {
+        setActiveNode(null);
+      }, 2000);
+    } else {
+      toast.error("Incorrect Answer", {
+        description: "Try again or use a hint",
       });
     }
   };
@@ -167,7 +173,7 @@ export default function AdventureMap() {
             }} />
           </div>
           
-          <div className="relative w-[200%] h-[3000px] md:w-[250%] md:h-[3500px]">
+          <div className="relative w-full min-w-[3000px] h-[4000px]">
           
           {/* Connection Lines */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ overflow: 'visible' }}>
@@ -179,10 +185,11 @@ export default function AdventureMap() {
                   const isCompleted = completedNodes.includes(node.id);
                   const isNextNode = !completedNodes.includes(node.id) && isNodeUnlocked(node.id, completedNodes);
                   
-                  const x1 = node.position.x;
-                  const y1 = node.position.y;
-                  const x2 = targetNode.position.x;
-                  const y2 = targetNode.position.y;
+                  // Convert percentage positions to pixel coordinates
+                const x1 = (node.position.x / 100) * 3000;
+                const y1 = ((node.position.y + 10) / 20) * 4000;
+                const x2 = (targetNode.position.x / 100) * 3000;
+                const y2 = ((targetNode.position.y + 10) / 20) * 4000;
                   
                   const pathData = `M ${x1} ${y1} L ${x2} ${y2}`;
                   
@@ -209,13 +216,17 @@ export default function AdventureMap() {
               const unlocked = isNodeUnlocked(node.id, completedNodes);
               const completed = completedNodes.includes(node.id);
               
+              // Convert percentage positions to pixel coordinates
+            const left = (node.position.x / 100) * 3000;
+            const top = ((node.position.y + 10) / 20) * 4000;
+              
               return (
             <motion.div
               key={node.id}
               className="absolute"
               style={{
-                left: `${node.position.x}%`,
-                top: `${node.position.y}%`,
+                left: `${left}px`,
+                top: `${top}px`,
                 transform: "translate(-50%, -50%)",
               }}
               initial={{ scale: 0, opacity: 0 }}

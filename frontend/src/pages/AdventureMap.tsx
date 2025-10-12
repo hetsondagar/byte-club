@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { adventureNodes, getNodeById, isNodeUnlocked, AdventureNode } from "@/data/adventureMapData";
 import { Lock, Lightbulb, CheckCircle, XCircle, Zap, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { apiService } from "@/services/api";
 
 export default function AdventureMap() {
   const navigate = useNavigate();
@@ -40,6 +39,11 @@ export default function AdventureMap() {
   const [correct, setCorrect] = useState(false);
 
   useEffect(() => {
+    // Debug: Check if adventureNodes loaded
+    console.log("Adventure Map Loaded");
+    console.log("Total nodes:", adventureNodes.length);
+    console.log("First 3 nodes:", adventureNodes.slice(0, 3));
+    
     // Load completed nodes from localStorage
     const saved = localStorage.getItem("byte_club_adventure_progress");
     if (saved) {
@@ -87,39 +91,46 @@ export default function AdventureMap() {
       return;
     }
 
-    try {
-      // Submit to backend API
-      const result = await apiService.submitChallenge(activeNode.slug, answer.trim());
-      
-      setCorrect(result.isCorrect);
-      setSubmitted(true);
+    // Check answer locally (Adventure Map works independently)
+    const userAnswer = answer.trim().toLowerCase();
+    const correctAnswer = activeNode.correctAnswer.toLowerCase();
+    const isCorrect = userAnswer === correctAnswer;
+    
+    setCorrect(isCorrect);
+    setSubmitted(true);
 
-      if (result.isCorrect) {
-        // Add to completed nodes
-        const newCompleted = [...completedNodes, activeNode.id];
-        setCompletedNodes(newCompleted);
-        localStorage.setItem("byte_club_adventure_progress", JSON.stringify(newCompleted));
+    if (isCorrect) {
+      // Add to completed nodes
+      const newCompleted = [...completedNodes, activeNode.id];
+      setCompletedNodes(newCompleted);
+      localStorage.setItem("byte_club_adventure_progress", JSON.stringify(newCompleted));
 
-        toast.success("Challenge Completed!", {
-          description: `+${activeNode.xp} XP earned!`,
-        });
-
-        setConfetti(true);
-        setTimeout(() => setConfetti(false), 3000);
-
-        // Close modal after a short delay
-        setTimeout(() => {
-          setActiveNode(null);
-        }, 2000);
-      } else {
-        toast.error("Incorrect Answer", {
-          description: "Try again or use a hint",
-        });
+      // Update user XP in localStorage
+      try {
+        const userData = localStorage.getItem("byteclub_user");
+        if (userData) {
+          const user = JSON.parse(userData);
+          user.totalXP = (user.totalXP || 0) + activeNode.xp;
+          localStorage.setItem("byteclub_user", JSON.stringify(user));
+        }
+      } catch (e) {
+        console.error("Failed to update XP:", e);
       }
-    } catch (error) {
-      console.error("Submit error:", error);
-      toast.error("Submission Failed", {
-        description: "Please try again",
+
+      toast.success("Challenge Completed!", {
+        description: `+${activeNode.xp} XP earned!`,
+      });
+
+      setConfetti(true);
+      setTimeout(() => setConfetti(false), 3000);
+
+      // Close modal after a short delay
+      setTimeout(() => {
+        setActiveNode(null);
+      }, 2000);
+    } else {
+      toast.error("Incorrect Answer", {
+        description: "Try again or use a hint",
       });
     }
   };
@@ -170,7 +181,15 @@ export default function AdventureMap() {
             }} />
           </div>
           
-          <div className="relative w-full min-w-[1400px] h-[4000px] z-10">
+          {/* Debug Info */}
+          {adventureNodes.length === 0 && (
+            <div className="relative z-50 text-center p-8 bg-red-500/20 border-2 border-red-500 rounded-lg">
+              <p className="text-xl font-bold text-red-400">⚠️ No Adventure Nodes Loaded!</p>
+              <p className="text-sm text-gray-300 mt-2">The adventure map data failed to load.</p>
+            </div>
+          )}
+          
+          <div className="relative w-full min-w-[3000px] h-[4000px] z-10 bg-black/20">
           
           {/* Connection Lines */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ overflow: 'visible' }}>
@@ -182,10 +201,11 @@ export default function AdventureMap() {
                   const isCompleted = completedNodes.includes(node.id);
                   const isNextNode = !completedNodes.includes(node.id) && isNodeUnlocked(node.id, completedNodes);
                   
-                  const x1 = node.position.x;
-                  const y1 = node.position.y;
-                  const x2 = targetNode.position.x;
-                  const y2 = targetNode.position.y;
+                  // Convert percentage positions to pixel coordinates
+                const x1 = (node.position.x / 100) * 3000;
+                const y1 = ((node.position.y + 10) / 20) * 4000;
+                const x2 = (targetNode.position.x / 100) * 3000;
+                const y2 = ((targetNode.position.y + 10) / 20) * 4000;
                   
                   const pathData = `M ${x1} ${y1} L ${x2} ${y2}`;
                   
@@ -208,17 +228,23 @@ export default function AdventureMap() {
           </svg>
 
           {/* Nodes with Visible Information */}
-            {adventureNodes.map((node, index) => {
+            {adventureNodes.length > 0 ? adventureNodes.map((node, index) => {
               const unlocked = isNodeUnlocked(node.id, completedNodes);
               const completed = completedNodes.includes(node.id);
+              
+              // Convert percentage positions to pixel coordinates
+            const left = (node.position.x / 100) * 3000;
+            const top = ((node.position.y + 10) / 20) * 4000;
+              
+              console.log(`Rendering node ${node.id} at position (${left}, ${top})`);
               
               return (
             <motion.div
               key={node.id}
-              className="absolute"
+              className="absolute z-20"
               style={{
-                left: `${node.position.x}%`,
-                top: `${node.position.y}%`,
+                left: `${left}px`,
+                top: `${top}px`,
                 transform: "translate(-50%, -50%)",
               }}
               initial={{ scale: 0, opacity: 0 }}
@@ -263,7 +289,14 @@ export default function AdventureMap() {
               </div>
             </motion.div>
           );
-        })}
+        }) : (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+            <div className="text-center p-8 bg-yellow-500/20 border-2 border-yellow-500 rounded-lg">
+              <p className="text-xl font-bold text-yellow-400">⚠️ No nodes to display</p>
+              <p className="text-sm text-gray-300 mt-2">Adventure nodes array is empty</p>
+            </div>
+          </div>
+        )}
           </div>
         </div>
       </div>
