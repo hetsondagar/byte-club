@@ -37,6 +37,7 @@ export default function AdventureMap() {
   const [showHint, setShowHint] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [correct, setCorrect] = useState(false);
+  const [, forceUpdate] = useState({});
 
   useEffect(() => {
     // Debug: Check if adventureNodes loaded
@@ -53,6 +54,33 @@ export default function AdventureMap() {
         console.error("Failed to load progress", e);
       }
     }
+
+    // Auto-scroll to starting node (Node 1) after a short delay
+    setTimeout(() => {
+      const mapContainer = document.querySelector('.overflow-x-auto.overflow-y-auto');
+      if (mapContainer) {
+        // Node 1 is at x=50, y=95 which maps to approximately center-top
+        const startX = 200 + (50 / 100) * 3600; // ~2000px
+        const startY = 200 + ((95 - 95) / 101) * 5600; // ~200px
+        
+        // Scroll to center the starting node
+        mapContainer.scrollTo({
+          left: startX - mapContainer.clientWidth / 2,
+          top: startY - 100,
+          behavior: 'smooth'
+        });
+      }
+    }, 500);
+
+    // Listen for progress updates to refresh path colors
+    const handleProgressUpdate = () => {
+      forceUpdate({});
+    };
+    window.addEventListener('adventureProgressUpdate', handleProgressUpdate);
+
+    return () => {
+      window.removeEventListener('adventureProgressUpdate', handleProgressUpdate);
+    };
   }, []);
 
   const handleNodeClick = (node: AdventureNode) => {
@@ -104,6 +132,8 @@ export default function AdventureMap() {
       const newCompleted = [...completedNodes, activeNode.id];
       setCompletedNodes(newCompleted);
       localStorage.setItem("byte_club_adventure_progress", JSON.stringify(newCompleted));
+      
+      console.log(`✅ Node ${activeNode.id} completed! Unlocking connected nodes:`, activeNode.connections);
 
       // Update user XP in localStorage
       try {
@@ -124,6 +154,9 @@ export default function AdventureMap() {
       setConfetti(true);
       setTimeout(() => setConfetti(false), 3000);
 
+      // Trigger update to refresh path colors
+      window.dispatchEvent(new Event('adventureProgressUpdate'));
+      
       // Close modal after a short delay
       setTimeout(() => {
         setActiveNode(null);
@@ -158,38 +191,39 @@ export default function AdventureMap() {
           <XPBar className="w-full md:w-auto" />
         </div>
 
-        {/* Map Container - Full Width, No Card */}
-        <div className="relative min-h-screen w-full overflow-x-auto overflow-y-auto pb-20">
-          {/* Matrix-Style Background */}
-          <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-black via-slate-950 to-black" />
-            <div className="absolute inset-0 opacity-[0.03]" style={{
-              backgroundImage: `repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                hsl(var(--primary) / 0.1) 2px,
-                hsl(var(--primary) / 0.1) 4px
-              ),
-              repeating-linear-gradient(
-                90deg,
-                transparent,
-                transparent 2px,
-                hsl(var(--primary) / 0.1) 2px,
-                hsl(var(--primary) / 0.1) 4px
-              )`
-            }} />
-          </div>
-          
+        {/* Map Container - Scrollable Both Directions - INCREASED HEIGHT */}
+        <div className="relative w-full h-[calc(100vh-8rem)] overflow-x-auto overflow-y-auto border-2 border-primary/20 rounded-lg bg-gradient-to-br from-black via-slate-950 to-black shadow-2xl">
           {/* Debug Info */}
           {adventureNodes.length === 0 && (
-            <div className="relative z-50 text-center p-8 bg-red-500/20 border-2 border-red-500 rounded-lg">
+            <div className="relative z-50 text-center p-8 bg-red-500/20 border-2 border-red-500 rounded-lg m-4">
               <p className="text-xl font-bold text-red-400">⚠️ No Adventure Nodes Loaded!</p>
               <p className="text-sm text-gray-300 mt-2">The adventure map data failed to load.</p>
             </div>
           )}
           
-          <div className="relative w-full min-w-[3000px] h-[4000px] z-10 bg-black/20">
+          {/* Scrollable Map Canvas with Grid Background */}
+          <div 
+            className="relative min-w-[4000px] min-h-[6000px] w-[4000px] h-[6000px]"
+            style={{
+              backgroundImage: `
+                repeating-linear-gradient(
+                  0deg,
+                  transparent,
+                  transparent 100px,
+                  rgba(0, 255, 255, 0.05) 100px,
+                  rgba(0, 255, 255, 0.05) 101px
+                ),
+                repeating-linear-gradient(
+                  90deg,
+                  transparent,
+                  transparent 100px,
+                  rgba(0, 255, 255, 0.05) 100px,
+                  rgba(0, 255, 255, 0.05) 101px
+                )
+              `,
+              backgroundSize: '100px 100px'
+            }}
+          >
           
           {/* Connection Lines */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ overflow: 'visible' }}>
@@ -198,14 +232,27 @@ export default function AdventureMap() {
                   const targetNode = getNodeById(targetId);
                   if (!targetNode) return null;
                   
-                  const isCompleted = completedNodes.includes(node.id);
-                  const isNextNode = !completedNodes.includes(node.id) && isNodeUnlocked(node.id, completedNodes);
+                  // Check if current node is completed
+                  const isNodeCompleted = completedNodes.includes(node.id);
                   
-                  // Convert percentage positions to pixel coordinates
-                const x1 = (node.position.x / 100) * 3000;
-                const y1 = ((node.position.y + 10) / 20) * 4000;
-                const x2 = (targetNode.position.x / 100) * 3000;
-                const y2 = ((targetNode.position.y + 10) / 20) * 4000;
+                  // Check if target node is unlocked (will be next to complete)
+                  const isTargetUnlocked = isNodeUnlocked(targetId, completedNodes);
+                  const isTargetCompleted = completedNodes.includes(targetId);
+                  
+                  // Path should be:
+                  // - CYAN if the source node is completed (showing completed progress)
+                  // - PURPLE/MAGENTA if target node is unlocked and ready to be completed
+                  // - WHITE if target is still locked
+                  const isActivePath = isNodeCompleted && isTargetUnlocked && !isTargetCompleted;
+                  const isCompletedPath = isNodeCompleted;
+                  
+                  // Convert positions to pixel coordinates with proper spacing
+                  // X: 0-100 maps to 200-3800px (with margins)
+                  // Y: 95 (start) to -6 (end) maps to 200-5800px (start at top, with margins)
+                const x1 = 200 + (node.position.x / 100) * 3600;
+                const y1 = 200 + ((95 - node.position.y) / 101) * 5600;
+                const x2 = 200 + (targetNode.position.x / 100) * 3600;
+                const y2 = 200 + ((95 - targetNode.position.y) / 101) * 5600;
                   
                   const pathData = `M ${x1} ${y1} L ${x2} ${y2}`;
                   
@@ -213,14 +260,15 @@ export default function AdventureMap() {
                     <motion.path
                       key={`path-${node.id}-${targetId}`}
                       d={pathData}
-                      stroke={isCompleted ? "hsl(var(--primary))" : isNextNode ? "hsl(var(--accent))" : "hsl(var(--muted-foreground))"}
-                      strokeWidth={isCompleted ? "3" : isNextNode ? "2" : "1"}
-                      strokeOpacity={isCompleted ? "0.6" : isNextNode ? "0.4" : "0.2"}
-                      strokeDasharray={isCompleted ? "none" : "10,5"}
+                      stroke={isActivePath ? "#a855f7" : isCompletedPath ? "#00ffff" : "#ffffff"}
+                      strokeWidth={isActivePath ? "5" : isCompletedPath ? "4" : "2"}
+                      strokeOpacity={isActivePath ? "0.9" : isCompletedPath ? "0.8" : "0.3"}
+                      strokeDasharray={isActivePath ? "none" : isCompletedPath ? "none" : "6,3"}
                       fill="none"
+                      filter={isActivePath ? "drop-shadow(0 0 8px #a855f7)" : isCompletedPath ? "drop-shadow(0 0 4px #00ffff)" : "none"}
                       initial={{ pathLength: 0, opacity: 0 }}
                       animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ duration: 1, delay: Math.min(index * 0.01, 1) }}
+                      transition={{ duration: 1.5, delay: Math.min(index * 0.01, 1) }}
                     />
                   );
                 });
@@ -232,9 +280,11 @@ export default function AdventureMap() {
               const unlocked = isNodeUnlocked(node.id, completedNodes);
               const completed = completedNodes.includes(node.id);
               
-              // Convert percentage positions to pixel coordinates
-            const left = (node.position.x / 100) * 3000;
-            const top = ((node.position.y + 10) / 20) * 4000;
+              // Convert positions to pixel coordinates with proper spacing
+              // X: 0-100 maps to 200-3800px (with margins)
+              // Y: 95 (start) to -6 (end) maps to 200-5800px (start at top, with margins)
+            const left = 200 + (node.position.x / 100) * 3600;
+            const top = 200 + ((95 - node.position.y) / 101) * 5600;
               
               console.log(`Rendering node ${node.id} at position (${left}, ${top})`);
               
@@ -255,29 +305,29 @@ export default function AdventureMap() {
                 <Button
                   variant={completed ? "default" : unlocked ? "neon" : "outline"}
                   size="lg"
-                  className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full p-0 transition-all duration-300 ${
+                  className={`relative w-20 h-20 rounded-full p-0 transition-all duration-300 shadow-lg ${
                     !unlocked ? "opacity-50" : ""
                   } ${completed ? "bg-green-500/20 border-green-400" : ""}`}
                   onClick={() => handleNodeClick(node)}
                 >
                   {!unlocked && (
-                    <Lock className="w-5 h-5" />
+                    <Lock className="w-6 h-6" />
                   )}
                   {completed && (
-                    <CheckCircle className="w-6 h-6 text-green-400" />
+                    <CheckCircle className="w-7 h-7 text-green-400" />
                   )}
                   {!completed && unlocked && (
-                    <span className="text-lg font-bold">{node.id}</span>
+                    <span className="text-xl font-bold">{node.id}</span>
                   )}
                 </Button>
                 
-                {/* Node Information - Always Visible */}
-                <div className="text-center pointer-events-none">
-                  <div className="text-xs md:text-sm font-bold text-primary mb-1 max-w-[120px] truncate">
+                {/* Node Information - Always Visible with Better Spacing */}
+                <div className="text-center pointer-events-none mt-2">
+                  <div className="text-sm font-bold text-primary mb-1 px-2 py-1 bg-black/60 rounded max-w-[180px] whitespace-nowrap overflow-hidden text-ellipsis">
                     {node.title}
                   </div>
-                  <div className="flex items-center justify-center gap-2">
-                    <NeonBadge variant={node.difficulty === 'expert' ? 'hard' : node.difficulty} className="text-[10px] md:text-xs">
+                  <div className="flex items-center justify-center gap-2 bg-black/60 rounded px-2 py-1">
+                    <NeonBadge variant={node.difficulty === 'expert' ? 'hard' : node.difficulty} className="text-xs">
                       {node.difficulty}
                     </NeonBadge>
                     <span className="text-accent text-xs font-bold flex items-center gap-1">
@@ -298,6 +348,13 @@ export default function AdventureMap() {
           </div>
         )}
           </div>
+        </div>
+
+        {/* Scroll Instructions - MOVED BELOW MAP */}
+        <div className="text-center mt-4 p-3 bg-primary/10 border border-primary/30 rounded-lg">
+          <p className="text-sm text-primary font-medium">
+            🖱️ <span className="font-bold">Scroll</span> horizontally and vertically to explore all 100 nodes • Click unlocked nodes to solve challenges
+          </p>
         </div>
       </div>
 
