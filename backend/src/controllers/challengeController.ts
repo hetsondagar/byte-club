@@ -302,10 +302,11 @@ export const runCodeForChallenge = async (req: any, res: Response) => {
       const lang = String(language).toLowerCase();
       let wrapped = '';
       if (lang === 'python') {
+        const testsJson = JSON.stringify(testCases);
         wrapped = `
 ${code}
-__tests__ = ${JSON.stringify(testCases)}
 import json
+__tests__ = json.loads(${JSON.stringify(testsJson)})
 
 def __run():
     results = []
@@ -428,10 +429,11 @@ export const runGenericCode = async (req: Request, res: Response) => {
       const lang = String(language).toLowerCase();
       let wrapped = '';
       if (lang === 'python') {
+        const testsJson = JSON.stringify(testCases);
         wrapped = `
 ${code}
-__tests__ = ${JSON.stringify(testCases)}
 import json
+__tests__ = json.loads(${JSON.stringify(testsJson)})
 
 def __run():
     results = []

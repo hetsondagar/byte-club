@@ -12,6 +12,8 @@ import { questsData, Mission } from "@/data/questsData";
 import { ArrowLeft, Scroll, Zap, CheckCircle, XCircle, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { apiService } from "@/services/api";
+import { CodeTerminal } from "@/components/CodeTerminal";
+import { updateStreakOnActivity } from "@/lib/streak";
 
 export default function QuestDetailPage() {
   const navigate = useNavigate();
@@ -27,6 +29,7 @@ export default function QuestDetailPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [runAllPassed, setRunAllPassed] = useState(false);
 
   useEffect(() => {
     // Load completed missions from backend
@@ -35,7 +38,16 @@ export default function QuestDetailPage() {
       
       try {
         const completed = await apiService.getCompletedMissions(id);
-        setCompletedMissions(new Set(completed));
+        // Also read any locally saved completions and merge
+        const saved = localStorage.getItem(`byte_club_quest_${id}_missions`);
+        let localList: string[] = [];
+        if (saved) {
+          try { localList = JSON.parse(saved) || []; } catch (_) { localList = []; }
+        }
+        const merged = Array.from(new Set([...(completed || []), ...localList]));
+        setCompletedMissions(new Set(merged));
+        // Persist the merged list back to localStorage to keep it sticky
+        localStorage.setItem(`byte_club_quest_${id}_missions`, JSON.stringify(merged));
       } catch (error) {
         console.error("Failed to load mission progress", error);
         // Fallback to localStorage
@@ -63,12 +75,14 @@ export default function QuestDetailPage() {
     setSubmitted(false);
     setCorrect(false);
     setShowHint(false);
+    setRunAllPassed(false);
   };
 
   const handleSubmit = async () => {
     if (!activeMission || !quest || !id) return;
 
-    if (!answer.trim()) {
+    // For MCQ and one-word missions, require answer text
+    if ((activeMission.type === undefined || activeMission.type === "one-word" || activeMission.type === "MCQ") && !answer.trim()) {
       toast.error("Answer Required", {
         description: "Please enter your answer",
       });
@@ -84,6 +98,19 @@ export default function QuestDetailPage() {
       setSubmitted(true);
 
       if (result.isCorrect) {
+        // Update streak on successful activity
+        const streakOutcome = updateStreakOnActivity();
+        if (streakOutcome.bonusXP > 0) {
+          try {
+            const userRaw = localStorage.getItem("byteclub_user");
+            if (userRaw) {
+              const u = JSON.parse(userRaw);
+              const cur = Number(u.totalXP || 0);
+              u.totalXP = cur; // already applied in streak util
+              localStorage.setItem("byteclub_user", JSON.stringify(u));
+            }
+          } catch {}
+        }
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 3000);
         
@@ -94,22 +121,39 @@ export default function QuestDetailPage() {
         
         // Save to localStorage as backup
         localStorage.setItem(`byte_club_quest_${id}_missions`, JSON.stringify(Array.from(newCompleted)));
+
+        // Persist quest progress for quests grid + unlock next quest
+        try {
+          const progressStore = JSON.parse(localStorage.getItem('byte_club_quest_progress') || '{"progress":{},"completed":[]}');
+          const missionsCount = quest.missions.length;
+          const completedCount = newCompleted.size;
+          const pct = Math.round((completedCount / missionsCount) * 100);
+          progressStore.progress = progressStore.progress || {};
+          progressStore.progress[quest.id] = pct;
+          if (pct === 100) {
+            const setCompleted = new Set<string>(progressStore.completed || []);
+            setCompleted.add(quest.id);
+            progressStore.completed = Array.from(setCompleted);
+          }
+          localStorage.setItem('byte_club_quest_progress', JSON.stringify(progressStore));
+        } catch (e) {
+          // ignore
+        }
         
-        toast.success("Mission Completed!", {
-          description: result.successText || `+${result.xpEarned} XP earned!`,
-        });
+        // Removed quest-level completion toast as requested
 
         if (result.questCompleted) {
-          toast.success("Quest Complete!", {
-            description: `You've earned ${quest.xp} total XP! 🎉`,
-          });
+          // Suppress quest complete toast
         }
 
-        // Update user data in localStorage
+        // Update user data in localStorage using server totalXP or fallback to exact mission XP
         const user = localStorage.getItem("byteclub_user");
         if (user) {
           const userData = JSON.parse(user);
-          userData.totalXP = result.totalXP;
+          const currentXP = Number(userData.totalXP || 0);
+          const serverTotal = typeof result?.totalXP === 'number' ? result.totalXP : undefined;
+          const xpDelta = typeof result?.xpEarned === 'number' ? result.xpEarned : (activeMission?.xp || 0);
+          userData.totalXP = typeof serverTotal === 'number' ? serverTotal : (currentXP + xpDelta);
           localStorage.setItem("byteclub_user", JSON.stringify(userData));
         }
 
@@ -130,6 +174,114 @@ export default function QuestDetailPage() {
       toast.error("Submission Failed", {
         description: "Please try again",
       });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCompleteTerminal = async () => {
+    if (!activeMission || !quest || !id) return;
+    if (!runAllPassed) {
+      toast.error("Tests Not Passed", { description: "Run your code until all tests pass." });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Attempt to record completion server-side
+      const result = await apiService.submitMission(quest.id, activeMission.id, "PASSED");
+
+      const wasAccepted = !!result?.isCorrect || !!result?.success;
+      setCorrect(true);
+      setSubmitted(true);
+
+      // Update completed missions regardless to avoid blocking UX
+      const newCompleted = new Set(completedMissions);
+      newCompleted.add(activeMission.id);
+      setCompletedMissions(newCompleted);
+      localStorage.setItem(`byte_club_quest_${id}_missions`, JSON.stringify(Array.from(newCompleted)));
+
+      // Persist quest progress for quests grid + unlock next quest
+      try {
+        const progressStore = JSON.parse(localStorage.getItem('byte_club_quest_progress') || '{"progress":{},"completed":[]}');
+        const missionsCount = quest.missions.length;
+        const completedCount = newCompleted.size;
+        const pct = Math.round((completedCount / missionsCount) * 100);
+        progressStore.progress = progressStore.progress || {};
+        progressStore.progress[quest.id] = pct;
+        if (pct === 100) {
+          const setCompleted = new Set<string>(progressStore.completed || []);
+          setCompleted.add(quest.id);
+          progressStore.completed = Array.from(setCompleted);
+        }
+        localStorage.setItem('byte_club_quest_progress', JSON.stringify(progressStore));
+      } catch (e) {
+        // ignore
+      }
+
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
+
+      // Suppress mission completed toast
+
+      // Update user XP locally using xpEarned or mission.xp
+      const user = localStorage.getItem("byteclub_user");
+      if (user) {
+        try {
+          const userData = JSON.parse(user);
+          const currentXP = Number(userData.totalXP || 0);
+          const xpDelta = typeof result?.xpEarned === 'number' ? result.xpEarned : (activeMission?.xp || 0);
+          userData.totalXP = currentXP + xpDelta;
+          localStorage.setItem("byteclub_user", JSON.stringify(userData));
+        } catch (_) {}
+      }
+
+      // Close modal after short delay
+      setTimeout(() => {
+        setActiveMission(null);
+        setAnswer("");
+        setSubmitted(false);
+        setShowHint(false);
+        setRunAllPassed(false);
+      }, 1500);
+    } catch (error) {
+      // Fallback: mark as complete locally if server call fails
+      const newCompleted = new Set(completedMissions);
+      newCompleted.add(activeMission.id);
+      setCompletedMissions(newCompleted);
+      localStorage.setItem(`byte_club_quest_${id}_missions`, JSON.stringify(Array.from(newCompleted)));
+
+      try {
+        const progressStore = JSON.parse(localStorage.getItem('byte_club_quest_progress') || '{"progress":{},"completed":[]}');
+        const missionsCount = quest.missions.length;
+        const completedCount = newCompleted.size;
+        const pct = Math.round((completedCount / missionsCount) * 100);
+        progressStore.progress = progressStore.progress || {};
+        progressStore.progress[quest.id] = pct;
+        if (pct === 100) {
+          const setCompleted = new Set<string>(progressStore.completed || []);
+          setCompleted.add(quest.id);
+          progressStore.completed = Array.from(setCompleted);
+        }
+        localStorage.setItem('byte_club_quest_progress', JSON.stringify(progressStore));
+      } catch (_) {}
+
+      // Add XP locally for mission since server failed
+      // Update streak even if server failed
+      updateStreakOnActivity();
+      const user = localStorage.getItem("byteclub_user");
+      if (user) {
+        try {
+          const userData = JSON.parse(user);
+          const currentXP = Number(userData.totalXP || 0);
+          const xpDelta = activeMission?.xp || 0;
+          userData.totalXP = currentXP + xpDelta;
+          localStorage.setItem("byteclub_user", JSON.stringify(userData));
+        } catch (_) {}
+      }
+      setCorrect(true);
+      setSubmitted(true);
+      // Suppress fallback toast
     } finally {
       setIsLoading(false);
     }
@@ -292,7 +444,7 @@ export default function QuestDetailPage() {
           setSubmitted(false);
           setShowHint(false);
         }}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-lg border-primary/30">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-card/95 backdrop-blur-lg border-primary/30" aria-describedby="mission-desc">
             {activeMission && (
               <>
                 <DialogHeader>
@@ -304,26 +456,57 @@ export default function QuestDetailPage() {
 
                 <div className="space-y-6 py-4">
                   {/* Description */}
-                  <div className="prose prose-sm prose-invert max-w-none">
+                  <div id="mission-desc" className="prose prose-sm prose-invert max-w-none">
                     <p className="text-muted-foreground">{activeMission.description}</p>
                   </div>
 
                   {/* Challenge */}
                   <NeonCard variant="violet" glow>
                     <h4 className="font-semibold mb-3">{activeMission.challenge}</h4>
-                    <Input
-                      placeholder="Type your answer here (1-2 words)..."
-                      className="text-lg font-mono bg-input border-secondary/30 focus:border-secondary"
-                      value={answer}
-                      onChange={(e) => setAnswer(e.target.value)}
-                      disabled={submitted && correct}
-                      maxLength={50}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !submitted) {
-                          handleSubmit();
-                        }
-                      }}
-                    />
+                    {activeMission.type === "MCQ" && Array.isArray(activeMission.options) ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {activeMission.options.map((opt, idx) => {
+                          const letter = String.fromCharCode(65 + idx); // A-D
+                          const selected = answer === letter;
+                          return (
+                            <button
+                              key={letter}
+                              type="button"
+                              onClick={() => setAnswer(letter)}
+                              disabled={submitted && correct}
+                              className={`text-left p-3 rounded border transition ${selected ? 'border-primary bg-primary/10' : 'border-primary/20 hover:border-primary/40'}`}
+                            >
+                              <span className="font-mono text-xs mr-2">{letter})</span>{opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : activeMission.type === "terminal" ? (
+                      <div className="space-y-4">
+                        <CodeTerminal
+                          initialCode={"// JavaScript:\nfunction solution(input){\n  // input is an adjacency list object, return true if cycle exists\n  return false;\n}\n\n// Python:\ndef solution(input):\n    # input is a dict adjacency list, return True if cycle exists\n    return False\n\n// Java:\nimport java.util.*;\npublic class Solution {\n  public static boolean solution(Map<Integer, List<Integer>> adj){\n    // return true if cycle exists in the directed graph\n    return false;\n  }\n}\n\n// C++:\n#include <bits/stdc++.h>\nusing namespace std;\nbool solution(unordered_map<int, vector<int>> &adj){\n  // return true if cycle exists in the directed graph\n  return false;\n}\n\n// C:\n#include <stdbool.h>\n#include <stddef.h>\n// You may represent the graph differently in C.\nbool solution(/* adjacency representation */){\n  // return true if cycle exists in the directed graph\n  return false;\n}\n"}
+                          testCases={activeMission.testCases}
+                          onRunChange={(info) => setRunAllPassed(info.allPassed)}
+                        />
+                        <Button variant="cyber" size="lg" onClick={handleCompleteTerminal} disabled={isLoading || !runAllPassed}>
+                          {isLoading ? 'Completing...' : runAllPassed ? 'Complete Mission' : 'Run until all tests pass'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Input
+                        placeholder="Type your answer here (1-2 words)..."
+                        className="text-lg font-mono bg-input border-secondary/30 focus:border-secondary"
+                        value={answer}
+                        onChange={(e) => setAnswer(e.target.value)}
+                        disabled={submitted && correct}
+                        maxLength={50}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !submitted) {
+                            handleSubmit();
+                          }
+                        }}
+                      />
+                    )}
                   </NeonCard>
 
                   {/* Hint System */}
@@ -384,30 +567,32 @@ export default function QuestDetailPage() {
                     </motion.div>
                   )}
 
-                  {/* Submit Button */}
-                  <div className="flex gap-3">
-                    <Button
-                      variant="cyber"
-                      size="lg"
-                      className="flex-1"
-                      onClick={handleSubmit}
-                      disabled={(submitted && correct) || isLoading}
-                    >
-                      {isLoading ? "Submitting..." : submitted && correct ? "Completed" : "Submit Answer"}
-                    </Button>
-                    {submitted && !correct && (
+                  {/* Submit Button (hidden for terminal; terminal has its own complete button) */}
+                  {activeMission.type !== "terminal" && (
+                    <div className="flex gap-3">
                       <Button
-                        variant="outline"
+                        variant="cyber"
                         size="lg"
-                        onClick={() => {
-                          setSubmitted(false);
-                          setAnswer("");
-                        }}
+                        className="flex-1"
+                        onClick={handleSubmit}
+                        disabled={(submitted && correct) || isLoading || (activeMission.type === "MCQ" && !answer)}
                       >
-                        Reset
+                        {isLoading ? "Submitting..." : submitted && correct ? "Completed" : "Submit Answer"}
                       </Button>
-                    )}
-                  </div>
+                      {submitted && !correct && (
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => {
+                            setSubmitted(false);
+                            setAnswer("");
+                          }}
+                        >
+                          Reset
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </>
             )}

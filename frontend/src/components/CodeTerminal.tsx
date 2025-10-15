@@ -11,9 +11,10 @@ interface CodeTerminalProps {
   onRunChange?: (info: { allPassed: boolean; language: string; results: Array<{ input: any; expected: any; actual: any; passed: boolean; error?: string }> }) => void;
   onLanguageChange?: (language: string) => void;
   disabled?: boolean;
+  testCases?: Array<{ input: any; expected: any }>; // NEW: optional test cases for sandbox runs
 }
 
-export function CodeTerminal({ slug, initialCode = "", onCodeChange, onRunChange, onLanguageChange, disabled }: CodeTerminalProps) {
+export function CodeTerminal({ slug, initialCode = "", onCodeChange, onRunChange, onLanguageChange, disabled, testCases }: CodeTerminalProps) {
   const [code, setCode] = useState<string>("");
   const [language, setLanguage] = useState<string>("javascript");
   const [running, setRunning] = useState(false);
@@ -97,7 +98,7 @@ export function CodeTerminal({ slug, initialCode = "", onCodeChange, onRunChange
     try {
       const data = slug
         ? await apiService.runCode(slug, code, language)
-        : await apiService.runCodeSandbox(code, undefined, language);
+        : await apiService.runCodeSandbox(code, testCases, language);
       const nextResults = data.results || [];
       setResults(nextResults);
       if (data.error) setRunError(data.error);

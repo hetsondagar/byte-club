@@ -253,11 +253,14 @@ class ApiService {
   }
 
   async submitMission(questId: string, missionId: string, answer: string): Promise<any> {
-    const response = await this.request(`/quests/${questId}/missions/${missionId}/submit`, {
+    const response = await this.request<any>(`/quests/${questId}/missions/${missionId}/submit`, {
       method: 'POST',
       body: JSON.stringify({ answer }),
     });
-    return response.data!;
+    // Backend may return either { success, ... } or { success, data: {...} }
+    // Normalize to return the payload object
+    const payload = (response as any)?.data ?? response;
+    return payload;
   }
 
   async getQuestStats(): Promise<any> {

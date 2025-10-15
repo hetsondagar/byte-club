@@ -594,7 +594,20 @@ export class Quest {
     // Validate answer (case-insensitive, trimmed)
     const correctAnswer = missionData.correctAnswer.toLowerCase().trim();
     const submittedAnswer = userAnswer.toLowerCase().trim();
-    const isCorrect = correctAnswer === submittedAnswer;
+
+    // Build acceptable answers (supports aliases per mission)
+    const acceptableAnswers: string[] = [correctAnswer];
+    // Mission-specific aliases
+    if (missionData.id === 'mission-1b') {
+      acceptableAnswers.push('quantum entanglement');
+    }
+
+    // Allow terminal missions to be marked complete when client test run passes.
+    // We detect terminal missions heuristically by title/challenge content.
+    const isTerminalMission = /terminal/i.test(missionData.title) || /terminal\s+challenge/i.test(missionData.challenge);
+    const isCorrect = isTerminalMission
+      ? (submittedAnswer === 'passed' || acceptableAnswers.includes(submittedAnswer))
+      : acceptableAnswers.includes(submittedAnswer);
 
     if (!isCorrect) {
       return {

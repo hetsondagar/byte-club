@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { NeonCard } from "@/components/ui/neon-card";
 import { XPBar } from "@/components/ui/xp-bar";
+import { computeLevelProgress } from "@/lib/xp";
 import { NeonBadge } from "@/components/ui/neon-badge";
 import { Button } from "@/components/ui/button";
 import { FloatingParticles } from "@/components/ui/floating-particles";
@@ -46,9 +47,14 @@ export default function Quests() {
     return !isQuestCompleted(prevQuestId);
   };
 
-  const totalXP = questsData.reduce((sum, quest) => {
-    return sum + (quest.xp * (getQuestProgress(quest.id) / 100));
-  }, 0);
+  // Total XP from stored user plus quest completion progress contribution
+  const storedUser = (() => {
+    const u = localStorage.getItem("byteclub_user");
+    try { return u ? JSON.parse(u) : null; } catch { return null; }
+  })();
+  const totalXP = Math.max(0, Math.floor(Number(storedUser?.totalXP || 0)));
+
+  const { level, currentXP, requiredXP, percent } = computeLevelProgress(totalXP);
 
   const completedCount = completedQuests.size;
   const totalQuests = questsData.length;
@@ -145,8 +151,8 @@ export default function Quests() {
                     <Zap className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Total Quest XP</div>
-                    <div className="text-2xl font-bold text-primary">{Math.round(totalXP).toLocaleString()}</div>
+                  <div className="text-sm text-muted-foreground">Level</div>
+                  <div className="text-2xl font-bold text-primary">Level {level}</div>
                   </div>
                 </div>
                 <NeonBadge variant="success" className="text-lg px-4 py-2">
@@ -154,7 +160,7 @@ export default function Quests() {
                   Quest Hunter
                 </NeonBadge>
               </div>
-              <XPBar current={totalXP} max={6000} level={Math.floor(totalXP / 500)} />
+            <XPBar current={currentXP} max={requiredXP} level={level} />
             </div>
           </NeonCard>
         </motion.div>

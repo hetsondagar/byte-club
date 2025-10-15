@@ -3,6 +3,9 @@ export interface Mission {
   title: string;
   description: string;
   challenge: string;
+  type?: "MCQ" | "one-word" | "terminal"; // mission interaction type
+  options?: string[]; // for MCQ missions (4 options)
+  testCases?: Array<{ input: any; expected: any }>; // for terminal missions
   tags: string[];
   xp: number;
   difficulty: string;
@@ -50,6 +53,8 @@ export const questsData: Quest[] = [
           C) Superposed
           D) Indeterminate
         `,
+        type: "MCQ",
+        options: ["0", "1", "Superposed", "Indeterminate"],
         tags: ["quantum", "probability", "logic"],
         xp: 600,
         difficulty: "Hard",
@@ -66,6 +71,7 @@ export const questsData: Quest[] = [
           Name the fundamental CSE concept describing such instant correlations.
         `,
         challenge: `>> CONCEPT QUERY: Concept describing instant correlated states?`,
+        type: "one-word",
         tags: ["quantum", "theory", "logic"],
         xp: 700,
         difficulty: "Very Hard",
@@ -86,6 +92,13 @@ export const questsData: Quest[] = [
           >> Input: adj = {0:[1],1:[2],2:[0],3:[]}
           >> Output: true
         `,
+        type: "terminal",
+        testCases: [
+          { input: { "0": [1], "1": [2], "2": [0], "3": [] }, expected: true },
+          { input: { "0": [1], "1": [2], "2": [], "3": [] }, expected: false },
+          { input: { "0": [1,2], "1": [2], "2": [0] }, expected: true },
+          { input: { "0": [], "1": [], "2": [] }, expected: false }
+        ],
         tags: ["graph", "cycle-detection", "coding", "DSA"],
         xp: 900,
         difficulty: "Very Hard",
@@ -120,6 +133,8 @@ export const questsData: Quest[] = [
           C) HeapSort
           D) SelectionSort
         `,
+        type: "MCQ",
+        options: ["QuickSort", "MergeSort", "HeapSort", "SelectionSort"],
         tags: ["sorting", "algorithm", "logic"],
         xp: 600,
         difficulty: "Hard",
@@ -153,6 +168,11 @@ export const questsData: Quest[] = [
         challenge: `
           >> TERMINAL CHALLENGE: Implement LCA function
         `,
+        type: "terminal",
+        testCases: [
+          { input: { tree: { val: 3, left: { val: 5, left: { val: 6 }, right: { val: 2, left: { val: 7 }, right: { val: 4 } } }, right: { val: 1, left: { val: 0 }, right: { val: 8 } } }, p: 5, q: 1 }, expected: 3 },
+          { input: { tree: { val: 3, left: { val: 5, left: { val: 6 }, right: { val: 2, left: { val: 7 }, right: { val: 4 } } }, right: { val: 1, left: { val: 0 }, right: { val: 8 } } }, p: 5, q: 4 }, expected: 5 }
+        ],
         tags: ["coding", "tree", "DSA"],
         xp: 900,
         difficulty: "Very Hard",
@@ -186,6 +206,8 @@ export const questsData: Quest[] = [
           C) CSRF
           D) RCE
         `,
+        type: "MCQ",
+        options: ["SQL Injection", "XSS", "CSRF", "RCE"],
         tags: ["security", "network", "logic"],
         xp: 600,
         difficulty: "Hard",
@@ -217,6 +239,11 @@ export const questsData: Quest[] = [
         challenge: `
           >> TERMINAL CHALLENGE: Escape 'userInput' for SQL safely
         `,
+        type: "terminal",
+        testCases: [
+          { input: "O'Reilly", expected: "O''Reilly" },
+          { input: "admin' OR '1'='1", expected: "admin'' OR ''1''='''1" }
+        ],
         tags: ["coding", "security", "sanitization"],
         xp: 800,
         difficulty: "Very Hard",
@@ -250,6 +277,8 @@ export const questsData: Quest[] = [
           C) Dijkstra
           D) Bellman-Ford
         `,
+        type: "MCQ",
+        options: ["BFS", "DFS", "Dijkstra", "Bellman-Ford"],
         tags: ["graph", "cycle-detection", "logic"],
         xp: 600,
         difficulty: "Hard",
@@ -278,6 +307,11 @@ export const questsData: Quest[] = [
           Terminal demands: remove duplicate elements from array 'vars' for optimized memory.
         `,
         challenge: `>> TERMINAL CHALLENGE: One-line code to remove duplicates`,
+        type: "terminal",
+        testCases: [
+          { input: [1,1,2,3,3,3], expected: [1,2,3] },
+          { input: ["a","a","b"], expected: ["a","b"] }
+        ],
         tags: ["coding", "optimization", "DSA"],
         xp: 900,
         difficulty: "Very Hard",
@@ -311,6 +345,8 @@ export const questsData: Quest[] = [
           C) Identity
           D) None
         `,
+        type: "MCQ",
+        options: ["ReLU", "Linear", "Identity", "None"],
         tags: ["ai", "neural-networks", "logic"],
         xp: 700,
         difficulty: "Hard",
@@ -341,6 +377,10 @@ export const questsData: Quest[] = [
         challenge: `
           >> TERMINAL CHALLENGE: Implement Dijkstra's algorithm
         `,
+        type: "terminal",
+        testCases: [
+          { input: { graph: { A: [["B",1],["C",4]], B: [["C",2]], C: [] }, src: "A" }, expected: { A: 0, B: 1, C: 3 } }
+        ],
         tags: ["coding", "graph", "DSA"],
         xp: 1000,
         difficulty: "Very Hard",
@@ -375,6 +415,8 @@ export const questsData: Quest[] = [
           C) top
           D) echo
         `,
+        type: "MCQ",
+        options: ["ps", "grep", "top", "echo"],
         tags: ["os", "unix", "logic"],
         xp: 600,
         difficulty: "Hard",
@@ -406,6 +448,11 @@ export const questsData: Quest[] = [
         challenge: `
           >> TERMINAL CHALLENGE: Detect deadlocks in resource allocation graph
         `,
+        type: "terminal",
+        testCases: [
+          { input: { "P0": ["P1"], "P1": ["P2"], "P2": ["P0"] }, expected: true },
+          { input: { "P0": ["P1"], "P1": [], "P2": [] }, expected: false }
+        ],
         tags: ["coding", "graph", "DSA"],
         xp: 900,
         difficulty: "Very Hard",
@@ -440,6 +487,8 @@ export const questsData: Quest[] = [
           C) BFS
           D) DFS
         `,
+        type: "MCQ",
+        options: ["Bellman-Ford", "Dijkstra", "BFS", "DFS"],
         tags: ["graphs", "routing", "algorithm"],
         xp: 600,
         difficulty: "Hard",
@@ -468,6 +517,10 @@ export const questsData: Quest[] = [
           Terminal challenge: Implement **Floyd-Warshall** to compute shortest paths between all pairs of nodes.
         `,
         challenge: `>> TERMINAL CHALLENGE: Compute all-pairs shortest paths`,
+        type: "terminal",
+        testCases: [
+          { input: [[0,3,Infinity],[3,0,1],[Infinity,1,0]], expected: [[0,3,4],[3,0,1],[4,1,0]] }
+        ],
         tags: ["coding", "graph", "DSA"],
         xp: 900,
         difficulty: "Very Hard",
@@ -530,6 +583,11 @@ export const questsData: Quest[] = [
           Terminal challenge: Implement a function to find the **maximum subarray sum** in a dataset of transaction values.
         `,
         challenge: `>> TERMINAL CHALLENGE: Maximum subarray sum`,
+        type: "terminal",
+        testCases: [
+          { input: [-2,1,-3,4,-1,2,1,-5,4], expected: 6 },
+          { input: [1,2,3], expected: 6 }
+        ],
         tags: ["coding", "array", "DSA"],
         xp: 900,
         difficulty: "Very Hard",
@@ -591,6 +649,12 @@ export const questsData: Quest[] = [
           Terminal challenge: Implement **LRU Cache** with get and put operations.
         `,
         challenge: `>> TERMINAL CHALLENGE: Implement LRU Cache`,
+        type: "terminal",
+        testCases: [
+          { input: { ops: [
+            ["put",1,1], ["put",2,2], ["get",1], ["put",3,3], ["get",2], ["put",4,4], ["get",1], ["get",3], ["get",4]
+          ], capacity: 2 }, expected: [1,-1,-1,3,4] }
+        ],
         tags: ["coding", "ds", "DSA"],
         xp: 900,
         difficulty: "Very Hard",
@@ -652,6 +716,10 @@ export const questsData: Quest[] = [
           Terminal challenge: Implement **Topological Sort** on a DAG to determine task execution order.
         `,
         challenge: `>> TERMINAL CHALLENGE: Topological Sort`,
+        type: "terminal",
+        testCases: [
+          { input: { V: 6, edges: [[5,2],[5,0],[4,0],[4,1],[2,3],[3,1]] }, expected: [5,4,2,3,1,0] }
+        ],
         tags: ["coding", "graph", "DSA"],
         xp: 1000,
         difficulty: "Very Hard",

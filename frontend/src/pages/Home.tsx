@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { NeonCard } from "@/components/ui/neon-card";
 import { XPBar } from "@/components/ui/xp-bar";
+import { computeLevelProgress } from "@/lib/xp";
 import { NeonBadge } from "@/components/ui/neon-badge";
 import { FloatingParticles } from "@/components/ui/floating-particles";
 import { Navbar } from "@/components/Navbar";
@@ -201,7 +202,10 @@ export default function Home() {
       <FloatingParticles count={25} />
 
       {/* Navbar */}
-      <Navbar username={userData.username} level={userData.currentLevel} xp={userData.totalXP} onLogout={handleLogout} />
+      {(() => {
+        const { level } = computeLevelProgress(userData.totalXP);
+        return <Navbar username={userData.username} level={level} xp={userData.totalXP} onLogout={handleLogout} />
+      })()}
 
       <div className="relative z-10 container mx-auto px-4 py-8">
         {/* Hero Section */}
@@ -229,15 +233,21 @@ export default function Home() {
           className="max-w-2xl mx-auto mb-12"
         >
           <NeonCard variant="cyan" glow>
-            <XPBar 
-              current={userData.totalXP} 
-              max={userData.currentLevel * 500} 
-              level={userData.currentLevel} 
-            />
+            {(() => {
+              const { level, currentXP, requiredXP } = computeLevelProgress(userData.totalXP);
+              return <XPBar current={currentXP} max={requiredXP} level={level} />
+            })()}
             <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
-              <NeonBadge variant="success" className="animate-pulse">
-                🔥 {userData.currentStreak} Day Streak
-              </NeonBadge>
+              {(() => {
+                const raw = localStorage.getItem("byteclub_user");
+                let currentStreak = userData.currentStreak || 0;
+                try { if (raw) currentStreak = JSON.parse(raw).currentStreak || currentStreak; } catch {}
+                return (
+                  <NeonBadge variant="success" className="animate-pulse">
+                    🔥 {currentStreak} Day Streak
+                  </NeonBadge>
+                );
+              })()}
               {userData.badges && userData.badges.length > 0 ? (
                 userData.badges.slice(0, 2).map((badge, index) => (
                   <NeonBadge key={index} variant="default" className="hover:scale-105 transition-transform">
