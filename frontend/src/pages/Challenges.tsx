@@ -49,7 +49,12 @@ export default function Challenges() {
       setError(null);
       console.log('Fetching challenges from API...');
       
-      const challengesData = await apiService.getChallenges();
+      // Fetch only our DSA-99 code challenges; fallback to all code if none tagged yet
+      let challengesData = await apiService.getChallengesFiltered({ type: 'code', tags: ['dsa-99'] });
+      if (!Array.isArray(challengesData) || challengesData.length === 0) {
+        console.log('No dsa-99 tagged items returned, falling back to type=code');
+        challengesData = await apiService.getChallengesFiltered({ type: 'code' });
+      }
       console.log('Challenges data:', challengesData);
       
       // Get user's completed challenges to mark them
@@ -251,14 +256,14 @@ export default function Challenges() {
             <TabsTrigger value="completed">Completed</TabsTrigger>
           </TabsList>
 
-          <TabsContent value={filter} className="space-y-4">
+          {/* Direct render panel (avoid TabsContent hiding due to dynamic values) */}
+          <div className="space-y-4">
             {filteredChallenges.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-400 text-lg">
                   {filter === "completed" 
                     ? "No completed challenges yet. Start solving to see your progress!" 
-                    : "No challenges found for this filter."
-                  }
+                    : "No challenges found for this filter."}
                 </p>
               </div>
             ) : (
@@ -279,13 +284,9 @@ export default function Challenges() {
                       <div className="space-y-4">
                         <div className="flex items-start justify-between">
                           <h3 className="text-lg font-semibold">{challenge.title}</h3>
-                          {challenge.completed && (
-                            <span className="text-2xl">✓</span>
-                          )}
+                          {challenge.completed && <span className="text-2xl">✓</span>}
                         </div>
-                        
                         <p className="text-gray-300 text-sm">{challenge.description}</p>
-                        
                         <div className="flex items-center justify-between">
                           <NeonBadge variant={getDifficultyBadge(challenge.difficulty) as any}>
                             {challenge.difficulty}
@@ -297,13 +298,9 @@ export default function Challenges() {
                             </span>
                           </div>
                         </div>
-                        
                         <div className="flex flex-wrap gap-1">
                           {challenge.tags.slice(0, 3).map((tag, tagIndex) => (
-                            <span
-                              key={tagIndex}
-                              className="px-2 py-1 bg-white/10 rounded-full text-xs"
-                            >
+                            <span key={tagIndex} className="px-2 py-1 bg-white/10 rounded-full text-xs">
                               {tag}
                             </span>
                           ))}
@@ -313,13 +310,9 @@ export default function Challenges() {
                             </span>
                           )}
                         </div>
-                        
                         <Button
                           className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/challenges/${challenge.slug}`);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); navigate(`/challenges/${challenge.slug}`); }}
                         >
                           {challenge.completed ? "Retry" : "Start Challenge"}
                         </Button>
@@ -329,7 +322,7 @@ export default function Challenges() {
                 ))}
               </div>
             )}
-          </TabsContent>
+          </div>
         </Tabs>
       </div>
     </div>

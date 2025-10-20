@@ -71,4 +71,12 @@ export async function runOnJudge0(
   throw new Error('Judge0 result polling timed out');
 }
 
+// Normalize possibly stringified JSON inputs for Judge0 harnesses
+export function normalizeInputForHarness(value: any): any {
+  if (typeof value === 'string') {
+    try { return JSON.parse(value); } catch { return value; }
+  }
+  return value;
+}
+
 

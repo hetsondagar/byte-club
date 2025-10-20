@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { config } from '../config';
 import { seedChallengesPageData } from './challengesPageData';
+import { seed99Challenges } from '../scripts/seed99Challenges';
 import { seedFrontendAchievements } from './frontendAchievements';
 import { Migration } from '../models';
 import logger from '../config/logger';
@@ -27,31 +28,56 @@ const runSeeds = async () => {
 
     // Check if seeds have already been run
     logger.info('🔍 Checking for existing seed data...');
-    const existingMigration = await Migration.findOne({ name: 'challenges_page_data_seed_v2' });
-    if (existingMigration) {
-      logger.info(`⏭️  Seeds already applied at ${(existingMigration as any).createdAt}`);
-      logger.info('✅ Seeding check completed - no new seeds to run');
-      return;
+    // Seed 1: Frontend challenges (the 6 detailed ones) and achievements
+    const pageDataSeed = await Migration.findOne({ name: 'challenges_page_data_seed_v2' });
+    if (!pageDataSeed) {
+      logger.info('🔄 Running initial seed: populating challenges and meta data...');
+
+      // Run seeds with detailed logging
+      logger.info('📚 Seeding challenges from frontend page data...');
+      await seedChallengesPageData();
+      logger.info('✅ Frontend challenges seeded successfully');
+
+      logger.info('🏆 Seeding achievements from frontend static data...');
+      await seedFrontendAchievements();
+      logger.info('✅ Frontend achievements seeded successfully');
+
+      // Record migration
+      logger.info('📝 Recording seed completion for frontend page data...');
+      const migration = new Migration({ name: 'challenges_page_data_seed_v2' });
+      await migration.save();
+      logger.info('  ✅ Seed record saved to migrations collection (frontend page data)');
+    } else {
+      logger.info('⏭️  Frontend page data seed already applied, skipping');
     }
 
-    logger.info('🔄 Running initial seed: populating challenges and meta data...');
+    // Seed 2: 99 comprehensive DSA challenges
+    const dsaSeed = await Migration.findOne({ name: 'dsa_99_challenges_seed_v1' });
+    if (!dsaSeed) {
+      logger.info('📚 Seeding comprehensive 99 DSA challenges...');
+      const count = await seed99Challenges();
+      logger.info(`✅ Seeded ${count} DSA challenges`);
 
-    // Run seeds with detailed logging
-    logger.info('📚 Seeding challenges from frontend page data...');
-    await seedChallengesPageData();
-    logger.info('✅ Frontend challenges seeded successfully');
+      logger.info('📝 Recording seed completion for 99 DSA challenges...');
+      const migration = new Migration({ name: 'dsa_99_challenges_seed_v1' });
+      await migration.save();
+      logger.info('  ✅ Seed record saved to migrations collection (99 DSA)');
+    } else {
+      logger.info('⏭️  99 DSA challenges seed already applied, skipping');
+    }
 
-    logger.info('🏆 Seeding achievements from frontend static data...');
-    await seedFrontendAchievements();
-    logger.info('✅ Frontend achievements seeded successfully');
-
-    // Record migration
-    logger.info('📝 Recording seed completion...');
-    const migration = new Migration({
-      name: 'challenges_page_data_seed_v2'
-    });
-    await migration.save();
-    logger.info('  ✅ Seed record saved to migrations collection');
+    // Enrichment V2: Force all 99 DSA to type 'code' with LeetCode-style content
+    const dsaEnrichV2 = await Migration.findOne({ name: 'dsa_99_challenges_enrich_v2' });
+    if (!dsaEnrichV2) {
+      logger.info('🧩 Enriching 99 DSA challenges to LeetCode-style and type=code...');
+      const count = await seed99Challenges();
+      logger.info(`✅ Enriched ${count} DSA challenges`);
+      const migration = new Migration({ name: 'dsa_99_challenges_enrich_v2' });
+      await migration.save();
+      logger.info('  ✅ Seed record saved to migrations collection (99 DSA Enrich V2)');
+    } else {
+      logger.info('⏭️  99 DSA enrichment v2 already applied, skipping');
+    }
 
     const duration = Date.now() - startTime;
     logger.info(`🎉 Database seeding completed successfully in ${duration}ms`);

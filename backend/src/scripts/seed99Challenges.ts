@@ -117,15 +117,104 @@ const challenges99 = [
   {slug:"self-crossing",title:"Self Crossing",difficulty:"hard",xpReward:300,tags:["array","math","geometry"],content:{question:"Determine if path crosses itself",starterCode:"function isSelfCrossing(x){\n  \n}\nconsole.log(isSelfCrossing(JSON.parse(readline())));",testCases:[{input:"[2,1,1,2]",expected:"true"}],correctAnswer:"function isSelfCrossing(x){for(let i=3;i<x.length;i++){if(i>=3&&x[i]>=x[i-2]&&x[i-1]<=x[i-3])return true;if(i>=4&&x[i-1]===x[i-3]&&x[i]+x[i-4]>=x[i-2])return true;if(i>=5&&x[i-2]>=x[i-4]&&x[i-3]>=x[i-1]&&x[i-1]+x[i-5]>=x[i-3]&&x[i]+x[i-4]>=x[i-2])return true;}return false;}"},isActive:true}
 ];
 
+// Enrich all challenges to LeetCode-style problem statements and multi-language starter code
+function buildLeetCodeMarkdown(title: string, baseQuestion: string, difficulty: string, examples: Array<{ input: any; expected: any }>): string {
+  const examplesMd = examples.slice(0, 3).map((e, idx) => {
+    return `Example ${idx + 1}:
+Input: ${JSON.stringify(e.input)}
+Output: ${JSON.stringify(e.expected)}`;
+  }).join("\n\n");
+
+  const constraints = difficulty === 'easy'
+    ? `- 1 <= array length <= 10^4\n- Values fit in 32-bit signed integer`
+    : difficulty === 'medium'
+    ? `- 1 <= array length <= 10^5\n- Values fit in 32-bit signed integer\n- Solution should be better than O(n^2) where applicable`
+    : `- 1 <= array length <= 2 * 10^5\n- Values fit in 32-bit signed integer\n- Aim for optimal time and space complexity`;
+
+  return [
+    `Problem: ${title}`,
+    '',
+    baseQuestion.trim(),
+    '',
+    'Input Format:',
+    '- The function will receive a single argument named `input` which matches the structure used in examples/test cases.',
+    '',
+    'Output Format:',
+    '- Return the computed result. Ensure the return type matches the expected value in the examples/test cases.',
+    '',
+    'Constraints:',
+    constraints,
+    '',
+    examplesMd
+  ].join('\n');
+}
+
+function buildMultiLanguageStarter(): string {
+  return [
+    '// JavaScript:',
+    'function solution(input) {',
+    '  // TODO: implement',
+    '  return null;',
+    '}',
+    '',
+    '// Python:',
+    'def solution(input):',
+    '    # TODO: implement',
+    '    return None',
+    '',
+    '// Java:',
+    'import java.util.*;',
+    'class Main {',
+    '    public static Object solution(Object input) {',
+    '        // TODO: implement',
+    '        return null;',
+    '    }',
+    '}',
+    '',
+    '// C++:',
+    '#include <bits/stdc++.h>',
+    'using namespace std;',
+    '/*',
+    'Implement a function with signature of your choosing.',
+    'When tested, your program should print the JSON of the output to stdout for given input.',
+    '*/',
+    '',
+    '// C:',
+    '#include <stdio.h>',
+    '/* Implement your logic. For testing, print the result to stdout. */'
+  ].join('\n');
+}
+
+const enrichedChallenges99 = challenges99.map((ch) => {
+  const examples = Array.isArray((ch as any).content?.testCases) ? (ch as any).content.testCases : [];
+  const title = (ch as any).title || 'Challenge';
+  const baseQ = (ch as any).content?.question || (ch as any).description || 'Solve the problem as described.';
+  const difficulty = (ch as any).difficulty || 'easy';
+  const detailedQuestion = buildLeetCodeMarkdown(title, baseQ, difficulty, examples);
+  const starter = buildMultiLanguageStarter();
+  return {
+    ...ch,
+    type: 'code' as const,
+    isActive: true,
+    content: {
+      ...(ch as any).content,
+      question: detailedQuestion,
+      starterCode: starter,
+      codeSnippet: starter
+    },
+    tags: Array.from(new Set([...(ch as any).tags || [], 'dsa-99']))
+  } as typeof ch;
+});
+
 // Export for use in seed scripts
-export { challenges99 };
+export { enrichedChallenges99 as challenges99 };
 
 // Seed function
 export async function seed99Challenges() {
   try {
     logger.info('🌱 Starting DSA challenges seed...');
     
-    for (const challenge of challenges99) {
+    for (const challenge of enrichedChallenges99) {
       await Challenge.findOneAndUpdate(
         { slug: challenge.slug },
         challenge,
@@ -133,8 +222,8 @@ export async function seed99Challenges() {
       );
     }
     
-    logger.info(`✅ Successfully seeded ${challenges99.length} DSA challenges`);
-    return challenges99.length;
+    logger.info(`✅ Successfully seeded ${enrichedChallenges99.length} DSA challenges`);
+    return enrichedChallenges99.length;
   } catch (error) {
     logger.error('❌ Error seeding challenges:', error);
     throw error;

@@ -144,6 +144,21 @@ class ApiService {
     return response.data || [];
   }
 
+  async getChallengesFiltered(params?: { type?: string; tags?: string[]; isDaily?: boolean }): Promise<any[]> {
+    const query = new URLSearchParams();
+    if (params?.type) query.set('type', params.type);
+    if (params?.isDaily !== undefined) query.set('isDaily', String(params.isDaily));
+    if (params?.tags && params.tags.length) {
+      for (const t of params.tags) query.append('tags', t);
+    }
+    const qs = query.toString();
+    const response = await this.request<any>(`/challenges${qs ? `?${qs}` : ''}`);
+    if (response.data?.challenges) {
+      return response.data.challenges;
+    }
+    return response.data || [];
+  }
+
   async getChallenge(slug: string): Promise<any> {
     const response = await this.request<any>(`/challenges/${slug}`);
     // Handle both response structures: { data: {...} } and { data: { challenge: {...} } }
