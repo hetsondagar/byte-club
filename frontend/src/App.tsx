@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MatrixRain } from "@/components/ui/matrix-rain";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CodeHeistProvider } from "@/contexts/CodeHeistContext";
+import { StreakNotificationWrapper } from "@/components/StreakNotificationWrapper";
 import { config } from "@/config/env";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -42,11 +43,12 @@ const App = () => {
       <AuthProvider>
         <CodeHeistProvider>
           <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            {/* Matrix Rain Background - Falls behind all content */}
-            <MatrixRain color="hsl(140 100% 50%)" fontSize={16} speed={50} />
-            <BrowserRouter>
+            <StreakNotificationWrapper>
+              <Toaster />
+              <Sonner />
+              {/* Matrix Rain Background - Falls behind all content */}
+              <MatrixRain color="hsl(140 100% 50%)" fontSize={16} speed={50} />
+              <BrowserRouter>
             <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
@@ -78,6 +80,7 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
             </Routes>
             </BrowserRouter>
+            </StreakNotificationWrapper>
           </TooltipProvider>
         </CodeHeistProvider>
       </AuthProvider>

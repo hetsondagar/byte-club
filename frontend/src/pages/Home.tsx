@@ -9,6 +9,8 @@ import { FloatingParticles } from "@/components/ui/floating-particles";
 import { Navbar } from "@/components/Navbar";
 import { getDailyFact } from "@/data/cseFacts";
 import { apiService } from "@/services/api";
+import { checkStreakStatus, updateStreakOnActivity } from "@/lib/streak";
+import "@/lib/streak-debug"; // Import debug function
 import {
   Map,
   Target,
@@ -156,6 +158,62 @@ export default function Home() {
     };
   }, [navigate]);
 
+  // Check and update streak status when component loads
+  useEffect(() => {
+    const checkAndUpdateStreak = () => {
+      console.log('🔍 Checking streak status...');
+      const localUser = localStorage.getItem("byteclub_user");
+      console.log('localStorage data:', localUser);
+      
+      if (localUser) {
+        const parsedData = JSON.parse(localUser);
+        console.log('Parsed data:', parsedData);
+        console.log('currentStreak:', parsedData.currentStreak);
+        console.log('lastActiveDate:', parsedData.lastActiveDate);
+        console.log('lastActiveTime:', parsedData.lastActiveTime);
+        
+        const hasStreakButNoDate = parsedData.currentStreak > 0 && 
+          !parsedData.lastActiveDate && 
+          !parsedData.lastActiveTime;
+        
+        // Check for invalid future dates (including wrong year 2025)
+        const lastActiveDateObj = parsedData.lastActiveDate ? new Date(parsedData.lastActiveDate) : null;
+        const now = new Date();
+        const isWrongYear = lastActiveDateObj && lastActiveDateObj.getFullYear() === 2025;
+        const hasInvalidFutureDate = parsedData.lastActiveDate && 
+          lastActiveDateObj && (lastActiveDateObj > now || isWrongYear);
+        
+        console.log('hasStreakButNoDate:', hasStreakButNoDate);
+        console.log('lastActiveDateObj:', lastActiveDateObj);
+        console.log('now:', now);
+        console.log('isWrongYear (2025):', isWrongYear);
+        console.log('lastActiveDateObj > now:', lastActiveDateObj ? lastActiveDateObj > now : 'N/A');
+        console.log('hasInvalidFutureDate:', hasInvalidFutureDate);
+        
+        // If user has a streak but no tracking data, or has invalid future date, it's an old invalid streak
+        if (hasStreakButNoDate || hasInvalidFutureDate) {
+          console.log('✅ Found invalid streak (no tracking data or future date), resetting...');
+          // Reset the streak to 0 and add current timestamp
+          parsedData.currentStreak = 0;
+          parsedData.lastActiveTime = new Date().toISOString();
+          parsedData.lastActiveDate = new Date().toISOString().slice(0, 10);
+          localStorage.setItem("byteclub_user", JSON.stringify(parsedData));
+          console.log('✅ Streak reset in localStorage');
+          
+          // Update the UI
+          setUserData(prev => prev ? { ...prev, currentStreak: 0 } : null);
+          console.log('✅ UI updated');
+        } else {
+          console.log('❌ No old streak found or streak is valid');
+        }
+      } else {
+        console.log('❌ No localStorage data found');
+      }
+    };
+
+    checkAndUpdateStreak();
+  }, []);
+
   const handleLogout = async () => {
     try {
       await apiService.logout();
@@ -241,10 +299,49 @@ export default function Home() {
               {(() => {
                 const raw = localStorage.getItem("byteclub_user");
                 let currentStreak = userData.currentStreak || 0;
-                try { if (raw) currentStreak = JSON.parse(raw).currentStreak || currentStreak; } catch {}
+                let hasValidStreakData = false;
+                
+                try { 
+                  if (raw) {
+                    const userData = JSON.parse(raw);
+                    currentStreak = userData.currentStreak || currentStreak;
+                    // Check if user has proper streak tracking data
+                    hasValidStreakData = !!(userData.lastActiveDate || userData.lastActiveTime);
+                  }
+                } catch {}
+                
+                // Check for invalid future dates
+                let hasInvalidFutureDate = false;
+                if (raw) {
+                  const userData = JSON.parse(raw);
+                  hasInvalidFutureDate = userData.lastActiveDate && 
+                    new Date(userData.lastActiveDate) > new Date();
+                }
+                
+                // If user has a streak but no tracking data, or has invalid future date, it's an old invalid streak
+                if ((currentStreak > 0 && !hasValidStreakData) || hasInvalidFutureDate) {
+                  return (
+                    <NeonBadge variant="hard" className="animate-pulse">
+                      💔 Streak Broken
+                    </NeonBadge>
+                  );
+                }
+                
+                // Check if streak should be broken based on 48-hour rule
+                const streakStatus = checkStreakStatus();
+                const displayStreak = streakStatus.shouldBreak ? 0 : currentStreak;
+                
+                if (displayStreak === 0) {
+                  return (
+                    <NeonBadge variant="hard" className="animate-pulse">
+                      💔 Streak Broken
+                    </NeonBadge>
+                  );
+                }
+                
                 return (
                   <NeonBadge variant="success" className="animate-pulse">
-                    🔥 {currentStreak} Day Streak
+                    🔥 {displayStreak} Day Streak
                   </NeonBadge>
                 );
               })()}

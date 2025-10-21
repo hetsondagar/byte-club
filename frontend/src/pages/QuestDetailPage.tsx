@@ -100,6 +100,14 @@ export default function QuestDetailPage() {
       if (result.isCorrect) {
         // Update streak on successful activity
         const streakOutcome = updateStreakOnActivity();
+        
+        // Show streak break notification if applicable
+        if (streakOutcome.streakBroken) {
+          toast.error("Streak Broken! You haven't solved anything for more than 48 hours. Starting fresh!", {
+            duration: 5000,
+          });
+        }
+        
         if (streakOutcome.bonusXP > 0) {
           try {
             const userRaw = localStorage.getItem("byteclub_user");
@@ -268,7 +276,14 @@ export default function QuestDetailPage() {
 
       // Add XP locally for mission since server failed
       // Update streak even if server failed
-      updateStreakOnActivity();
+      const streakOutcome = updateStreakOnActivity();
+      
+      // Show streak break notification if applicable
+      if (streakOutcome.streakBroken) {
+        toast.error("Streak Broken! You haven't solved anything for more than 48 hours. Starting fresh!", {
+          duration: 5000,
+        });
+      }
       const user = localStorage.getItem("byteclub_user");
       if (user) {
         try {
