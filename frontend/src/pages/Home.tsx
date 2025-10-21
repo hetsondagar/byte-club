@@ -9,21 +9,20 @@ import { FloatingParticles } from "@/components/ui/floating-particles";
 import { Navbar } from "@/components/Navbar";
 import { getDailyFact } from "@/data/cseFacts";
 import { apiService } from "@/services/api";
-import { checkStreakStatus, updateStreakOnActivity } from "@/lib/streak";
+import { checkStreakStatus, updateStreakOnActivity, loadUserStreak, fixBrokenStreakForActiveUser } from "@/lib/streak";
 import "@/lib/streak-debug"; // Import debug function
 import {
   Map,
   Target,
   Trophy,
   User,
-  BarChart3,
   Award,
   BookOpen,
   Settings,
-  Calendar,
   Scroll,
   Lightbulb,
   Sparkles,
+  Calendar,
 } from "lucide-react";
 
 const navCards = [
@@ -31,12 +30,10 @@ const navCards = [
   { title: "Challenges", icon: Target, path: "/challenges", color: "violet", description: "Test your skills" },
   { title: "Leaderboard", icon: Trophy, path: "/leaderboard", color: "blue", description: "Top hackers" },
   { title: "Profile", icon: User, path: "/profile", color: "cyan", description: "Your stats" },
-  { title: "Stats", icon: BarChart3, path: "/stats", color: "violet", description: "Analytics dashboard" },
-  { title: "Achievements", icon: Award, path: "/achievements", color: "blue", description: "Unlock badges" },
-  { title: "Tutorial", icon: BookOpen, path: "/tutorial", color: "cyan", description: "Learn the ropes" },
-  { title: "Settings", icon: Settings, path: "/settings", color: "violet", description: "Customize" },
-  { title: "Daily Challenge", icon: Calendar, path: "/daily-challenge", color: "blue", description: "Today's mission" },
-  { title: "Quests", icon: Scroll, path: "/quests", color: "cyan", description: "Story missions" },
+  { title: "Achievements", icon: Award, path: "/achievements", color: "violet", description: "Unlock badges" },
+  { title: "Tutorial", icon: BookOpen, path: "/tutorial", color: "blue", description: "Learn the ropes" },
+  { title: "Settings", icon: Settings, path: "/settings", color: "cyan", description: "Customize" },
+  { title: "Quests", icon: Scroll, path: "/quests", color: "violet", description: "Story missions" },
 ];
 
 interface UserData {
@@ -56,6 +53,7 @@ export default function Home() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [dailyFact, setDailyFact] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const refreshUserData = async () => {
     try {
@@ -97,8 +95,45 @@ export default function Home() {
       try {
         setLoading(true);
         
-        // Get user data from localStorage
+        // Always get fresh data from localStorage (don't rely on cached state)
         const localUser = localStorage.getItem("byteclub_user");
+        console.log('Home page - Loading fresh data from localStorage');
+        console.log('Home page - Raw localStorage data:', localUser);
+        
+        // Trigger migration by calling loadUserStreak
+        console.log('Home page - Triggering streak migration...');
+        loadUserStreak();
+        
+        // Auto-fix broken streaks for users with XP
+        console.log('Home page - Auto-fixing broken streaks...');
+        fixBrokenStreakForActiveUser();
+        
+        // Also check if user has activities but zero streak and fix it
+        if (localUser) {
+          try {
+            const user = JSON.parse(localUser);
+            const hasActivities = (user.totalXP > 0) || (user.completedChallenges?.length > 0) || (user.completedAdventureNodes?.length > 0);
+            const hasZeroStreak = (user.currentStreak || 0) === 0;
+            
+            if (hasActivities && hasZeroStreak) {
+              console.log('🔧 Home page - User has activities but zero streak, fixing...');
+              user.currentStreak = 1;
+              user.longestStreak = Math.max(user.longestStreak || 0, 1);
+              user.lastActiveDate = new Date().toISOString().slice(0, 10);
+              user.lastActiveTime = new Date().toISOString();
+              localStorage.setItem('byteclub_user', JSON.stringify(user));
+              
+              // Dispatch event to notify components
+              window.dispatchEvent(new CustomEvent('streakMigrated', { 
+                detail: { newStreak: 1 } 
+              }));
+              
+              console.log('✅ Home page - Fixed broken streak for active user');
+            }
+          } catch (error) {
+            console.log('Error fixing streak in Home page:', error);
+          }
+        }
         
         if (localUser) {
           try {
@@ -106,18 +141,32 @@ export default function Home() {
             // Handle both nested and direct user data structures
             const userData = parsedData.user || parsedData;
             // Ensure required fields exist
+            // Get streak from frontend system instead of backend
+            // Always read fresh from localStorage, not from backend data
+            let frontendStreak = 0;
+            try { 
+              const raw = localStorage.getItem("byteclub_user");
+              if (raw) {
+                const localUserData = JSON.parse(raw);
+                frontendStreak = localUserData.currentStreak || 0;
+                console.log('Home page - Using localStorage streak:', frontendStreak, 'instead of backend:', userData.currentStreak);
+              }
+            } catch {}
+            
             const safeUserData = {
               _id: userData._id || "unknown",
               username: userData.username || "Hacker",
               email: userData.email || "user@example.com",
               totalXP: userData.totalXP || 0,
               currentLevel: userData.currentLevel || 1,
-              currentStreak: userData.currentStreak || 0,
+              currentStreak: frontendStreak, // Use frontend streak system
               badges: userData.badges || [],
               rewards: userData.rewards || [],
               role: userData.role || "user"
             };
             console.log('Home page user data:', safeUserData);
+            console.log('Home page - totalXP:', safeUserData.totalXP);
+            console.log('Home page - currentStreak:', safeUserData.currentStreak);
             setUserData(safeUserData);
           } catch (parseError) {
             console.error('Error parsing user data:', parseError);
@@ -140,78 +189,58 @@ export default function Home() {
     // Listen for localStorage changes to refresh user data
     const handleStorageChange = () => {
       console.log('Storage changed, refreshing user data...');
+      setRefreshTrigger(prev => prev + 1);
       loadUserData();
     };
 
     // Listen for our custom challenge completion event
     const handleChallengeCompleted = () => {
       console.log('Challenge completed, refreshing user data...');
+      setRefreshTrigger(prev => prev + 1);
+      loadUserData();
+    };
+    
+    // Listen for streak migration event
+    const handleStreakMigrated = () => {
+      console.log('Streak migrated, refreshing user data...');
+      setRefreshTrigger(prev => prev + 1);
+      loadUserData();
+    };
+
+    // Listen for page focus to refresh data when user comes back
+    const handlePageFocus = () => {
+      console.log('Page focused, refreshing user data...');
+      setRefreshTrigger(prev => prev + 1);
       loadUserData();
     };
 
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('challengeCompleted', handleChallengeCompleted);
+    window.addEventListener('streakMigrated', handleStreakMigrated);
+    window.addEventListener('focus', handlePageFocus);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('challengeCompleted', handleChallengeCompleted);
+      window.removeEventListener('streakMigrated', handleStreakMigrated);
+      window.removeEventListener('focus', handlePageFocus);
     };
-  }, [navigate]);
+  }, [navigate, refreshTrigger]);
 
-  // Check and update streak status when component loads
+  // Force refresh data when component becomes visible
   useEffect(() => {
-    const checkAndUpdateStreak = () => {
-      console.log('🔍 Checking streak status...');
-      const localUser = localStorage.getItem("byteclub_user");
-      console.log('localStorage data:', localUser);
-      
-      if (localUser) {
-        const parsedData = JSON.parse(localUser);
-        console.log('Parsed data:', parsedData);
-        console.log('currentStreak:', parsedData.currentStreak);
-        console.log('lastActiveDate:', parsedData.lastActiveDate);
-        console.log('lastActiveTime:', parsedData.lastActiveTime);
-        
-        const hasStreakButNoDate = parsedData.currentStreak > 0 && 
-          !parsedData.lastActiveDate && 
-          !parsedData.lastActiveTime;
-        
-        // Check for invalid future dates (including wrong year 2025)
-        const lastActiveDateObj = parsedData.lastActiveDate ? new Date(parsedData.lastActiveDate) : null;
-        const now = new Date();
-        const isWrongYear = lastActiveDateObj && lastActiveDateObj.getFullYear() === 2025;
-        const hasInvalidFutureDate = parsedData.lastActiveDate && 
-          lastActiveDateObj && (lastActiveDateObj > now || isWrongYear);
-        
-        console.log('hasStreakButNoDate:', hasStreakButNoDate);
-        console.log('lastActiveDateObj:', lastActiveDateObj);
-        console.log('now:', now);
-        console.log('isWrongYear (2025):', isWrongYear);
-        console.log('lastActiveDateObj > now:', lastActiveDateObj ? lastActiveDateObj > now : 'N/A');
-        console.log('hasInvalidFutureDate:', hasInvalidFutureDate);
-        
-        // If user has a streak but no tracking data, or has invalid future date, it's an old invalid streak
-        if (hasStreakButNoDate || hasInvalidFutureDate) {
-          console.log('✅ Found invalid streak (no tracking data or future date), resetting...');
-          // Reset the streak to 0 and add current timestamp
-          parsedData.currentStreak = 0;
-          parsedData.lastActiveTime = new Date().toISOString();
-          parsedData.lastActiveDate = new Date().toISOString().slice(0, 10);
-          localStorage.setItem("byteclub_user", JSON.stringify(parsedData));
-          console.log('✅ Streak reset in localStorage');
-          
-          // Update the UI
-          setUserData(prev => prev ? { ...prev, currentStreak: 0 } : null);
-          console.log('✅ UI updated');
-        } else {
-          console.log('❌ No old streak found or streak is valid');
-        }
-      } else {
-        console.log('❌ No localStorage data found');
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Page became visible, refreshing data...');
+        setRefreshTrigger(prev => prev + 1);
       }
     };
 
-    checkAndUpdateStreak();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -297,51 +326,58 @@ export default function Home() {
             })()}
             <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
               {(() => {
+                // Always read fresh data from localStorage on every render
                 const raw = localStorage.getItem("byteclub_user");
-                let currentStreak = userData.currentStreak || 0;
-                let hasValidStreakData = false;
+                let currentStreak = 0;
                 
                 try { 
                   if (raw) {
-                    const userData = JSON.parse(raw);
-                    currentStreak = userData.currentStreak || currentStreak;
-                    // Check if user has proper streak tracking data
-                    hasValidStreakData = !!(userData.lastActiveDate || userData.lastActiveTime);
+                    const localUserData = JSON.parse(raw);
+                    currentStreak = localUserData.currentStreak || 0;
+                    console.log('Streak display - Fresh localStorage data:', currentStreak);
+                    console.log('Streak display - Raw localStorage:', raw);
                   }
-                } catch {}
-                
-                // Check for invalid future dates
-                let hasInvalidFutureDate = false;
-                if (raw) {
-                  const userData = JSON.parse(raw);
-                  hasInvalidFutureDate = userData.lastActiveDate && 
-                    new Date(userData.lastActiveDate) > new Date();
+                } catch (error) {
+                  console.error('Error reading streak from localStorage:', error);
                 }
                 
-                // If user has a streak but no tracking data, or has invalid future date, it's an old invalid streak
-                if ((currentStreak > 0 && !hasValidStreakData) || hasInvalidFutureDate) {
-                  return (
-                    <NeonBadge variant="hard" className="animate-pulse">
-                      💔 Streak Broken
-                    </NeonBadge>
-                  );
-                }
-                
-                // Check if streak should be broken based on 48-hour rule
-                const streakStatus = checkStreakStatus();
-                const displayStreak = streakStatus.shouldBreak ? 0 : currentStreak;
-                
-                if (displayStreak === 0) {
-                  return (
-                    <NeonBadge variant="hard" className="animate-pulse">
-                      💔 Streak Broken
-                    </NeonBadge>
-                  );
+                if (currentStreak === 0) {
+                  // Check if this is a new user vs a user with broken streak
+                  const userData = localStorage.getItem('byteclub_user');
+                  let isNewUser = false;
+                  
+                  if (userData) {
+                    try {
+                      const user = JSON.parse(userData);
+                      const hasCompletedChallenges = (user.completedChallenges?.length || 0) > 0;
+                      const hasAnyXP = (user.totalXP || 0) > 0;
+                      // A user with ANY XP should not be considered a new user
+                      isNewUser = !hasCompletedChallenges && !hasAnyXP;
+                    } catch (e) {
+                      isNewUser = true;
+                    }
+                  } else {
+                    isNewUser = true;
+                  }
+                  
+                  if (isNewUser) {
+                    return (
+                      <NeonBadge variant="secondary" className="animate-pulse">
+                        🔥 Start Your Streak
+                      </NeonBadge>
+                    );
+                  } else {
+                    return (
+                      <NeonBadge variant="hard" className="animate-pulse">
+                        💔 Streak Broken
+                      </NeonBadge>
+                    );
+                  }
                 }
                 
                 return (
                   <NeonBadge variant="success" className="animate-pulse">
-                    🔥 {displayStreak} Day Streak
+                    🔥 {currentStreak} Day Streak
                   </NeonBadge>
                 );
               })()}
@@ -364,6 +400,7 @@ export default function Home() {
             </div>
           </NeonCard>
         </motion.div>
+
 
         {/* Mission Control - Navigation Cards */}
         <motion.div

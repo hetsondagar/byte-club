@@ -38,25 +38,39 @@ export default function QuestDetailPage() {
       
       try {
         const completed = await apiService.getCompletedMissions(id);
-        // Also read any locally saved completions and merge
-        const saved = localStorage.getItem(`byte_club_quest_${id}_missions`);
-        let localList: string[] = [];
-        if (saved) {
-          try { localList = JSON.parse(saved) || []; } catch (_) { localList = []; }
+        // Also read any locally saved completions and merge (user-specific)
+        const userData = localStorage.getItem("byteclub_user");
+        if (userData) {
+          const user = JSON.parse(userData);
+          const userId = user._id || user.id || "anonymous";
+          const userSpecificMissionKey = `byte_club_quest_${id}_missions_${userId}`;
+          
+          const saved = localStorage.getItem(userSpecificMissionKey);
+          let localList: string[] = [];
+          if (saved) {
+            try { localList = JSON.parse(saved) || []; } catch (_) { localList = []; }
+          }
+          const merged = Array.from(new Set([...(completed || []), ...localList]));
+          setCompletedMissions(new Set(merged));
+          // Persist the merged list back to localStorage to keep it sticky
+          localStorage.setItem(userSpecificMissionKey, JSON.stringify(merged));
         }
-        const merged = Array.from(new Set([...(completed || []), ...localList]));
-        setCompletedMissions(new Set(merged));
-        // Persist the merged list back to localStorage to keep it sticky
-        localStorage.setItem(`byte_club_quest_${id}_missions`, JSON.stringify(merged));
       } catch (error) {
         console.error("Failed to load mission progress", error);
-        // Fallback to localStorage
-        const saved = localStorage.getItem(`byte_club_quest_${id}_missions`);
-        if (saved) {
-          try {
-            setCompletedMissions(new Set(JSON.parse(saved)));
-          } catch (e) {
-            console.error("Failed to parse localStorage", e);
+        // Fallback to localStorage (user-specific)
+        const userData = localStorage.getItem("byteclub_user");
+        if (userData) {
+          const user = JSON.parse(userData);
+          const userId = user._id || user.id || "anonymous";
+          const userSpecificMissionKey = `byte_club_quest_${id}_missions_${userId}`;
+          
+          const saved = localStorage.getItem(userSpecificMissionKey);
+          if (saved) {
+            try {
+              setCompletedMissions(new Set(JSON.parse(saved)));
+            } catch (e) {
+              console.error("Failed to parse localStorage", e);
+            }
           }
         }
       }
@@ -103,22 +117,43 @@ export default function QuestDetailPage() {
         
         // Show streak break notification if applicable
         if (streakOutcome.streakBroken) {
-          toast.error("Streak Broken! You haven't solved anything for more than 48 hours. Starting fresh!", {
+          toast.error("Streak Broken! You haven't solved anything for more than 2 days. Starting fresh!", {
             duration: 5000,
           });
+        } else if (streakOutcome.updated) {
+          if (streakOutcome.isFirstActivity) {
+            toast.success("Streak Started!", {
+              description: `🔥 Welcome! Your coding streak has begun!`,
+            });
+          } else {
+            toast.success("Streak Updated!", {
+              description: `🔥 ${streakOutcome.state.currentStreak} day streak! Keep it up!`,
+            });
+          }
+        } else {
+          // Streak not updated (same day activity)
+          console.log('Streak not updated - same day activity');
         }
         
-        if (streakOutcome.bonusXP > 0) {
-          try {
-            const userRaw = localStorage.getItem("byteclub_user");
-            if (userRaw) {
-              const u = JSON.parse(userRaw);
-              const cur = Number(u.totalXP || 0);
-              u.totalXP = cur; // already applied in streak util
-              localStorage.setItem("byteclub_user", JSON.stringify(u));
+        // Update user data with quest completion results
+        try {
+          const userRaw = localStorage.getItem("byteclub_user");
+          if (userRaw) {
+            const u = JSON.parse(userRaw);
+            // Update XP from quest completion (only if XP was actually awarded)
+            if (result.xpEarned && result.xpEarned > 0) {
+              u.totalXP = Number(u.totalXP || 0) + result.xpEarned;
+              console.log(`💰 Frontend: Awarded ${result.xpEarned} XP for mission completion`);
+            } else {
+              console.log(`🚫 Frontend: No XP awarded (mission already completed)`);
             }
-          } catch {}
-        }
+            // Sync streak data
+            u.currentStreak = streakOutcome.state.currentStreak;
+            u.lastActiveDate = streakOutcome.state.lastActiveDate;
+            u.lastActiveTime = streakOutcome.state.lastActiveTime;
+            localStorage.setItem("byteclub_user", JSON.stringify(u));
+          }
+        } catch {}
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 3000);
         
@@ -127,31 +162,71 @@ export default function QuestDetailPage() {
         newCompleted.add(activeMission.id);
         setCompletedMissions(newCompleted);
         
-        // Save to localStorage as backup
-        localStorage.setItem(`byte_club_quest_${id}_missions`, JSON.stringify(Array.from(newCompleted)));
+        // Save to localStorage as backup (user-specific)
+        const userData = localStorage.getItem("byteclub_user");
+        if (userData) {
+          const user = JSON.parse(userData);
+          const userId = user._id || user.id || "anonymous";
+          const userSpecificMissionKey = `byte_club_quest_${id}_missions_${userId}`;
+          localStorage.setItem(userSpecificMissionKey, JSON.stringify(Array.from(newCompleted)));
+        }
 
-        // Persist quest progress for quests grid + unlock next quest
+        // Persist quest progress for quests grid + unlock next quest (user-specific)
         try {
-          const progressStore = JSON.parse(localStorage.getItem('byte_club_quest_progress') || '{"progress":{},"completed":[]}');
-          const missionsCount = quest.missions.length;
-          const completedCount = newCompleted.size;
-          const pct = Math.round((completedCount / missionsCount) * 100);
-          progressStore.progress = progressStore.progress || {};
-          progressStore.progress[quest.id] = pct;
-          if (pct === 100) {
-            const setCompleted = new Set<string>(progressStore.completed || []);
-            setCompleted.add(quest.id);
-            progressStore.completed = Array.from(setCompleted);
+          // Get current user ID for user-specific quest progress
+          const userData = localStorage.getItem("byteclub_user");
+          if (userData) {
+            const user = JSON.parse(userData);
+            const userId = user._id || user.id || "anonymous";
+            const userSpecificKey = `byte_club_quest_progress_${userId}`;
+            
+            const progressStore = JSON.parse(localStorage.getItem(userSpecificKey) || '{"progress":{},"completed":[]}');
+            const missionsCount = quest.missions.length;
+            const completedCount = newCompleted.size;
+            const pct = Math.round((completedCount / missionsCount) * 100);
+            progressStore.progress = progressStore.progress || {};
+            progressStore.progress[quest.id] = pct;
+            if (pct === 100) {
+              const setCompleted = new Set<string>(progressStore.completed || []);
+              setCompleted.add(quest.id);
+              progressStore.completed = Array.from(setCompleted);
+            }
+            localStorage.setItem(userSpecificKey, JSON.stringify(progressStore));
+            console.log(`✅ Saved quest progress for user ${userId}:`, progressStore);
           }
-          localStorage.setItem('byte_club_quest_progress', JSON.stringify(progressStore));
         } catch (e) {
-          // ignore
+          console.error("Failed to save quest progress:", e);
         }
         
         // Removed quest-level completion toast as requested
 
         if (result.questCompleted) {
           // Suppress quest complete toast
+        }
+        
+        // Show toast notifications for unlocked badges
+        console.log('🔍 Quest Detail - Full result:', result);
+        console.log('🔍 Quest Detail - badgesUnlocked:', result.badgesUnlocked);
+        
+        if (Array.isArray(result.badgesUnlocked) && result.badgesUnlocked.length > 0) {
+          console.log('🎉 Quest Detail - Showing badge unlock toasts for:', result.badgesUnlocked);
+          result.badgesUnlocked.forEach((badge: string) => {
+            const badgeName = badge.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            toast.success(`🏆 Badge Unlocked!`, {
+              description: `${badgeName}`,
+              duration: 4000,
+            });
+          });
+          
+          // Show summary toast if multiple badges
+          if (result.badgesUnlocked.length > 1) {
+            toast.success(`🎉 ${result.badgesUnlocked.length} Badges Unlocked!`, {
+              description: `Great job completing the quest!`,
+              duration: 5000,
+            });
+          }
+        } else {
+          console.log('🔍 Quest Detail - No badges unlocked or badgesUnlocked is empty');
         }
 
         // Update user data in localStorage using server totalXP or fallback to exact mission XP
@@ -197,34 +272,50 @@ export default function QuestDetailPage() {
     setIsLoading(true);
     try {
       // Attempt to record completion server-side
-      const result = await apiService.submitMission(quest.id, activeMission.id, "PASSED");
+      const result = await apiService.submitMission(quest.id, activeMission.id, "passed");
 
       const wasAccepted = !!result?.isCorrect || !!result?.success;
       setCorrect(true);
       setSubmitted(true);
 
-      // Update completed missions regardless to avoid blocking UX
+      // Update completed missions regardless to avoid blocking UX (user-specific)
       const newCompleted = new Set(completedMissions);
       newCompleted.add(activeMission.id);
       setCompletedMissions(newCompleted);
-      localStorage.setItem(`byte_club_quest_${id}_missions`, JSON.stringify(Array.from(newCompleted)));
+      
+      // Save to user-specific localStorage
+      const userData = localStorage.getItem("byteclub_user");
+      if (userData) {
+        const user = JSON.parse(userData);
+        const userId = user._id || user.id || "anonymous";
+        const userSpecificMissionKey = `byte_club_quest_${id}_missions_${userId}`;
+        localStorage.setItem(userSpecificMissionKey, JSON.stringify(Array.from(newCompleted)));
+      }
 
-      // Persist quest progress for quests grid + unlock next quest
+      // Persist quest progress for quests grid + unlock next quest (user-specific)
       try {
-        const progressStore = JSON.parse(localStorage.getItem('byte_club_quest_progress') || '{"progress":{},"completed":[]}');
-        const missionsCount = quest.missions.length;
-        const completedCount = newCompleted.size;
-        const pct = Math.round((completedCount / missionsCount) * 100);
-        progressStore.progress = progressStore.progress || {};
-        progressStore.progress[quest.id] = pct;
-        if (pct === 100) {
-          const setCompleted = new Set<string>(progressStore.completed || []);
-          setCompleted.add(quest.id);
-          progressStore.completed = Array.from(setCompleted);
+        const userData = localStorage.getItem("byteclub_user");
+        if (userData) {
+          const user = JSON.parse(userData);
+          const userId = user._id || user.id || "anonymous";
+          const userSpecificKey = `byte_club_quest_progress_${userId}`;
+          
+          const progressStore = JSON.parse(localStorage.getItem(userSpecificKey) || '{"progress":{},"completed":[]}');
+          const missionsCount = quest.missions.length;
+          const completedCount = newCompleted.size;
+          const pct = Math.round((completedCount / missionsCount) * 100);
+          progressStore.progress = progressStore.progress || {};
+          progressStore.progress[quest.id] = pct;
+          if (pct === 100) {
+            const setCompleted = new Set<string>(progressStore.completed || []);
+            setCompleted.add(quest.id);
+            progressStore.completed = Array.from(setCompleted);
+          }
+          localStorage.setItem(userSpecificKey, JSON.stringify(progressStore));
+          console.log(`✅ Saved terminal quest progress for user ${userId}:`, progressStore);
         }
-        localStorage.setItem('byte_club_quest_progress', JSON.stringify(progressStore));
       } catch (e) {
-        // ignore
+        console.error("Failed to save terminal quest progress:", e);
       }
 
       setShowConfetti(true);
@@ -232,14 +323,21 @@ export default function QuestDetailPage() {
 
       // Suppress mission completed toast
 
-      // Update user XP locally using xpEarned or mission.xp
+      // Update user XP locally using xpEarned (only if XP was actually awarded)
       const user = localStorage.getItem("byteclub_user");
       if (user) {
         try {
           const userData = JSON.parse(user);
           const currentXP = Number(userData.totalXP || 0);
-          const xpDelta = typeof result?.xpEarned === 'number' ? result.xpEarned : (activeMission?.xp || 0);
-          userData.totalXP = currentXP + xpDelta;
+          const xpDelta = typeof result?.xpEarned === 'number' ? result.xpEarned : 0;
+          
+          if (xpDelta > 0) {
+            userData.totalXP = currentXP + xpDelta;
+            console.log(`💰 Terminal: Awarded ${xpDelta} XP for mission completion`);
+          } else {
+            console.log(`🚫 Terminal: No XP awarded (mission already completed)`);
+          }
+          
           localStorage.setItem("byteclub_user", JSON.stringify(userData));
         } catch (_) {}
       }
@@ -260,18 +358,26 @@ export default function QuestDetailPage() {
       localStorage.setItem(`byte_club_quest_${id}_missions`, JSON.stringify(Array.from(newCompleted)));
 
       try {
-        const progressStore = JSON.parse(localStorage.getItem('byte_club_quest_progress') || '{"progress":{},"completed":[]}');
-        const missionsCount = quest.missions.length;
-        const completedCount = newCompleted.size;
-        const pct = Math.round((completedCount / missionsCount) * 100);
-        progressStore.progress = progressStore.progress || {};
-        progressStore.progress[quest.id] = pct;
-        if (pct === 100) {
-          const setCompleted = new Set<string>(progressStore.completed || []);
-          setCompleted.add(quest.id);
-          progressStore.completed = Array.from(setCompleted);
+        // Use user-specific localStorage key
+        const userData = localStorage.getItem('byteclub_user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          const userId = user._id || user.id || "anonymous";
+          const userSpecificKey = `byte_club_quest_progress_${userId}`;
+          
+          const progressStore = JSON.parse(localStorage.getItem(userSpecificKey) || '{"progress":{},"completed":[]}');
+          const missionsCount = quest.missions.length;
+          const completedCount = newCompleted.size;
+          const pct = Math.round((completedCount / missionsCount) * 100);
+          progressStore.progress = progressStore.progress || {};
+          progressStore.progress[quest.id] = pct;
+          if (pct === 100) {
+            const setCompleted = new Set<string>(progressStore.completed || []);
+            setCompleted.add(quest.id);
+            progressStore.completed = Array.from(setCompleted);
+          }
+          localStorage.setItem(userSpecificKey, JSON.stringify(progressStore));
         }
-        localStorage.setItem('byte_club_quest_progress', JSON.stringify(progressStore));
       } catch (_) {}
 
       // Add XP locally for mission since server failed

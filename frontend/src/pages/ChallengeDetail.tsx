@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { apiService } from "@/services/api";
+import { updateStreakOnActivity } from "@/lib/streak";
 
 interface Challenge {
   _id: string;
@@ -50,6 +51,7 @@ export default function ChallengeDetail() {
   const [lastRunPassed, setLastRunPassed] = useState(false);
   const [lastRunLanguage, setLastRunLanguage] = useState<string>('javascript');
   const [isAlreadyCompleted, setIsAlreadyCompleted] = useState(false);
+  const [challengeStartTime, setChallengeStartTime] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchChallenge = async () => {
@@ -64,11 +66,14 @@ export default function ChallengeDetail() {
           if (userData) {
             const user = JSON.parse(userData);
             const completedChallenges = user.completedChallenges || [];
-            if (completedChallenges.includes(slug)) {
-              setIsAlreadyCompleted(true);
-              setSubmitted(true);
-              setCorrect(true);
-            }
+          if (completedChallenges.includes(slug)) {
+            setIsAlreadyCompleted(true);
+            setSubmitted(true);
+            setCorrect(true);
+          } else {
+            // Set start time for timing tracking
+            setChallengeStartTime(Date.now());
+          }
           }
         }
       } catch (error) {
@@ -118,8 +123,13 @@ export default function ChallengeDetail() {
       setSubmitting(true);
       const userAnswer = challenge.type === "mcq" || challenge.type === "true/false" ? mcqAnswer : answer;
       
-      const result = await apiService.submitChallenge(challenge.slug, userAnswer);
+      // Calculate completion time
+      const completionTimeMs = challengeStartTime ? Date.now() - challengeStartTime : null;
+      
+      const result = await apiService.submitChallenge(challenge.slug, userAnswer, completionTimeMs);
       console.log('Challenge submission result:', result);
+      console.log('Result streak value:', result.streak);
+      console.log('Result isCorrect:', result.isCorrect);
       
       setSubmitted(true);
       setCorrect(result.isCorrect);
@@ -129,6 +139,31 @@ export default function ChallengeDetail() {
       if (result.isCorrect) {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 3000);
+        
+        // Update streak on successful challenge completion
+        const streakOutcome = updateStreakOnActivity();
+        console.log('Streak update result:', streakOutcome);
+        
+        // Show streak break notification if applicable
+        if (streakOutcome.streakBroken) {
+          toast.error("Streak Broken!", {
+            description: "You haven't been active for more than 2 days. Starting a new streak!",
+          });
+        } else if (streakOutcome.updated) {
+          if (streakOutcome.isFirstActivity) {
+            toast.success("Streak Started!", {
+              description: `🔥 Welcome! Your coding streak has begun!`,
+            });
+          } else {
+            toast.success("Streak Updated!", {
+              description: `🔥 ${streakOutcome.state.currentStreak} day streak! Keep it up!`,
+            });
+          }
+        } else {
+          // Streak not updated (same day activity)
+          console.log('Streak not updated - same day activity');
+        }
+        
         toast.success("Correct Answer!", {
           description: `You earned ${result.xpEarned} XP!`,
         });
@@ -146,22 +181,53 @@ export default function ChallengeDetail() {
           });
           
           userData.totalXP = result.totalXP;
-          userData.currentStreak = result.streak;
+          // Use frontend streak system instead of backend
+          userData.currentStreak = streakOutcome.state.currentStreak;
+          userData.lastActiveDate = streakOutcome.state.lastActiveDate;
+          userData.lastActiveTime = streakOutcome.state.lastActiveTime;
           if (Array.isArray(result.completedChallenges)) userData.completedChallenges = result.completedChallenges;
           if (Array.isArray(result.badges)) userData.badges = result.badges;
           
           console.log('After update - userData:', userData);
           localStorage.setItem("byteclub_user", JSON.stringify(userData));
           console.log('localStorage updated successfully');
+          
+          // Verify the update was saved
+          const verifyData = JSON.parse(localStorage.getItem("byteclub_user") || '{}');
+          console.log('Verification - currentStreak:', verifyData.currentStreak);
+          console.log('Verification - lastActiveDate:', verifyData.lastActiveDate);
         }
 
         if (Array.isArray(result.badgesUnlocked) && result.badgesUnlocked.length > 0) {
           setNewBadges(result.badgesUnlocked);
+          
+          // Show toast notifications for each unlocked badge
+          result.badgesUnlocked.forEach((badge: string) => {
+            const badgeName = badge.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            toast.success(`🏆 Badge Unlocked!`, {
+              description: `${badgeName}`,
+              duration: 4000,
+            });
+          });
+          
+          // Show summary toast if multiple badges
+          if (result.badgesUnlocked.length > 1) {
+            toast.success(`🎉 ${result.badgesUnlocked.length} Badges Unlocked!`, {
+              description: `Great job completing the challenge!`,
+              duration: 5000,
+            });
+          }
         }
 
         // Dispatch custom event to notify other components of challenge completion
         window.dispatchEvent(new CustomEvent('challengeCompleted', {
-          detail: { slug: challenge.slug, xpEarned: result.xpEarned, badgesUnlocked: result.badgesUnlocked }
+          detail: { 
+            slug: challenge.slug, 
+            xpEarned: result.xpEarned, 
+            badgesUnlocked: result.badgesUnlocked,
+            streak: result.streak,
+            totalXP: result.totalXP
+          }
         }));
       } else {
         toast.error("Incorrect Answer", {

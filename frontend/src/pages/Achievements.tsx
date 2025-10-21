@@ -7,6 +7,9 @@ import { FloatingParticles } from "@/components/ui/floating-particles";
 import { ArrowLeft, Award, Lock, Loader2, AlertCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { apiService } from "@/services/api";
+import { computeLevelProgress } from "@/lib/xp";
+import { loadUserStreak } from "@/lib/streak";
+import { toast } from "sonner";
 
 interface Achievement {
   _id: string;
@@ -26,6 +29,192 @@ export default function Achievements() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Function to manually trigger badge checking
+  const triggerBadgeCheck = async () => {
+    try {
+      console.log('Triggering badge check...');
+      
+      // First, let's manually check and unlock badges based on current user data
+      const userData = localStorage.getItem("byteclub_user");
+      if (userData) {
+        const user = JSON.parse(userData);
+        const currentBadges = user.badges || [];
+        const newBadges = [];
+        
+        console.log('Current user data:', {
+          totalXP: user.totalXP,
+          currentStreak: user.currentStreak,
+          completedChallenges: user.completedChallenges?.length || 0,
+          currentBadges: currentBadges.length
+        });
+        
+        // Check XP Novice badge (12,000 XP)
+        if (user.totalXP >= 12000 && !currentBadges.includes('xp_novice')) {
+          newBadges.push('xp_novice');
+          console.log('✅ XP Novice badge should be unlocked!');
+        }
+        
+        // Check XP Warrior badge (25,000 XP)
+        if (user.totalXP >= 25000 && !currentBadges.includes('xp_warrior')) {
+          newBadges.push('xp_warrior');
+          console.log('✅ XP Warrior badge should be unlocked!');
+        }
+        
+        // Check XP Legend badge (50,000 XP)
+        if (user.totalXP >= 50000 && !currentBadges.includes('xp_legend')) {
+          newBadges.push('xp_legend');
+          console.log('✅ XP Legend badge should be unlocked!');
+        }
+        
+        // Check XP God badge (100,000 XP)
+        if (user.totalXP >= 100000 && !currentBadges.includes('xp_god')) {
+          newBadges.push('xp_god');
+          console.log('✅ XP God badge should be unlocked!');
+        }
+        
+        // Check Quantum Vault Breaker badge (check actual quest completion)
+        const questProgress = localStorage.getItem(`byte_club_quest_progress_${user._id || user.id || 'anonymous'}`);
+        if (questProgress) {
+          try {
+            const questData = JSON.parse(questProgress);
+            const completedQuests = questData.completed || [];
+            const quantumVaultCompleted = completedQuests.includes('quest-1');
+            
+            if (quantumVaultCompleted && !currentBadges.includes('quantum_vault_breaker')) {
+              newBadges.push('quantum_vault_breaker');
+              console.log('✅ Quantum Vault Breaker badge should be unlocked!');
+            }
+            
+            // Check Quest Completer badge (any quest completed)
+            if (completedQuests.length >= 1 && !currentBadges.includes('quest_completer')) {
+              newBadges.push('quest_completer');
+              console.log('✅ Quest Completer badge should be unlocked!');
+            }
+          } catch (e) {
+            console.error('Error parsing quest progress:', e);
+          }
+        }
+        
+        // Check First Steps badge (1 challenge)
+        if ((user.completedChallenges?.length || 0) >= 1 && !currentBadges.includes('first_steps')) {
+          newBadges.push('first_steps');
+          console.log('✅ First Steps badge should be unlocked!');
+        }
+        
+        // Check Challenge Master badge (5 challenges)
+        if ((user.completedChallenges?.length || 0) >= 5 && !currentBadges.includes('challenge_master')) {
+          newBadges.push('challenge_master');
+          console.log('✅ Challenge Master badge should be unlocked!');
+        }
+        
+        // IMPORTANT: Use frontend streak system for accurate streak badges
+        const frontendStreak = loadUserStreak();
+        console.log('Frontend streak data:', frontendStreak);
+        
+        // Check Daily Coder badge (2 day streak) - using frontend streak
+        if (frontendStreak.currentStreak >= 2 && !currentBadges.includes('daily_coder')) {
+          newBadges.push('daily_coder');
+          console.log('✅ Daily Coder badge should be unlocked!');
+        }
+        
+        // Check Week Warrior badge (7 day streak) - using frontend streak
+        if (frontendStreak.currentStreak >= 7 && !currentBadges.includes('week_warrior')) {
+          newBadges.push('week_warrior');
+          console.log('✅ Week Warrior badge should be unlocked!');
+        }
+        
+        // Check Month Master badge (30 day streak) - using frontend streak
+        if (frontendStreak.currentStreak >= 30 && !currentBadges.includes('month_master')) {
+          newBadges.push('month_master');
+          console.log('✅ Month Master badge should be unlocked!');
+        }
+        
+        if (newBadges.length > 0) {
+          console.log(`🎉 Unlocking ${newBadges.length} new badges:`, newBadges);
+          
+          // Update user badges
+          user.badges = [...(user.badges || []), ...newBadges];
+          
+          // Award XP for each badge (get from achievement definitions)
+          let totalXPBonus = 0;
+          newBadges.forEach(badge => {
+            // Find the achievement definition to get the XP reward
+            const achievement = achievements.find(a => a.key === badge);
+            const xpReward = achievement?.xpReward || 0;
+            totalXPBonus += xpReward;
+            console.log(`🎁 Awarded ${xpReward} XP for ${badge} badge`);
+          });
+          
+          user.totalXP += totalXPBonus;
+          
+          // Update user level based on new total XP
+          const levelData = computeLevelProgress(user.totalXP);
+          user.currentLevel = levelData.level;
+          
+          // Update localStorage
+          localStorage.setItem("byteclub_user", JSON.stringify(user));
+          
+          console.log(`🏆 Successfully unlocked ${newBadges.length} badges and awarded ${totalXPBonus} XP!`);
+          
+          // Show toast notifications for each unlocked badge
+          newBadges.forEach(badge => {
+            const achievement = achievements.find(a => a.key === badge);
+            const badgeName = achievement?.name || badge;
+            const xpReward = achievement?.xpReward || 0;
+            
+            toast.success(`🏆 Badge Unlocked!`, {
+              description: `${badgeName}${xpReward > 0 ? ` (+${xpReward} XP)` : ''}`,
+              duration: 4000,
+            });
+          });
+          
+          // Show summary toast if multiple badges
+          if (newBadges.length > 1) {
+            toast.success(`🎉 ${newBadges.length} Badges Unlocked!`, {
+              description: `You've earned ${totalXPBonus} bonus XP!`,
+              duration: 5000,
+            });
+          }
+          
+          // Sync badge data to backend
+          try {
+            console.log('Syncing badge data to backend:', { badges: user.badges, totalXP: user.totalXP });
+            const response = await apiService.updateProfile({
+              badges: user.badges,
+              totalXP: user.totalXP,
+              triggerBadgeCheck: false // We already did the badge check
+            });
+            console.log('✅ Badge data synced to backend successfully:', response);
+          } catch (error) {
+            console.error('❌ Failed to sync badge data to backend:', error);
+            // Don't fail the badge unlock process if backend sync fails
+          }
+          
+          // Dispatch badge update event to notify other components
+          console.log('Achievements - Dispatching badgeUpdated event with:', { newBadges, totalXPBonus, userBadges: user.badges });
+          window.dispatchEvent(new CustomEvent('badgeUpdated', {
+            detail: { 
+              newBadges,
+              totalXPBonus,
+              userData: user
+            }
+          }));
+          
+          // Show success message
+          alert(`🎉 Unlocked ${newBadges.length} new badges!\n\n${newBadges.join(', ')}\n\n+${totalXPBonus} XP awarded!`);
+          
+          // Refresh the page to show updated badges
+          window.location.reload();
+        } else {
+          console.log('No new badges to unlock');
+        }
+      }
+    } catch (error) {
+      console.error('Error triggering badge check:', error);
+      alert('Error checking badges. Please try again.');
+    }
+  };
+
   // Fetch achievements from API
   useEffect(() => {
     const fetchAchievements = async () => {
@@ -33,6 +222,10 @@ export default function Achievements() {
         setLoading(true);
         setError(null);
         console.log('Fetching achievements from API...');
+        
+        // Auto-check badges when page loads
+        console.log('Auto-checking badges on page load...');
+        await triggerBadgeCheck();
         
         const response = await apiService.getMeta('badge');
         console.log('Achievements response:', response);
@@ -58,11 +251,128 @@ export default function Achievements() {
             console.log('No user data found in localStorage');
           }
           
+          // Function to analyze completed challenges and calculate detailed stats
+          const analyzeCompletedChallenges = async (completedChallenges: string[]) => {
+            const stats = {
+              easyChallengesCompleted: 0,
+              mediumChallengesCompleted: 0,
+              hardChallengesCompleted: 0,
+              veryHardChallengesCompleted: 0,
+              arrayChallengesCompleted: 0,
+              stringChallengesCompleted: 0,
+              graphChallengesCompleted: 0,
+              cryptoChallengesCompleted: 0,
+              dsaChallengesCompleted: 0,
+              fastChallengesCompleted: 0,
+              perfectChallengesCompleted: 0
+            };
+
+            // Analyze each completed challenge
+            for (const slug of completedChallenges) {
+              try {
+                const challenge = await apiService.getChallenge(slug);
+                if (challenge) {
+                  // Count by difficulty
+                  switch (challenge.difficulty?.toLowerCase()) {
+                    case 'easy':
+                      stats.easyChallengesCompleted++;
+                      break;
+                    case 'medium':
+                      stats.mediumChallengesCompleted++;
+                      break;
+                    case 'hard':
+                      stats.hardChallengesCompleted++;
+                      break;
+                    case 'very hard':
+                    case 'very-hard':
+                    case 'veryhard':
+                      stats.veryHardChallengesCompleted++;
+                      break;
+                  }
+
+                  // Count by topic/tags
+                  const tags = challenge.tags || [];
+                  const title = challenge.title?.toLowerCase() || '';
+                  const description = challenge.description?.toLowerCase() || '';
+
+                  if (tags.includes('array') || title.includes('array') || description.includes('array')) {
+                    stats.arrayChallengesCompleted++;
+                  }
+                  if (tags.includes('string') || title.includes('string') || description.includes('string')) {
+                    stats.stringChallengesCompleted++;
+                  }
+                  if (tags.includes('graph') || title.includes('graph') || description.includes('graph')) {
+                    stats.graphChallengesCompleted++;
+                  }
+                  if (tags.includes('crypto') || title.includes('crypto') || description.includes('crypto')) {
+                    stats.cryptoChallengesCompleted++;
+                  }
+                  if (tags.includes('dsa') || tags.includes('dsa-99') || title.includes('dsa')) {
+                    stats.dsaChallengesCompleted++;
+                  }
+
+                  // Count fast challenges (completed in under 5 minutes)
+                  // This would need to be tracked separately, for now assume some are fast
+                  if (Math.random() > 0.7) { // Mock: 30% are considered "fast"
+                    stats.fastChallengesCompleted++;
+                  }
+
+                  // Count perfect challenges (completed without hints)
+                  // This would need to be tracked separately, for now assume some are perfect
+                  if (Math.random() > 0.8) { // Mock: 20% are considered "perfect"
+                    stats.perfectChallengesCompleted++;
+                  }
+                }
+              } catch (error) {
+                console.log(`Could not fetch details for challenge ${slug}:`, error);
+                // For challenges we can't fetch, make educated guesses based on slug
+                if (slug.includes('easy') || slug.includes('simple')) {
+                  stats.easyChallengesCompleted++;
+                } else if (slug.includes('medium')) {
+                  stats.mediumChallengesCompleted++;
+                } else if (slug.includes('hard')) {
+                  stats.hardChallengesCompleted++;
+                }
+                
+                if (slug.includes('array')) {
+                  stats.arrayChallengesCompleted++;
+                }
+                if (slug.includes('string')) {
+                  stats.stringChallengesCompleted++;
+                }
+                if (slug.includes('graph')) {
+                  stats.graphChallengesCompleted++;
+                }
+                if (slug.includes('crypto')) {
+                  stats.cryptoChallengesCompleted++;
+                }
+                if (slug.includes('dsa')) {
+                  stats.dsaChallengesCompleted++;
+                }
+              }
+            }
+
+            return stats;
+          };
+          
           // Get user stats for progress calculation
           let userStats = {
             challengesCompleted: 0,
             totalXP: 0,
-            currentStreak: 0
+            currentStreak: 0,
+            completedAdventureNodes: 0,
+            questMissionsCompleted: 0,
+            easyChallengesCompleted: 0,
+            mediumChallengesCompleted: 0,
+            hardChallengesCompleted: 0,
+            veryHardChallengesCompleted: 0,
+            arrayChallengesCompleted: 0,
+            stringChallengesCompleted: 0,
+            graphChallengesCompleted: 0,
+            cryptoChallengesCompleted: 0,
+            dsaChallengesCompleted: 0,
+            fastChallengesCompleted: 0,
+            perfectChallengesCompleted: 0
           };
           
           if (userData) {
@@ -70,11 +380,105 @@ export default function Achievements() {
               const parsedData = JSON.parse(userData);
               // Handle both nested and direct user data structures
               const parsedUser = parsedData.user || parsedData;
+              const completedChallenges = parsedUser.completedChallenges || [];
+              
+              // Analyze completed challenges to get detailed stats
+              const challengeStats = await analyzeCompletedChallenges(completedChallenges);
+              console.log('🔍 Challenge stats:', { 
+                completedChallenges: completedChallenges.length, 
+                challengeStats 
+              });
+              
+              // Get adventure nodes progress
+              let completedAdventureNodes = 0;
+              try {
+                const adventureProgress = localStorage.getItem("byte_club_adventure_progress");
+                if (adventureProgress) {
+                  const nodes = JSON.parse(adventureProgress);
+                  completedAdventureNodes = Array.isArray(nodes) ? nodes.length : 0;
+                  console.log('🔍 Adventure progress data:', { adventureProgress, nodes, completedAdventureNodes });
+                } else {
+                  console.log('🔍 No adventure progress found');
+                }
+              } catch (error) {
+                console.log('Error reading adventure progress:', error);
+              }
+              
+              // Get quest missions progress - use user-specific localStorage keys
+              let questMissionsCompleted = 0;
+              try {
+                const userId = parsedUser._id || parsedUser.id || 'anonymous';
+                const questProgress = localStorage.getItem(`byte_club_quest_progress_${userId}`);
+                if (questProgress) {
+                  const data = JSON.parse(questProgress);
+                  console.log('🔍 Quest progress data:', data);
+                  
+                  // Count actual completed missions from the completed array
+                  if (data.completed && Array.isArray(data.completed)) {
+                    questMissionsCompleted = data.completed.length;
+                    console.log('🔍 Quest missions completed (from completed array):', questMissionsCompleted);
+                  } else {
+                    // Fallback: count from progress percentages if completed array doesn't exist
+                    const progress = data.progress || {};
+                    const progressValues = Object.values(progress) as number[];
+                    questMissionsCompleted = progressValues.reduce((total: number, pct: number) => {
+                      // Convert percentage to approximate mission count
+                      // Assuming each quest has ~3 missions on average
+                      return total + Math.floor((pct / 100) * 3);
+                    }, 0);
+                    console.log('🔍 Quest missions completed (from progress %):', questMissionsCompleted);
+                  }
+                } else {
+                  console.log('🔍 No quest progress found for user:', userId);
+                }
+              } catch (error) {
+                console.log('Error reading quest progress:', error);
+              }
+              
+              // IMPORTANT: Use frontend streak system for accurate streak data
+              const frontendStreakData = loadUserStreak();
+              
+              // If user has activities but streak is 0, force fix it
+              if (frontendStreakData.currentStreak === 0 && (parsedUser.totalXP > 0 || completedChallenges.length > 0 || completedAdventureNodes > 0 || questMissionsCompleted > 0)) {
+                console.log('🔧 Achievements - User has activities but streak is 0, fixing...');
+                // Force update the streak to 1 for users with activities
+                const raw = localStorage.getItem('byteclub_user');
+                if (raw) {
+                  const user = JSON.parse(raw);
+                  user.currentStreak = 1;
+                  user.longestStreak = Math.max(user.longestStreak || 0, 1);
+                  user.lastActiveDate = new Date().toISOString().slice(0, 10);
+                  user.lastActiveTime = new Date().toISOString();
+                  localStorage.setItem('byteclub_user', JSON.stringify(user));
+                  
+                  // Dispatch event to notify components
+                  window.dispatchEvent(new CustomEvent('streakMigrated', { 
+                    detail: { newStreak: 1 } 
+                  }));
+                  
+                  console.log('✅ Achievements - Fixed broken streak for active user');
+                  frontendStreakData.currentStreak = 1; // Update the data we're using
+                }
+              }
+              
               userStats = {
-                challengesCompleted: parsedUser.completedChallenges?.length || 0,
+                challengesCompleted: completedChallenges.length,
                 totalXP: parsedUser.totalXP || 0,
-                currentStreak: parsedUser.currentStreak || 0,
+                currentStreak: frontendStreakData.currentStreak, // Use frontend streak system
+                completedAdventureNodes: completedAdventureNodes,
+                questMissionsCompleted: questMissionsCompleted,
+                ...challengeStats
               };
+              
+              console.log('🔍 Achievements - User stats updated:', {
+                currentStreak: userStats.currentStreak,
+                frontendStreakData: frontendStreakData,
+                totalXP: userStats.totalXP,
+                completedChallenges: completedChallenges.length,
+                completedAdventureNodes: completedAdventureNodes,
+                questMissionsCompleted: questMissionsCompleted,
+                hasActivities: parsedUser.totalXP > 0 || completedChallenges.length > 0 || completedAdventureNodes > 0 || questMissionsCompleted > 0
+              });
               console.log('User stats for achievements:', userStats);
             } catch (error) {
               console.log('Error parsing user data for stats:', error);
@@ -87,62 +491,260 @@ export default function Achievements() {
             
             // Calculate progress based on achievement requirements
             let progress = undefined;
-            if (!unlocked && achievement.requirements) {
-              const req = achievement.requirements;
-              
-              if (req.challengesCompleted) {
+            if (!unlocked) {
+              // Calculate progress based on badge key and user stats
+              switch (achievement.key) {
+                // Basic Progression Badges
+                case 'first_steps':
+                  progress = {
+                    current: Math.min(userStats.challengesCompleted, 1),
+                    total: 1
+                  };
+                  break;
+                case 'challenge_master':
+                  progress = {
+                    current: Math.min(userStats.challengesCompleted, 5),
+                    total: 5
+                  };
+                  break;
+                case 'coding_warrior':
+                  progress = {
+                    current: Math.min(userStats.challengesCompleted, 15),
+                    total: 15
+                  };
+                  break;
+                case 'algorithm_legend':
+                  progress = {
+                    current: Math.min(userStats.challengesCompleted, 30),
+                    total: 30
+                  };
+                  break;
+                
+                // Streak Badges
+                case 'daily_coder':
+                  progress = {
+                    current: Math.min(userStats.currentStreak, 2),
+                    total: 2
+                  };
+                  console.log('🔍 Daily Coder progress:', { 
+                    current: progress.current, 
+                    total: progress.total, 
+                    userStatsCurrentStreak: userStats.currentStreak 
+                  });
+                  break;
+                case 'week_warrior':
+                  progress = {
+                    current: Math.min(userStats.currentStreak, 7),
+                    total: 7
+                  };
+                  console.log('🔍 Week Warrior progress:', { 
+                    current: progress.current, 
+                    total: progress.total, 
+                    userStatsCurrentStreak: userStats.currentStreak 
+                  });
+                  break;
+                case 'month_master':
+                  progress = {
+                    current: Math.min(userStats.currentStreak, 30),
+                    total: 30
+                  };
+                  console.log('🔍 Month Master progress:', { 
+                    current: progress.current, 
+                    total: progress.total, 
+                    userStatsCurrentStreak: userStats.currentStreak 
+                  });
+                  break;
+                case 'streak_legend':
+                  progress = {
+                    current: Math.min(userStats.currentStreak, 100),
+                    total: 100
+                  };
+                  console.log('🔍 Streak Legend progress:', { 
+                    current: progress.current, 
+                    total: progress.total, 
+                    userStatsCurrentStreak: userStats.currentStreak 
+                  });
+                  break;
+                
+                // Difficulty Mastery Badges
+                case 'easy_ace':
+                  progress = {
+                    current: Math.min(userStats.easyChallengesCompleted, 5),
+                    total: 5
+                  };
+                  break;
+                case 'medium_maestro':
+                  progress = {
+                    current: Math.min(userStats.mediumChallengesCompleted, 10),
+                    total: 10
+                  };
+                  break;
+                case 'hard_hero':
+                  progress = {
+                    current: Math.min(userStats.hardChallengesCompleted, 5),
+                    total: 5
+                  };
+                  break;
+                case 'very_hard_virtuoso':
+                  progress = {
+                    current: Math.min(userStats.veryHardChallengesCompleted, 3),
+                    total: 3
+                  };
+                  break;
+                
+                // Topic Mastery Badges
+                case 'array_architect':
+                  progress = {
+                    current: Math.min(userStats.arrayChallengesCompleted, 5),
+                    total: 5
+                  };
+                  break;
+                case 'string_sorcerer':
+                  progress = {
+                    current: Math.min(userStats.stringChallengesCompleted, 5),
+                    total: 5
+                  };
+                  break;
+                case 'graph_guru':
+                  progress = {
+                    current: Math.min(userStats.graphChallengesCompleted, 3),
+                    total: 3
+                  };
+                  break;
+                case 'crypto_crusader':
+                  progress = {
+                    current: Math.min(userStats.cryptoChallengesCompleted, 3),
+                    total: 3
+                  };
+                  break;
+                case 'dsa_destroyer':
+                  progress = {
+                    current: Math.min(userStats.dsaChallengesCompleted, 10),
+                    total: 10
+                  };
+                  break;
+                
+                // Quest Completion Badges
+                case 'quantum_vault_breaker':
+                  // Check if Quantum Vault quest is completed (100% progress)
+                  const quantumVaultProgress = (() => {
+                    try {
+                      const userData = localStorage.getItem("byteclub_user");
+                      if (userData) {
+                        const user = JSON.parse(userData);
+                        const userId = user._id || user.id || "anonymous";
+                        const userSpecificKey = `byte_club_quest_progress_${userId}`;
+                        const questProgress = localStorage.getItem(userSpecificKey);
+                        if (questProgress) {
+                          const data = JSON.parse(questProgress);
+                          const completed = data.completed || [];
+                          return completed.includes('quest-1') ? 1 : 0;
+                        }
+                      }
+                    } catch (error) {
+                      console.log('Error reading quest progress for quantum vault:', error);
+                    }
+                    return 0;
+                  })();
+                  progress = {
+                    current: quantumVaultProgress,
+                    total: 1
+                  };
+                  break;
+                case 'quest_completer':
+                  // Check if any quest is completed (100% progress)
+                  const anyQuestCompleted = (() => {
+                    try {
+                      const userData = localStorage.getItem("byteclub_user");
+                      if (userData) {
+                        const user = JSON.parse(userData);
+                        const userId = user._id || user.id || "anonymous";
+                        const userSpecificKey = `byte_club_quest_progress_${userId}`;
+                        const questProgress = localStorage.getItem(userSpecificKey);
+                        if (questProgress) {
+                          const data = JSON.parse(questProgress);
+                          const completed = data.completed || [];
+                          return completed.length >= 1 ? 1 : 0;
+                        }
+                      }
+                    } catch (error) {
+                      console.log('Error reading quest progress:', error);
+                    }
+                    return 0;
+                  })();
+                  progress = {
+                    current: anyQuestCompleted,
+                    total: 1
+                  };
+                  break;
+                
+                // Adventure Map Badges
+                case 'adventure_explorer':
+                  progress = {
+                    current: Math.min(userStats.completedAdventureNodes, 5),
+                    total: 5
+                  };
+                  break;
+                case 'adventure_master':
                 progress = {
-                  current: Math.min(userStats.challengesCompleted, req.challengesCompleted),
-                  total: req.challengesCompleted
+                    current: Math.min(userStats.completedAdventureNodes, 20),
+                    total: 20
                 };
-              } else if (req.loopChallengesCompleted) {
-                // For loop_lord, show 0 progress since no loop challenges exist yet
+                  break;
+                case 'adventure_legend':
                 progress = {
-                  current: 0, // No loop challenges completed
-                  total: req.loopChallengesCompleted
-                };
-              } else if (req.syntaxErrorsFixed) {
-                // For syntax_slayer, show progress based on syntax challenges completed
-                const syntaxChallengesCompleted = userStats.challengesCompleted; // Assuming first challenge is syntax
+                    current: Math.min(userStats.completedAdventureNodes, 50),
+                    total: 50
+                  };
+                  break;
+                
+                // Speed and Efficiency Badges
+                case 'speed_demon':
                 progress = {
-                  current: Math.min(syntaxChallengesCompleted, req.syntaxErrorsFixed),
-                  total: req.syntaxErrorsFixed
+                    current: Math.min(userStats.fastChallengesCompleted, 5),
+                    total: 5
                 };
-              } else if (req.speedChallenges) {
-                // Mock for now - would need to track speed challenges
+                  break;
+                case 'perfectionist':
                 progress = {
-                  current: Math.min(userStats.challengesCompleted, req.speedChallenges),
-                  total: req.speedChallenges
-                };
-              } else if (req.arrayChallenges) {
-                // Mock for now - would need to track array challenges
+                    current: Math.min(userStats.perfectChallengesCompleted, 10),
+                    total: 10
+                  };
+                  break;
+                
+                // XP Milestone Badges
+                case 'xp_novice':
                 progress = {
-                  current: Math.min(userStats.challengesCompleted, req.arrayChallenges),
-                  total: req.arrayChallenges
+                    current: Math.min(userStats.totalXP, 12000),
+                    total: 12000
                 };
-              } else if (req.functionsWritten) {
-                // Mock for now - would need to track functions written
+                  break;
+                case 'xp_warrior':
                 progress = {
-                  current: Math.min(userStats.challengesCompleted, req.functionsWritten),
-                  total: req.functionsWritten
+                    current: Math.min(userStats.totalXP, 25000),
+                    total: 25000
                 };
-              } else if (req.recursionProblems) {
-                // Mock for now - would need to track recursion problems
+                  break;
+                case 'xp_legend':
                 progress = {
-                  current: Math.min(userStats.challengesCompleted, req.recursionProblems),
-                  total: req.recursionProblems
+                    current: Math.min(userStats.totalXP, 50000),
+                    total: 50000
                 };
-              } else if (req.debuggingChallenges) {
-                // Mock for now - would need to track debugging challenges
+                  break;
+                case 'xp_god':
                 progress = {
-                  current: Math.min(userStats.challengesCompleted, req.debuggingChallenges),
-                  total: req.debuggingChallenges
+                    current: Math.min(userStats.totalXP, 100000),
+                    total: 100000
                 };
-              } else if (req.streakDays) {
+                  break;
+                
+                default:
+                  // For any other badges, show 0 progress
                 progress = {
-                  current: Math.min(userStats.currentStreak, req.streakDays),
-                  total: req.streakDays
+                    current: 0,
+                    total: 1
                 };
+                  break;
               }
             }
             
@@ -155,15 +757,47 @@ export default function Achievements() {
           
           // Define achievement progression order (by difficulty/XP reward)
           const achievementOrder = [
+            // Basic Progression
             'first_steps',      // 50 XP - First achievement
-            'loop_lord',        // 200 XP - Basic loops
-            'syntax_slayer',    // 300 XP - Fix syntax errors
-            'speed_demon',      // 400 XP - Speed challenges
-            'array_ace',        // 500 XP - Array mastery
-            'function_fury',    // 600 XP - Function writing
-            'recursion_master', // 700 XP - Recursion
-            'bug_exterminator', // 800 XP - Debugging
-            'streak_keeper'     // 1000 XP - Long-term commitment
+            'challenge_master', // 150 XP - 5 challenges
+            'coding_warrior',   // 300 XP - 15 challenges
+            'algorithm_legend', // 500 XP - 30 challenges
+            
+            // Streak Badges
+            'daily_coder',      // 100 XP - 1 day streak
+            'week_warrior',     // 200 XP - 7 day streak
+            'month_master',     // 500 XP - 30 day streak
+            'streak_legend',    // 1000 XP - 100 day streak
+            
+            // Difficulty Mastery
+            'easy_ace',         // 150 XP - 5 easy challenges
+            'medium_maestro',   // 300 XP - 10 medium challenges
+            'hard_hero',        // 400 XP - 5 hard challenges
+            'very_hard_virtuoso', // 600 XP - 3 very hard challenges
+            
+            // Topic Mastery
+            'array_architect',  // 250 XP - 5 array challenges
+            'string_sorcerer',  // 250 XP - 5 string challenges
+            'graph_guru',       // 400 XP - 3 graph challenges
+            'crypto_crusader',  // 500 XP - 3 crypto challenges
+            'dsa_destroyer',    // 600 XP - 10 DSA challenges
+            
+            // Quest & Adventure
+            'quantum_vault_breaker', // 800 XP - Quantum Vault quest
+            'quest_completer',  // 600 XP - Any quest
+            'adventure_explorer', // 200 XP - 5 adventure nodes
+            'adventure_master', // 400 XP - 20 adventure nodes
+            'adventure_legend', // 800 XP - 50 adventure nodes
+            
+            // Speed & Efficiency
+            'speed_demon',      // 400 XP - 5 fast challenges
+            'perfectionist',    // 600 XP - 10 perfect challenges
+            
+            // XP Milestones
+            'xp_novice',        // 200 XP - 12,000 total XP
+            'xp_warrior',       // 500 XP - 25,000 total XP
+            'xp_legend',        // 1000 XP - 50,000 total XP
+            'xp_god'            // 2500 XP - 100,000 total XP
           ];
           
           // Sort achievements: unlocked first, then by progression order
@@ -209,6 +843,37 @@ export default function Achievements() {
     };
 
     fetchAchievements();
+  }, []);
+
+  // Listen for streak updates and badge updates
+  useEffect(() => {
+    const handleStreakMigrated = () => {
+      console.log('Streak migrated, refreshing achievements...');
+      // Refresh the page to update streak progress
+      window.location.reload();
+    };
+
+    const handleBadgeUpdated = () => {
+      console.log('Badge updated, refreshing achievements...');
+      // Refresh the page to show new badges
+      window.location.reload();
+    };
+
+    const handleChallengeCompleted = () => {
+      console.log('Challenge completed, refreshing achievements...');
+      // Refresh the page to update progress
+      window.location.reload();
+    };
+
+    window.addEventListener('streakMigrated', handleStreakMigrated);
+    window.addEventListener('badgeUpdated', handleBadgeUpdated);
+    window.addEventListener('challengeCompleted', handleChallengeCompleted);
+
+    return () => {
+      window.removeEventListener('streakMigrated', handleStreakMigrated);
+      window.removeEventListener('badgeUpdated', handleBadgeUpdated);
+      window.removeEventListener('challengeCompleted', handleChallengeCompleted);
+    };
   }, []);
 
   if (loading) {
@@ -258,6 +923,16 @@ export default function Achievements() {
               Achievements
             </h1>
           </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={triggerBadgeCheck}
+              className="text-white border-white/20 hover:bg-white/10"
+            >
+              <Award className="h-4 w-4 mr-2" />
+              Check Badges
+            </Button>
           <Button
             variant="outline"
             size="sm"
@@ -278,6 +953,7 @@ export default function Achievements() {
             <Loader2 className="h-4 w-4 mr-2" />
             Refresh Data
           </Button>
+          </div>
         </div>
 
         <div className="max-w-5xl mx-auto">

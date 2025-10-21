@@ -1,9 +1,10 @@
-import { Request, Response } from 'express';
-import { Quest } from '../models';
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/auth';
+import { Quest, User } from '../models';
 
 export const questController = {
   // Get all quests for a user
-  async getUserQuests(req: Request, res: Response) {
+  async getUserQuests(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
 
@@ -25,7 +26,7 @@ export const questController = {
   },
 
   // Get a specific quest by ID
-  async getQuestById(req: Request, res: Response) {
+  async getQuestById(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const { questId } = req.params;
@@ -48,7 +49,7 @@ export const questController = {
   },
 
   // Submit a mission answer
-  async submitMission(req: Request, res: Response) {
+  async submitMission(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const { questId, missionId } = req.params;
@@ -72,6 +73,29 @@ export const questController = {
         });
       }
 
+      // Only check for badge unlocks when the entire quest is completed
+      let badgesUnlocked: string[] = [];
+      if (result.questCompleted) {
+        const { checkAndUnlockBadges } = await import('../utils/badges');
+        const user = await User.findById(userId);
+        const prevBadges = (user as any)?.badges || [];
+        console.log('🔍 Quest Controller - Previous badges:', prevBadges);
+        await checkAndUnlockBadges(userId);
+        
+        // Get updated badges to determine what was unlocked
+        const updatedUser = await User.findById(userId);
+        const updatedBadges = (updatedUser as any)?.badges || [];
+        badgesUnlocked = updatedBadges.filter((b: string) => !prevBadges.includes(b));
+        
+        console.log('🔍 Quest Controller - Updated badges:', updatedBadges);
+        console.log('🔍 Quest Controller - Badges unlocked:', badgesUnlocked);
+        
+        console.log(`🏆 Quest ${questId} completed! Badge check triggered for user ${userId}`);
+        if (badgesUnlocked.length > 0) {
+          console.log(`🎉 Unlocked badges: ${badgesUnlocked.join(', ')}`);
+        }
+      }
+
       return res.json({
         success: true,
         message: result.successText || 'Mission completed!',
@@ -79,7 +103,8 @@ export const questController = {
         xpEarned: result.xpEarned,
         totalXP: result.totalXP,
         questCompleted: result.questCompleted,
-        allMissionsCompleted: result.allMissionsCompleted
+        allMissionsCompleted: result.allMissionsCompleted,
+        badgesUnlocked
       });
     } catch (error) {
       console.error('Error submitting mission:', error);
@@ -88,7 +113,7 @@ export const questController = {
   },
 
   // Get user's quest progress
-  async getQuestProgress(req: Request, res: Response) {
+  async getQuestProgress(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const { questId } = req.params;
@@ -107,7 +132,7 @@ export const questController = {
   },
 
   // Get all completed missions for a quest
-  async getCompletedMissions(req: Request, res: Response) {
+  async getCompletedMissions(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const { questId } = req.params;
@@ -129,7 +154,7 @@ export const questController = {
   },
 
   // Get quest statistics
-  async getQuestStats(req: Request, res: Response) {
+  async getQuestStats(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
 

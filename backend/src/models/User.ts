@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { User as IUser } from '../types';
+import { calculateLevel } from '../utils/xp';
 
 const userSchema = new Schema<IUser>({
   username: {
@@ -43,6 +44,9 @@ const userSchema = new Schema<IUser>({
   completedChallenges: [{
     type: String
   }],
+  completedAdventureNodes: [{
+    type: String
+  }],
   badges: [{
     type: String
   }],
@@ -62,14 +66,15 @@ const userSchema = new Schema<IUser>({
 userSchema.index({ totalXP: -1 }); // For leaderboard
 userSchema.index({ currentLevel: -1 });
 
+
 // Virtual for level calculation
 userSchema.virtual('calculatedLevel').get(function() {
-  return Math.floor(this.totalXP / 500) + 1;
+  return calculateLevel(this.totalXP);
 });
 
 // Method to update level based on XP
 userSchema.methods.updateLevel = function() {
-  const newLevel = Math.floor(this.totalXP / 500) + 1;
+  const newLevel = calculateLevel(this.totalXP);
   if (newLevel !== this.currentLevel) {
     this.currentLevel = newLevel;
     return this.save();

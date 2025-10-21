@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { User, Session } from '../models';
 import { generateTokens } from '../utils/jwt';
-import { updateStreak } from '../utils/xp';
+import { calculateLevel } from '../utils/xp';
 import { checkAndUnlockBadges } from '../utils/badges';
 import logger from '../config/logger';
 
@@ -109,7 +109,7 @@ export const signup = async (req: Request, res: Response) => {
           username: (user as any).username,
           email: (user as any).email,
           totalXP: (user as any).totalXP,
-          currentLevel: (user as any).currentLevel,
+          currentLevel: calculateLevel((user as any).totalXP),
           currentStreak: (user as any).currentStreak,
           badges: (user as any).badges,
           rewards: (user as any).rewards,
@@ -234,7 +234,7 @@ export const login = async (req: Request, res: Response) => {
           username: (user as any).username,
           email: (user as any).email,
           totalXP: (user as any).totalXP,
-          currentLevel: (user as any).currentLevel,
+          currentLevel: calculateLevel((user as any).totalXP),
           currentStreak: (user as any).currentStreak,
           badges: (user as any).badges,
           rewards: (user as any).rewards,
@@ -304,11 +304,11 @@ export const updateProfile = async (req: any, res: Response) => {
   
   try {
     const user = req.user;
-    const { username, email, password } = req.body;
+    const { username, email, password, badges, totalXP, triggerBadgeCheck } = req.body;
     
     logger.info(`🔄 Profile update for user: ${user.username}`, {
       userId: user._id,
-      updatingFields: { username: !!username, email: !!email, password: !!password }
+      updatingFields: { username: !!username, email: !!email, password: !!password, badges: !!badges, totalXP: totalXP !== undefined }
     });
 
     // Check if username or email already taken (by another user)
@@ -339,8 +339,20 @@ export const updateProfile = async (req: any, res: Response) => {
       const hashedPassword = await bcrypt.hash(password, 10);
       user.password = hashedPassword;
     }
+    if (badges) user.badges = badges;
+    if (totalXP !== undefined) user.totalXP = totalXP;
 
     await user.save();
+
+    // Trigger badge checking if requested
+    if (triggerBadgeCheck) {
+      logger.info(`🏆 Triggering badge check for user: ${user.username}`);
+      await checkAndUnlockBadges(user._id);
+      
+      // Reload user to get updated badges
+      const updatedUser = await User.findById(user._id);
+      logger.info(`✅ Badge check completed for ${user.username}`);
+    }
 
     logger.info(`✅ Profile updated for ${user.username}`);
 
@@ -352,7 +364,7 @@ export const updateProfile = async (req: any, res: Response) => {
         username: user.username,
         email: user.email,
         totalXP: user.totalXP,
-        currentLevel: user.currentLevel,
+        currentLevel: calculateLevel(user.totalXP),
         currentStreak: user.currentStreak,
         badges: user.badges,
         rewards: user.rewards,
@@ -391,7 +403,7 @@ export const getMe = async (req: any, res: Response) => {
           username: (user as any).username,
           email: (user as any).email,
           totalXP: (user as any).totalXP,
-          currentLevel: (user as any).currentLevel,
+          currentLevel: calculateLevel((user as any).totalXP),
           currentStreak: (user as any).currentStreak,
           badges: (user as any).badges,
           rewards: (user as any).rewards,

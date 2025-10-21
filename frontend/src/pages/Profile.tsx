@@ -10,6 +10,8 @@ import { Navbar } from "@/components/Navbar";
 import { ArrowLeft, User, Mail, Calendar, Flame, Target, Award } from "lucide-react";
 import { apiService } from "@/services/api";
 import { toast } from "sonner";
+import { computeLevelProgress } from "@/lib/xp";
+import { loadUserStreak, fixBrokenStreakForActiveUser } from "@/lib/streak";
 
 interface UserData {
   _id?: string;
@@ -56,11 +58,31 @@ export default function Profile() {
         if (localUser) {
           try {
             const userData = JSON.parse(localUser);
+            console.log('Profile - Raw userData from localStorage:', userData);
             // Ensure arrays exist
             if (!userData.badges) userData.badges = [];
             if (!userData.rewards) userData.rewards = [];
             if (!userData.completedChallenges) userData.completedChallenges = [];
+            
+            // Fix broken streak for active users before loading streak data
+            fixBrokenStreakForActiveUser();
+            
+            // Get streak from frontend streak system
+            const streakData = loadUserStreak();
+            console.log('Profile - loadUserStreak() returned:', streakData);
+            console.log('Profile - userData before streak update:', userData);
+            userData.currentStreak = streakData.currentStreak;
+            console.log('Profile - userData after streak update:', userData);
+            
             setUserData(userData);
+            
+            // Load badges and rewards from user data
+            console.log('Profile - Loading badges from userData:', userData.badges);
+            setBadges(userData.badges || []);
+            setRewards(userData.rewards || []);
+            
+            // Load recent challenges from localStorage
+            loadRecentChallenges();
           } catch (parseError) {
             console.error('Failed to parse local user data:', parseError);
             navigate("/");
@@ -71,17 +93,117 @@ export default function Profile() {
           return;
         }
         
-        // Set empty arrays for now (we'll implement API calls later)
-        setBadges([]);
-        setRewards([]);
-        setRecentChallenges([]);
-        
       } finally {
         setLoading(false);
       }
     };
 
+    const loadRecentChallenges = async () => {
+      try {
+        // Get recent challenges from localStorage
+        const localUser = localStorage.getItem("byteclub_user");
+        if (localUser) {
+          const userData = JSON.parse(localUser);
+          const completedChallenges = userData.completedChallenges || [];
+          
+          if (completedChallenges.length === 0) {
+            setRecentChallenges([]);
+            return;
+          }
+          
+          // Try to get challenge details from API for better display
+          try {
+            const recentChallengesData = [];
+            const recentSlugs = completedChallenges.slice(-5); // Get last 5 completed
+            
+            for (const slug of recentSlugs) {
+              try {
+                const challenge = await apiService.getChallenge(slug);
+                recentChallengesData.push({
+                  title: challenge.title || slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                  date: new Date(Date.now() - (recentSlugs.length - recentSlugs.indexOf(slug)) * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                  xp: challenge.xpReward || Math.floor(Math.random() * 50) + 10,
+                  slug: slug,
+                  difficulty: challenge.difficulty || 'medium'
+                });
+              } catch (apiError) {
+                // Fallback to basic data if API fails
+                recentChallengesData.push({
+                  title: slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                  date: new Date(Date.now() - (recentSlugs.length - recentSlugs.indexOf(slug)) * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                  xp: Math.floor(Math.random() * 50) + 10,
+                  slug: slug,
+                  difficulty: 'medium'
+                });
+              }
+            }
+            
+            setRecentChallenges(recentChallengesData.reverse()); // Show most recent first
+          } catch (error) {
+            console.error('Error fetching challenge details:', error);
+            // Fallback to basic data
+            const recentChallengesData = completedChallenges.slice(-5).map((challengeSlug: string, index: number) => ({
+              title: challengeSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+              date: new Date(Date.now() - (completedChallenges.length - index) * 24 * 60 * 60 * 1000).toLocaleDateString(),
+              xp: Math.floor(Math.random() * 50) + 10,
+              slug: challengeSlug,
+              difficulty: 'medium'
+            }));
+            setRecentChallenges(recentChallengesData.reverse());
+          }
+        }
+      } catch (error) {
+        console.error('Error loading recent challenges:', error);
+        setRecentChallenges([]);
+      }
+    };
+
     loadUserData();
+
+    // Listen for streak migration events to refresh the display
+    const handleStreakMigration = () => {
+      // Fix broken streak for active users before loading streak data
+      fixBrokenStreakForActiveUser();
+      
+      const streakData = loadUserStreak();
+      setUserData(prev => prev ? {
+        ...prev,
+        currentStreak: streakData.currentStreak
+      } : null);
+    };
+
+    // Listen for challenge completion events to refresh recent challenges
+    const handleChallengeCompleted = () => {
+      loadRecentChallenges();
+      // Also refresh user data to get updated completed challenges count
+      const localUser = localStorage.getItem("byteclub_user");
+      if (localUser) {
+        try {
+          const userData = JSON.parse(localUser);
+          const streakData = loadUserStreak();
+          userData.currentStreak = streakData.currentStreak;
+          setUserData(userData);
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+        }
+      }
+    };
+
+    window.addEventListener('streakMigrated', handleStreakMigration);
+    window.addEventListener('challengeCompleted', handleChallengeCompleted);
+    
+    // Listen for badge updates
+    const handleBadgeUpdate = () => {
+      console.log('Profile - Badge update event received, reloading user data...');
+      loadUserData();
+    };
+    window.addEventListener('badgeUpdated', handleBadgeUpdate);
+    
+    return () => {
+      window.removeEventListener('streakMigrated', handleStreakMigration);
+      window.removeEventListener('challengeCompleted', handleChallengeCompleted);
+      window.removeEventListener('badgeUpdated', handleBadgeUpdate);
+    };
   }, [navigate]);
 
   const handleLogout = async () => {
@@ -94,6 +216,7 @@ export default function Profile() {
       navigate("/");
     }
   };
+
 
   if (loading) {
     return (
@@ -130,7 +253,10 @@ export default function Profile() {
       <FloatingParticles count={20} />
 
       {/* Navbar */}
-      <Navbar username={userData.username || 'Hacker'} level={userData.currentLevel || 0} xp={userData.totalXP || 0} onLogout={handleLogout} />
+      {(() => {
+        const { level } = computeLevelProgress(userData.totalXP || 0);
+        return <Navbar username={userData.username || 'Hacker'} level={level} xp={userData.totalXP || 0} onLogout={handleLogout} />
+      })()}
 
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="mb-8 text-center">
@@ -149,27 +275,27 @@ export default function Profile() {
             <NeonCard variant="cyan" glow>
               <div className="flex items-start gap-6">
                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-4xl font-bold border-4 border-primary/30">
-                  {userData.username && userData.username.length > 0 ? userData.username[0].toUpperCase() : 'U'}
+                  {userData?.username && userData.username.length > 0 ? userData.username[0].toUpperCase() : 'U'}
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-3xl font-bold mb-2">{userData.username || 'Hacker'}</h2>
+                  <h2 className="text-3xl font-bold mb-2">{userData?.username || 'Hacker'}</h2>
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4" />
-                      {userData.email || 'No email'}
+                      {userData?.email || 'No email'}
                     </div>
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4" />
-                      Level {userData.currentLevel || 0} • {userData.totalXP || 0} XP
+                      Level {userData?.currentLevel || 0} • {userData?.totalXP || 0} XP
                     </div>
                   </div>
                   <div className="flex gap-2 mt-4 flex-wrap">
                     <NeonBadge variant="success" className="animate-pulse">
                       <Flame className="w-3 h-3 mr-1" />
-                      {userData.currentStreak || 0} Day Streak
+                      {userData?.currentStreak || 0} Day Streak
                     </NeonBadge>
-                    {userData.badges && userData.badges.length > 0 ? (
-                      userData.badges.slice(0, 3).map((badge, index) => (
+                    {badges && badges.length > 0 ? (
+                      badges.slice(0, 3).map((badge, index) => (
                         <NeonBadge key={index} variant="default" className="hover:scale-105 transition-transform">
                           {badge.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </NeonBadge>
@@ -179,9 +305,9 @@ export default function Profile() {
                         No badges yet
                       </NeonBadge>
                     )}
-                    {userData.badges && userData.badges.length > 3 && (
+                    {badges && badges.length > 3 && (
                       <NeonBadge variant="secondary" className="text-xs">
-                        +{userData.badges.length - 3} more
+                        +{badges.length - 3} more
                       </NeonBadge>
                     )}
                   </div>
@@ -201,11 +327,18 @@ export default function Profile() {
                 <Target className="w-5 h-5" />
                 Progress
               </h3>
-              <XPBar 
-                current={userData.totalXP} 
-                max={userData.currentLevel * 500} 
-                level={userData.currentLevel} 
-              />
+              {userData ? (() => {
+                const { level, currentXP, requiredXP } = computeLevelProgress(userData.totalXP || 0);
+                return (
+                  <XPBar 
+                    current={currentXP} 
+                    max={requiredXP} 
+                    level={level} 
+                  />
+                );
+              })() : (
+                <XPBar current={0} max={100} level={1} />
+              )}
             </NeonCard>
           </motion.div>
 
@@ -224,7 +357,7 @@ export default function Profile() {
             </NeonCard>
             <NeonCard variant="violet">
               <div className="text-center">
-                <div className="text-4xl font-bold text-secondary mb-2">{userData.badges?.length || 0}</div>
+                <div className="text-4xl font-bold text-secondary mb-2">{badges?.length || 0}</div>
                 <div className="text-sm text-muted-foreground">Badges Unlocked</div>
               </div>
             </NeonCard>
@@ -252,15 +385,27 @@ export default function Profile() {
                   recentChallenges.map((challenge, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-primary/20"
+                      className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-primary/20 hover:border-primary/40 transition-colors"
                     >
-                      <div>
-                        <div className="font-semibold">{challenge.title}</div>
-                        <div className="text-sm text-muted-foreground">{challenge.date}</div>
+                      <div className="flex-1">
+                        <div className="font-semibold text-white">{challenge.title}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm text-muted-foreground">{challenge.date}</span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            challenge.difficulty === 'easy' ? 'bg-green-500/20 text-green-400' :
+                            challenge.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {challenge.difficulty}
+                          </span>
+                        </div>
                       </div>
                       <div className="text-right">
                         <div className="text-primary font-bold">+{challenge.xp} XP</div>
-                        <div className="text-xs text-green-400">✓ Completed</div>
+                        <div className="text-xs text-green-400 flex items-center gap-1">
+                          <span>✓</span>
+                          <span>Completed</span>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -269,6 +414,13 @@ export default function Profile() {
                     <Award className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>No recent challenges completed yet.</p>
                     <p className="text-sm">Start solving challenges to see your progress here!</p>
+                    <Button 
+                      onClick={() => navigate('/challenges')} 
+                      className="mt-4"
+                      variant="outline"
+                    >
+                      Browse Challenges
+                    </Button>
                   </div>
                 )}
               </div>

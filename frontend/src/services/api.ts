@@ -107,7 +107,7 @@ class ApiService {
     }
   }
 
-  async updateProfile(data: { username?: string; email?: string; password?: string }): Promise<User> {
+  async updateProfile(data: { username?: string; email?: string; password?: string; badges?: string[]; totalXP?: number; triggerBadgeCheck?: boolean }): Promise<User> {
     const response = await this.request<User>('/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -130,7 +130,11 @@ class ApiService {
   }
 
   async getCurrentUser(): Promise<User> {
-    const response = await this.request<User>('/auth/me');
+    const response = await this.request<any>('/auth/me');
+    // Handle both response structures: { data: {...} } and { data: { user: {...} } }
+    if (response.data?.user) {
+      return response.data.user;
+    }
     return response.data!;
   }
 
@@ -138,6 +142,21 @@ class ApiService {
   async getChallenges(): Promise<any[]> {
     const response = await this.request<any>('/challenges');
     // Handle both response structures: { data: [...] } and { data: { challenges: [...] } }
+    if (response.data?.challenges) {
+      return response.data.challenges;
+    }
+    return response.data || [];
+  }
+
+  async getChallengesFiltered(params?: { type?: string; tags?: string[]; isDaily?: boolean }): Promise<any[]> {
+    const query = new URLSearchParams();
+    if (params?.type) query.set('type', params.type);
+    if (params?.isDaily !== undefined) query.set('isDaily', String(params.isDaily));
+    if (params?.tags && params.tags.length) {
+      for (const t of params.tags) query.append('tags', t);
+    }
+    const qs = query.toString();
+    const response = await this.request<any>(`/challenges${qs ? `?${qs}` : ''}`);
     if (response.data?.challenges) {
       return response.data.challenges;
     }
@@ -153,12 +172,32 @@ class ApiService {
     return response.data!;
   }
 
-  async submitChallenge(slug: string, answer: string | number): Promise<any> {
+  async submitChallenge(slug: string, answer: string | number, completionTimeMs?: number | null): Promise<any> {
+    // Get frontend streak data to sync with backend
+    const frontendStreak = this.getFrontendStreak();
+    
     const response = await this.request(`/challenges/${slug}/submit`, {
       method: 'POST',
-      body: JSON.stringify({ answer }),
+      body: JSON.stringify({ 
+        answer, 
+        completionTimeMs,
+        frontendStreak 
+      }),
     });
     return response.data!;
+  }
+  
+  private getFrontendStreak(): number {
+    try {
+      const userData = localStorage.getItem('byteclub_user');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        return parsed.currentStreak || 0;
+      }
+    } catch (error) {
+      console.error('Error getting frontend streak:', error);
+    }
+    return 0;
   }
 
   async runCode(slug: string, code: string, language?: string): Promise<{ success: boolean; results: any[]; error?: string; stderr?: string; compile_output?: string; }> {
@@ -177,20 +216,25 @@ class ApiService {
     return response.data!;
   }
 
-  // Daily challenge
-  async getDailyChallenge(): Promise<any> {
-    const response = await this.request('/daily');
-    return response.data!;
-  }
 
   // Leaderboard
-  async getLeaderboard(type: 'all-time' | 'weekly' = 'all-time'): Promise<any[]> {
-    const response = await this.request<any>(`/users/leaderboard?type=${type}`);
-    // Handle response structure: { data: { leaderboard: [...] } }
-    if (response.data?.leaderboard) {
-      return response.data.leaderboard;
+  async getLeaderboard(type: 'all-time' | 'challenges' | 'adventure' | 'quests' = 'all-time'): Promise<any[]> {
+    try {
+      const response = await this.request<any>(`/users/leaderboard?type=${type}`);
+      console.log(`Leaderboard API response for ${type}:`, response);
+      
+      // Handle response structure: { data: { leaderboard: [...] } }
+      if (response.data?.leaderboard) {
+        console.log(`Leaderboard data for ${type}:`, response.data.leaderboard);
+        return response.data.leaderboard;
+      }
+      
+      console.log(`Direct data for ${type}:`, response.data);
+      return response.data || [];
+    } catch (error) {
+      console.error(`Error fetching leaderboard for ${type}:`, error);
+      throw error;
     }
-    return response.data || [];
   }
 
   // User methods
@@ -265,6 +309,20 @@ class ApiService {
 
   async getQuestStats(): Promise<any> {
     const response = await this.request<any>('/quests/stats/overview');
+    return response.data!;
+  }
+
+  // Adventure Map methods
+  async completeAdventureNode(nodeId: string, xp: number): Promise<any> {
+    const response = await this.request<any>('/adventure/complete', {
+      method: 'POST',
+      body: JSON.stringify({ nodeId, xp }),
+    });
+    return response.data!;
+  }
+
+  async getAdventureProgress(): Promise<any> {
+    const response = await this.request<any>('/adventure/progress');
     return response.data!;
   }
 }

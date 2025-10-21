@@ -6,6 +6,8 @@ import { XPBar } from "@/components/ui/xp-bar";
 import { NeonBadge } from "@/components/ui/neon-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { FloatingParticles } from "@/components/ui/floating-particles";
 import { ConfettiEffect } from "@/components/ui/confetti-effect";
 import { Navbar } from "@/components/Navbar";
@@ -13,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { adventureNodes, getNodeById, isNodeUnlocked, AdventureNode } from "@/data/adventureMapData";
 import { Lock, Lightbulb, CheckCircle, XCircle, Zap, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { apiService } from "@/services/api";
+import { updateStreakOnActivity } from "@/lib/streak";
 
 export default function AdventureMap() {
   const navigate = useNavigate();
@@ -34,10 +38,16 @@ export default function AdventureMap() {
   const [completedNodes, setCompletedNodes] = useState<number[]>([]);
   const [activeNode, setActiveNode] = useState<AdventureNode | null>(null);
   const [answer, setAnswer] = useState("");
+  const [selectedOption, setSelectedOption] = useState("");
   const [showHint, setShowHint] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [correct, setCorrect] = useState(false);
-  const [, forceUpdate] = useState({});
+  const [forceUpdate, setForceUpdate] = useState({});
+
+  // Debug: Monitor completedNodes state changes
+  useEffect(() => {
+    console.log("🔄 completedNodes state changed:", completedNodes);
+  }, [completedNodes]);
 
   useEffect(() => {
     // Debug: Check if adventureNodes loaded
@@ -45,15 +55,50 @@ export default function AdventureMap() {
     console.log("Total nodes:", adventureNodes.length);
     console.log("First 3 nodes:", adventureNodes.slice(0, 3));
     
-    // Load completed nodes from localStorage
-    const saved = localStorage.getItem("byte_club_adventure_progress");
-    if (saved) {
+    // Load completed nodes from backend first, then fallback to localStorage
+    const loadAdventureProgress = async () => {
       try {
-        setCompletedNodes(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to load progress", e);
+        const result = await apiService.getAdventureProgress();
+        console.log("Backend adventure progress result:", result);
+        
+        // Handle both response structures: { data: {...} } and { data: { completedNodes: [...] } }
+        let completedNodes = [];
+        if (result.data?.completedNodes) {
+          completedNodes = result.data.completedNodes;
+        } else if (result.completedNodes) {
+          completedNodes = result.completedNodes;
+        }
+        
+        if (completedNodes && completedNodes.length >= 0) {
+          setCompletedNodes(completedNodes);
+          // Also update localStorage with backend data
+          localStorage.setItem("byte_club_adventure_progress", JSON.stringify(completedNodes));
+          console.log("✅ Loaded adventure progress from backend:", completedNodes);
+        }
+      } catch (error) {
+        console.log("Failed to load from backend, using localStorage:", error);
+        // Fallback to localStorage
+        const saved = localStorage.getItem("byte_club_adventure_progress");
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setCompletedNodes(parsed);
+            console.log("✅ Loaded adventure progress from localStorage:", parsed);
+          } catch (e) {
+            console.error("Failed to load progress", e);
+          }
+        }
       }
-    }
+    };
+
+    loadAdventureProgress();
+
+    // Listen for adventure progress updates
+    const handleAdventureProgressUpdate = () => {
+      loadAdventureProgress();
+    };
+    
+    window.addEventListener('adventureProgressUpdate', handleAdventureProgressUpdate);
 
     // Auto-scroll to starting node (Node 1) after a short delay
     setTimeout(() => {
@@ -93,7 +138,7 @@ export default function AdventureMap() {
       return;
     }
 
-    if (completedNodes.includes(node.id)) {
+    if (completedNodes.includes(node.id) || completedNodes.includes(node.id.toString())) {
       toast.success("Already Completed", {
         description: "You've conquered this node!",
       });
@@ -104,6 +149,7 @@ export default function AdventureMap() {
     // Open node challenge modal
     setActiveNode(node);
     setAnswer("");
+    setSelectedOption("");
     setShowHint(false);
     setSubmitted(false);
     setCorrect(false);
@@ -112,39 +158,136 @@ export default function AdventureMap() {
   const handleSubmit = async () => {
     if (!activeNode) return;
 
-    if (!answer.trim()) {
-      toast.error("Answer Required", {
-        description: "Enter your answer to proceed",
-      });
-      return;
+    // Get the user's answer based on question type
+    let userAnswer = "";
+    if (activeNode.type === "MCQ") {
+      if (!selectedOption) {
+        toast.error("Answer Required", {
+          description: "Please select an option to proceed",
+        });
+        return;
+      }
+      userAnswer = selectedOption;
+    } else {
+      if (!answer.trim()) {
+        toast.error("Answer Required", {
+          description: "Enter your answer to proceed",
+        });
+        return;
+      }
+      userAnswer = answer.trim();
     }
 
     // Check answer locally (Adventure Map works independently)
-    const userAnswer = answer.trim().toLowerCase();
     const correctAnswer = activeNode.correctAnswer.toLowerCase();
-    const isCorrect = userAnswer === correctAnswer;
+    const isCorrect = userAnswer.toLowerCase() === correctAnswer;
     
     setCorrect(isCorrect);
     setSubmitted(true);
 
     if (isCorrect) {
-      // Add to completed nodes
+      // Update streak on successful adventure completion
+      const streakOutcome = updateStreakOnActivity();
+      console.log('Adventure streak update result:', streakOutcome);
+      
+      // Show streak notifications (only show streak broken for existing users)
+      if (streakOutcome.streakBroken) {
+        toast.error("Streak Broken!", {
+          description: "You haven't been active for more than 2 days. Starting a new streak!",
+        });
+      } else if (streakOutcome.updated) {
+        if (streakOutcome.isFirstActivity) {
+          toast.success("Streak Started!", {
+            description: `🔥 Welcome! Your coding streak has begun!`,
+          });
+        } else {
+          toast.success("Streak Updated!", {
+            description: `🔥 ${streakOutcome.state.currentStreak} day streak! Keep it up!`,
+          });
+        }
+      } else {
+        // Streak not updated (same day activity)
+        console.log('Streak not updated - same day activity');
+      }
+      
+      // Add to completed nodes locally first
       const newCompleted = [...completedNodes, activeNode.id];
+      console.log("🔍 Before update - completedNodes:", completedNodes);
+      console.log("🔍 Adding node:", activeNode.id);
+      console.log("🔍 New completed array:", newCompleted);
+      
       setCompletedNodes(newCompleted);
       localStorage.setItem("byte_club_adventure_progress", JSON.stringify(newCompleted));
       
       console.log(`✅ Node ${activeNode.id} completed! Unlocking connected nodes:`, activeNode.connections);
 
-      // Update user XP in localStorage
+      // Update user XP and streak in localStorage
       try {
         const userData = localStorage.getItem("byteclub_user");
         if (userData) {
           const user = JSON.parse(userData);
           user.totalXP = (user.totalXP || 0) + activeNode.xp;
+          // Update streak data from frontend system
+          user.currentStreak = streakOutcome.state.currentStreak;
+          user.lastActiveDate = streakOutcome.state.lastActiveDate;
+          user.lastActiveTime = streakOutcome.state.lastActiveTime;
           localStorage.setItem("byteclub_user", JSON.stringify(user));
         }
       } catch (e) {
-        console.error("Failed to update XP:", e);
+        console.error("Failed to update XP and streak:", e);
+      }
+
+      // Try to sync with backend if user is authenticated
+      const token = localStorage.getItem("byteclub_token");
+      if (token) {
+        try {
+          const result = await apiService.completeAdventureNode(activeNode.id, activeNode.xp);
+          
+          if (result.success) {
+            // Update user data with fresh data from backend
+            const userData = localStorage.getItem("byteclub_user");
+            if (userData) {
+              const user = JSON.parse(userData);
+              user.totalXP = result.data?.totalXP || result.totalXP;
+              localStorage.setItem("byteclub_user", JSON.stringify(user));
+            }
+            console.log("✅ Adventure progress synced with backend");
+            
+            // Show toast notifications for unlocked badges
+            console.log('🔍 Adventure Map - Full result data:', result.data);
+            console.log('🔍 Adventure Map - badgesUnlocked:', result.data?.badgesUnlocked);
+            
+            if (Array.isArray(result.data?.badgesUnlocked) && result.data.badgesUnlocked.length > 0) {
+              console.log('🎉 Adventure Map - Showing badge unlock toasts for:', result.data.badgesUnlocked);
+              result.data.badgesUnlocked.forEach((badge: string) => {
+                const badgeName = badge.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                toast.success(`🏆 Badge Unlocked!`, {
+                  description: `${badgeName}`,
+                  duration: 4000,
+                });
+              });
+              
+              // Show summary toast if multiple badges
+              if (result.data.badgesUnlocked.length > 1) {
+                toast.success(`🎉 ${result.data.badgesUnlocked.length} Badges Unlocked!`, {
+                  description: `Great job completing the adventure!`,
+                  duration: 5000,
+                });
+              }
+            } else {
+              console.log('🔍 Adventure Map - No badges unlocked or badgesUnlocked is empty');
+            }
+          } else if (result.message === 'Node already completed') {
+            console.log("ℹ️ Node already completed, no XP awarded");
+            // Still show success since the node is completed
+          } else {
+            console.warn("⚠️ Failed to sync with backend, but progress saved locally");
+          }
+        } catch (error) {
+          console.warn("⚠️ Failed to sync with backend, but progress saved locally:", error);
+        }
+      } else {
+        console.log("ℹ️ User not authenticated, progress saved locally only");
       }
 
       toast.success("Challenge Completed!", {
@@ -154,8 +297,17 @@ export default function AdventureMap() {
       setConfetti(true);
       setTimeout(() => setConfetti(false), 3000);
 
-      // Trigger update to refresh path colors
+      // Trigger update to refresh path colors and navbar
       window.dispatchEvent(new Event('adventureProgressUpdate'));
+      window.dispatchEvent(new Event('challengeCompleted'));
+      
+      // Force re-render to update node states
+      setForceUpdate({});
+      
+      // Also force a re-render by updating a dummy state
+      setTimeout(() => {
+        setForceUpdate(prev => ({ ...prev, timestamp: Date.now() }));
+      }, 100);
       
       // Close modal after a short delay
       setTimeout(() => {
@@ -233,11 +385,11 @@ export default function AdventureMap() {
                   if (!targetNode) return null;
                   
                   // Check if current node is completed
-                  const isNodeCompleted = completedNodes.includes(node.id);
+                  const isNodeCompleted = completedNodes.includes(node.id) || completedNodes.includes(node.id.toString());
                   
                   // Check if target node is unlocked (will be next to complete)
                   const isTargetUnlocked = isNodeUnlocked(targetId, completedNodes);
-                  const isTargetCompleted = completedNodes.includes(targetId);
+                  const isTargetCompleted = completedNodes.includes(targetId) || completedNodes.includes(targetId.toString());
                   
                   // Path should be:
                   // - CYAN if the source node is completed (showing completed progress)
@@ -277,8 +429,15 @@ export default function AdventureMap() {
 
           {/* Nodes with Visible Information */}
             {adventureNodes.length > 0 ? adventureNodes.map((node, index) => {
+              // Use forceUpdate to ensure re-render when state changes
+              const _ = forceUpdate;
               const unlocked = isNodeUnlocked(node.id, completedNodes);
-              const completed = completedNodes.includes(node.id);
+              const completed = completedNodes.includes(node.id) || completedNodes.includes(node.id.toString());
+              
+              // Debug logging for first few nodes
+              if (node.id <= 3) {
+                console.log(`🔍 Node ${node.id}: unlocked=${unlocked}, completed=${completed}, completedNodes=`, completedNodes);
+              }
               
               // Convert positions to pixel coordinates with proper spacing
               // X: 0-100 maps to 200-3800px (with margins)
@@ -394,13 +553,22 @@ export default function AdventureMap() {
 
                 {/* Options for MCQ */}
                 {activeNode.type === "MCQ" && activeNode.options && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-muted-foreground">Options:</h3>
-                    {activeNode.options.map((option, index) => (
-                      <div key={index} className="p-3 bg-card/30 rounded-lg border border-border">
-                        {option}
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-muted-foreground">Choose your answer:</h3>
+                    <RadioGroup
+                      value={selectedOption}
+                      onValueChange={setSelectedOption}
+                      disabled={submitted && correct}
+                    >
+                      {activeNode.options.map((option, index) => (
+                        <div key={index} className="flex items-center space-x-2 p-3 bg-card/30 rounded-lg border border-border hover:bg-card/50 transition-colors">
+                          <RadioGroupItem value={option} id={`option-${index}`} />
+                          <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
+                            {option}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
                   </div>
                 )}
 
@@ -433,21 +601,23 @@ export default function AdventureMap() {
                   </p>
                 </div>
 
-                {/* Answer Input */}
-                <div>
-                  <Input
-                    placeholder="Enter your answer..."
-                    value={answer}
-                    onChange={(e) => setAnswer(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !submitted) {
-                        handleSubmit();
-                      }
-                    }}
-                    className="text-lg"
-                    disabled={submitted && correct}
-                  />
-                </div>
+                {/* Answer Input - Only for non-MCQ questions */}
+                {activeNode.type !== "MCQ" && (
+                  <div>
+                    <Input
+                      placeholder="Enter your answer..."
+                      value={answer}
+                      onChange={(e) => setAnswer(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !submitted) {
+                          handleSubmit();
+                        }
+                      }}
+                      className="text-lg"
+                      disabled={submitted && correct}
+                    />
+                  </div>
+                )}
 
                 {/* Submit Result */}
                 {submitted && (
@@ -482,6 +652,11 @@ export default function AdventureMap() {
                     onClick={handleSubmit}
                     className="w-full"
                     size="lg"
+                    disabled={
+                      activeNode.type === "MCQ" 
+                        ? !selectedOption 
+                        : !answer.trim()
+                    }
                   >
                     Submit Answer
                   </Button>
@@ -492,6 +667,7 @@ export default function AdventureMap() {
                     onClick={() => {
                       setSubmitted(false);
                       setAnswer("");
+                      setSelectedOption("");
                     }}
                     variant="outline"
                     className="w-full"

@@ -8,6 +8,7 @@ export interface User {
   currentStreak: number;
   lastChallengeDate?: Date;
   completedChallenges: string[];
+  completedAdventureNodes: string[];
   badges: string[];
   rewards: string[];
   role: 'user' | 'admin';
@@ -48,6 +49,7 @@ export interface Attempt {
   challengeSlug: string;
   isCorrect: boolean;
   xpEarned: number;
+  completionTimeMs?: number;
   createdAt: Date;
 }
 

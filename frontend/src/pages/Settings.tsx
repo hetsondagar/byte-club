@@ -10,6 +10,7 @@ import { Navbar } from "@/components/Navbar";
 import { ArrowLeft, Save, User as UserIcon, Mail, Shield, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiService } from "@/services/api";
+import { loadUserStreak } from "@/lib/streak";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -42,12 +43,15 @@ export default function Settings() {
         const parsedData = JSON.parse(user);
         const userInfo = parsedData.user || parsedData;
         
+        // Get streak from frontend streak system
+        const streakData = loadUserStreak();
+        
         setUserData({
           username: userInfo.username || "Hacker",
           email: userInfo.email || "",
           totalXP: userInfo.totalXP || 0,
           currentLevel: userInfo.currentLevel || 1,
-          currentStreak: userInfo.currentStreak || 0
+          currentStreak: streakData.currentStreak // Use frontend streak system
         });
         
         setSettings({
@@ -63,6 +67,21 @@ export default function Settings() {
     };
 
     loadUserData();
+
+    // Listen for streak migration events to refresh the display
+    const handleStreakMigration = () => {
+      const streakData = loadUserStreak();
+      setUserData(prev => ({
+        ...prev,
+        currentStreak: streakData.currentStreak
+      }));
+    };
+
+    window.addEventListener('streakMigrated', handleStreakMigration);
+    
+    return () => {
+      window.removeEventListener('streakMigrated', handleStreakMigration);
+    };
   }, [navigate]);
 
   const handleSave = async () => {
@@ -95,19 +114,30 @@ export default function Settings() {
 
       const response = await apiService.updateProfile(updateData);
       
-      // Update localStorage with new data
+      // Update localStorage with new data and refresh streak
       const currentUser = localStorage.getItem("byteclub_user");
       if (currentUser) {
         const parsedUser = JSON.parse(currentUser);
+        const streakData = loadUserStreak(); // Get fresh streak data
+        
         const updatedUser = {
           ...parsedUser,
           user: {
             ...parsedUser.user,
             username: settings.username,
-            email: settings.email
+            email: settings.email,
+            currentStreak: streakData.currentStreak // Update streak in user data
           }
         };
         localStorage.setItem("byteclub_user", JSON.stringify(updatedUser));
+        
+        // Update local state with fresh streak data
+        setUserData(prev => ({
+          ...prev,
+          username: settings.username,
+          email: settings.email,
+          currentStreak: streakData.currentStreak
+        }));
       }
 
       toast.success("Settings Saved", {

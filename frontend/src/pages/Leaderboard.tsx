@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { FloatingParticles } from "@/components/ui/floating-particles";
 import { Navbar } from "@/components/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Trophy, Medal, Award } from "lucide-react";
+import { ArrowLeft, Trophy, Medal, Award, Flame, Star } from "lucide-react";
 import { apiService } from "@/services/api";
 import { toast } from "sonner";
+import { loadUserStreak } from "@/lib/streak";
+import { computeLevelProgress } from "@/lib/xp";
 
 interface LeaderboardEntry {
   rank: number;
@@ -34,9 +36,11 @@ interface UserData {
 
 export default function Leaderboard() {
   const navigate = useNavigate();
-  const [timeframe, setTimeframe] = useState<"weekly" | "monthly" | "alltime">("alltime");
+  const [category, setCategory] = useState<"alltime" | "challenges" | "adventure" | "quests">("alltime");
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
-  const [weeklyData, setWeeklyData] = useState<LeaderboardEntry[]>([]);
+  const [challengesData, setChallengesData] = useState<LeaderboardEntry[]>([]);
+  const [adventureData, setAdventureData] = useState<LeaderboardEntry[]>([]);
+  const [questsData, setQuestsData] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<UserData | null>(null);
 
@@ -58,11 +62,25 @@ export default function Leaderboard() {
       try {
         setLoading(true);
         
-        // Get current user data
+        // Get current user data with frontend streak and level
         const localUser = localStorage.getItem("byteclub_user");
         if (localUser) {
           try {
             const userData = JSON.parse(localUser);
+            // Get streak from frontend streak system
+            const streakData = loadUserStreak();
+            // Calculate level from XP
+            const levelData = computeLevelProgress(userData.totalXP || 0);
+            
+            userData.currentStreak = streakData.currentStreak;
+            userData.currentLevel = levelData.level;
+            
+            // Update localStorage with the correct data
+            localStorage.setItem("byteclub_user", JSON.stringify(userData));
+            console.log('Updated localStorage with frontend data:');
+            console.log('  Streak:', streakData.currentStreak);
+            console.log('  Level:', levelData.level);
+            
             setUserData(userData);
           } catch (parseError) {
             console.error('Failed to parse local user data:', parseError);
@@ -71,13 +89,126 @@ export default function Leaderboard() {
         
         // Fetch leaderboard data from API
         try {
-          const [allTimeData, weeklyData] = await Promise.all([
+          const [allTimeData, challengesData, adventureData, questsData] = await Promise.all([
             apiService.getLeaderboard('all-time'),
-            apiService.getLeaderboard('weekly')
+            apiService.getLeaderboard('challenges'),
+            apiService.getLeaderboard('adventure'),
+            apiService.getLeaderboard('quests')
           ]);
           
-          setLeaderboardData(allTimeData);
-          setWeeklyData(weeklyData);
+          console.log('Raw API responses:');
+          console.log('All-time data:', allTimeData);
+          console.log('Challenges data:', challengesData);
+          console.log('Adventure data:', adventureData);
+          console.log('Quests data:', questsData);
+          
+          // Ensure data is properly formatted
+          const formatLeaderboardData = (data: any[]) => {
+            if (!Array.isArray(data)) {
+              console.error('Leaderboard data is not an array:', data);
+              return [];
+            }
+            
+            console.log('Raw leaderboard data:', data);
+            
+            return data.map((entry, index) => {
+              const formattedEntry = {
+                _id: entry._id || `entry-${index}`,
+                username: entry.username || 'Unknown User',
+                totalXP: entry.totalXP || 0,
+                currentLevel: entry.currentLevel || 1,
+                currentStreak: entry.currentStreak || 0,
+                badges: Array.isArray(entry.badges) ? entry.badges : [],
+                rank: entry.rank || index + 1
+              };
+              
+              console.log(`Formatted entry ${index}:`, formattedEntry);
+              return formattedEntry;
+            });
+          };
+          
+          // Format data and update ALL users' streak and level from frontend system
+          const currentUser = userData?.username;
+          const updateAllUsersData = (data: any[]) => {
+            return data.map(entry => {
+              // For weekly/monthly, use lifetimeXP for level calculation if available
+              const xpForLevel = entry.lifetimeXP || entry.totalXP || 0;
+              const levelData = computeLevelProgress(xpForLevel);
+              
+              // For current user, get data from localStorage
+              if (entry.username === currentUser) {
+                const streakData = loadUserStreak();
+                
+                console.log(`Updating current user data:`);
+                console.log(`  Streak: ${entry.currentStreak} -> ${streakData.currentStreak}`);
+                console.log(`  Level: ${entry.currentLevel} -> ${levelData.level} (from ${xpForLevel} XP)`);
+                
+                // Get badges from localStorage
+                const localUser = localStorage.getItem("byteclub_user");
+                let frontendBadges = entry.badges || [];
+                if (localUser) {
+                  try {
+                    const userData = JSON.parse(localUser);
+                    frontendBadges = userData.badges || [];
+                    console.log(`  Badges: ${entry.badges?.length || 0} -> ${frontendBadges.length}`);
+                  } catch (error) {
+                    console.error('Error getting badges from localStorage:', error);
+                  }
+                }
+                
+                // Force update the entry with frontend data
+                const updatedEntry = {
+                  ...entry,
+                  currentStreak: streakData.currentStreak,
+                  currentLevel: levelData.level,
+                  badges: frontendBadges
+                };
+                
+                // Also update localStorage to ensure consistency
+                if (localUser) {
+                  try {
+                    const userData = JSON.parse(localUser);
+                    userData.currentStreak = streakData.currentStreak;
+                    userData.currentLevel = levelData.level;
+                    userData.badges = frontendBadges;
+                    localStorage.setItem("byteclub_user", JSON.stringify(userData));
+                  } catch (error) {
+                    console.error('Error updating localStorage data:', error);
+                  }
+                }
+                
+                return updatedEntry;
+              } else {
+                // For other users, force 1-day streak and calculate level from XP
+                console.log(`Updating other user ${entry.username}:`);
+                console.log(`  Streak: ${entry.currentStreak} -> 1 (forced)`);
+                console.log(`  Level: ${entry.currentLevel} -> ${levelData.level} (from ${xpForLevel} XP)`);
+                
+                return {
+                  ...entry,
+                  currentStreak: 1, // Force all users to show 1-day streak
+                  currentLevel: levelData.level,
+                  badges: Array.isArray(entry.badges) ? entry.badges : []
+                };
+              }
+            });
+          };
+          
+          const formattedAllTime = updateAllUsersData(formatLeaderboardData(allTimeData));
+          const formattedChallenges = updateAllUsersData(formatLeaderboardData(challengesData));
+          const formattedAdventure = updateAllUsersData(formatLeaderboardData(adventureData));
+          const formattedQuests = updateAllUsersData(formatLeaderboardData(questsData));
+          
+          console.log('Formatted data:');
+          console.log('All-time formatted:', formattedAllTime);
+          console.log('Challenges formatted:', formattedChallenges);
+          console.log('Adventure formatted:', formattedAdventure);
+          console.log('Quests formatted:', formattedQuests);
+          
+          setLeaderboardData(formattedAllTime);
+          setChallengesData(formattedChallenges);
+          setAdventureData(formattedAdventure);
+          setQuestsData(formattedQuests);
           
         } catch (error) {
           console.error('Failed to fetch leaderboard data:', error);
@@ -85,7 +216,9 @@ export default function Leaderboard() {
           
           // Fallback to empty data
           setLeaderboardData([]);
-          setWeeklyData([]);
+          setChallengesData([]);
+          setAdventureData([]);
+          setQuestsData([]);
         }
         
       } finally {
@@ -94,6 +227,33 @@ export default function Leaderboard() {
     };
 
     fetchLeaderboardData();
+
+    // Listen for streak updates and challenge completions
+    const handleStreakUpdate = () => {
+      console.log('Streak update detected, refreshing leaderboard data');
+      fetchLeaderboardData();
+    };
+
+    const handleChallengeCompleted = () => {
+      console.log('Challenge completed, refreshing leaderboard data');
+      fetchLeaderboardData();
+    };
+
+    window.addEventListener('streakMigrated', handleStreakUpdate);
+    window.addEventListener('challengeCompleted', handleChallengeCompleted);
+    
+    // Listen for badge updates
+    const handleBadgeUpdate = () => {
+      console.log('Leaderboard - Badge update event received, refreshing leaderboard data');
+      fetchLeaderboardData();
+    };
+    window.addEventListener('badgeUpdated', handleBadgeUpdate);
+    
+    return () => {
+      window.removeEventListener('streakMigrated', handleStreakUpdate);
+      window.removeEventListener('challengeCompleted', handleChallengeCompleted);
+      window.removeEventListener('badgeUpdated', handleBadgeUpdate);
+    };
   }, []);
 
   const getRankIcon = (rank: number) => {
@@ -153,19 +313,56 @@ export default function Leaderboard() {
             Leaderboard
           </h1>
           <p className="text-muted-foreground mt-2">Top hackers in the realm</p>
+          <div className="flex gap-2 justify-center mt-4">
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+              size="sm"
+            >
+              Refresh Data
+            </Button>
+            <Button 
+              onClick={() => {
+                console.log('Force resetting all streaks to 1 day');
+                fetchLeaderboardData();
+              }}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+            >
+              🔥 Reset All Streaks
+            </Button>
+            <Button 
+              onClick={() => {
+                console.log('Testing weekly/monthly data...');
+                console.log('Current weekly data:', weeklyData);
+                console.log('Current monthly data:', monthlyData);
+                console.log('Current leaderboard data:', leaderboardData);
+              }}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+            >
+              🔍 Debug Data
+            </Button>
+          </div>
         </div>
 
         <div className="max-w-4xl mx-auto">
-          <Tabs defaultValue="alltime" className="mb-8" onValueChange={(v) => setTimeframe(v as any)}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="weekly">Weekly</TabsTrigger>
-              <TabsTrigger value="monthly">Monthly</TabsTrigger>
+          <Tabs defaultValue="alltime" className="mb-8" onValueChange={(v) => setCategory(v as any)}>
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="alltime">All Time</TabsTrigger>
+              <TabsTrigger value="challenges">Challenges</TabsTrigger>
+              <TabsTrigger value="adventure">Adventure</TabsTrigger>
+              <TabsTrigger value="quests">Quests</TabsTrigger>
             </TabsList>
 
-            <TabsContent value={timeframe} className="space-y-4 mt-8">
+            <TabsContent value={category} className="space-y-4 mt-8">
               {(() => {
-                const currentData = timeframe === 'weekly' ? weeklyData : leaderboardData;
+                const currentData = category === 'challenges' ? challengesData : 
+                                  category === 'adventure' ? adventureData : 
+                                  category === 'quests' ? questsData : 
+                                  leaderboardData;
                 const currentUser = userData?.username;
                 
                 // Ensure currentData is always an array
@@ -183,10 +380,25 @@ export default function Leaderboard() {
                   return (
                     <div className="text-center py-12">
                       <Trophy className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                      <p className="text-muted-foreground">No leaderboard data available</p>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        {timeframe === 'weekly' ? 'Weekly data will appear here' : 'All-time data will appear here'}
+                      <p className="text-muted-foreground">
+                        {category === 'challenges' ? 'No challenge completions yet' :
+                         category === 'adventure' ? 'No adventure nodes completed yet' :
+                         category === 'quests' ? 'No quest missions completed yet' :
+                         'No leaderboard data available'}
                       </p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {category === 'challenges' ? 'Complete some challenges to appear on the leaderboard!' :
+                         category === 'adventure' ? 'Explore the adventure map to earn XP!' :
+                         category === 'quests' ? 'Complete quest missions to climb the ranks!' :
+                         'Start your coding journey to appear here!'}
+                      </p>
+                      <Button 
+                        onClick={() => window.location.reload()} 
+                        className="mt-4"
+                        variant="outline"
+                      >
+                        Refresh
+                      </Button>
                     </div>
                   );
                 }
@@ -201,7 +413,7 @@ export default function Leaderboard() {
                     <NeonCard
                       variant={getRankColor(entry.rank || 1) as any}
                       glow={(entry.rank || 1) <= 3}
-                      className={`cursor-pointer ${entry.username === currentUser ? "border-primary border-2" : ""}`}
+                      className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] ${entry.username === currentUser ? "border-primary border-2 shadow-lg shadow-primary/20" : ""}`}
                       onClick={() => navigate(`/leaderboard/${entry.username || 'unknown'}`)}
                     >
                       <div className="flex items-center justify-between">
@@ -210,27 +422,42 @@ export default function Leaderboard() {
                             {getRankIcon(entry.rank || 1)}
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-semibold text-lg">
-                              {entry.username || 'Unknown User'}
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-lg text-white">
+                                {entry.username || 'Unknown User'}
+                              </h3>
                               {entry.username === currentUser && (
-                                <span className="ml-2 text-xs text-primary">(You)</span>
+                                <span className="text-xs px-2 py-1 bg-primary/20 text-primary rounded-full border border-primary/30">
+                                  You
+                                </span>
                               )}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              Level {entry.currentLevel || 1} • {entry.badges?.length || 0} badges • {entry.currentStreak || 0} day streak
-                            </p>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                              <div className="flex items-center gap-1">
+                                <Star className="w-3 h-3" />
+                                <span>Level {entry.currentLevel || 1}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Award className="w-3 h-3" />
+                                <span>{Array.isArray(entry.badges) ? entry.badges.length : 0} badges</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Flame className="w-3 h-3 text-orange-400" />
+                                <span>{entry.currentStreak || 0} day streak</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-primary">
                             {(entry.totalXP || 0).toLocaleString()}
                           </div>
-                        <div className="text-xs text-muted-foreground">XP</div>
+                          <div className="text-xs text-muted-foreground">XP</div>
+                        </div>
                       </div>
-                    </div>
-                  </NeonCard>
-                </motion.div>
-              ));
+                    </NeonCard>
+                  </motion.div>
+                ));
               })()}
             </TabsContent>
           </Tabs>

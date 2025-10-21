@@ -4,6 +4,8 @@ import { Terminal, User, Trophy, Settings, LogOut, Menu, X, Zap } from "lucide-r
 import { Button } from "./ui/button";
 import { NeonBadge } from "./ui/neon-badge";
 import { useState, useEffect } from "react";
+import { computeLevelProgress } from "@/lib/xp";
+import { apiService } from "@/services/api";
 
 interface NavbarProps {
   username?: string;
@@ -19,17 +21,43 @@ export function Navbar({ username = "Hacker", level = 12, xp = 2450, onLogout }:
 
   // Get user data from localStorage
   useEffect(() => {
-    const getUserData = () => {
+    const getUserData = async () => {
+      // Always try to fetch fresh data from API first
+      try {
+        const userData = await apiService.getCurrentUser();
+        if (userData) {
+          const totalXP = userData.totalXP || 0;
+          const { level, currentXP } = computeLevelProgress(totalXP);
+          console.log('Navbar - Fresh API data - totalXP:', totalXP, 'level:', level, 'currentXP:', currentXP);
+          console.log('Navbar - Backend returned level:', userData.currentLevel);
+          setUserData({
+            username: userData.username || "Hacker",
+            level: level,
+            xp: currentXP
+          });
+          
+          // Update localStorage with fresh data
+          localStorage.setItem('byteclub_user', JSON.stringify(userData));
+          return;
+        }
+      } catch (error) {
+        console.log('Error fetching fresh user data:', error);
+      }
+
+      // Fallback to localStorage if API fails
       const user = localStorage.getItem("byteclub_user");
       if (user) {
         try {
           const parsedData = JSON.parse(user);
           // Handle both nested and direct user data structures
           const parsed = parsedData.user || parsedData;
+          const totalXP = parsed.totalXP || 0;
+          const { level, currentXP } = computeLevelProgress(totalXP);
+          console.log('Navbar - localStorage data - totalXP:', totalXP, 'level:', level, 'currentXP:', currentXP);
           setUserData({
             username: parsed.username || "Hacker",
-            level: parsed.currentLevel || 1,
-            xp: parsed.totalXP || 0
+            level: level,
+            xp: currentXP
           });
         } catch (error) {
           console.log('Error parsing user data:', error);
@@ -44,12 +72,31 @@ export function Navbar({ username = "Hacker", level = 12, xp = 2450, onLogout }:
     window.addEventListener('storage', handleStorageChange);
     
     // Also listen for our custom challenge completion event
-    const handleChallengeCompleted = () => getUserData();
+    const handleChallengeCompleted = () => {
+      console.log('Navbar - Challenge completed event received, refreshing data...');
+      getUserData();
+    };
     window.addEventListener('challengeCompleted', handleChallengeCompleted);
+    
+    // Listen for adventure progress updates
+    const handleAdventureProgressUpdate = () => {
+      console.log('Navbar - Adventure progress update event received, refreshing data...');
+      getUserData();
+    };
+    window.addEventListener('adventureProgressUpdate', handleAdventureProgressUpdate);
+    
+    // Listen for badge updates
+    const handleBadgeUpdate = () => {
+      console.log('Navbar - Badge update event received, refreshing data...');
+      getUserData();
+    };
+    window.addEventListener('badgeUpdated', handleBadgeUpdate);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('challengeCompleted', handleChallengeCompleted);
+      window.removeEventListener('adventureProgressUpdate', handleAdventureProgressUpdate);
+      window.removeEventListener('badgeUpdated', handleBadgeUpdate);
     };
   }, []);
 
@@ -59,6 +106,27 @@ export function Navbar({ username = "Hacker", level = 12, xp = 2450, onLogout }:
     } else {
       localStorage.removeItem("byteclub_user");
       navigate("/");
+    }
+  };
+
+  const refreshUserData = async () => {
+    try {
+      const userData = await apiService.getCurrentUser();
+      if (userData) {
+        const totalXP = userData.totalXP || 0;
+        const { level, currentXP } = computeLevelProgress(totalXP);
+        setUserData({
+          username: userData.username || "Hacker",
+          level: level,
+          xp: currentXP
+        });
+        
+        // Update localStorage with fresh data
+        localStorage.setItem('byteclub_user', JSON.stringify(userData));
+        console.log('Navbar - Manual refresh - totalXP:', totalXP, 'level:', level, 'currentXP:', currentXP);
+      }
+    } catch (error) {
+      console.log('Error refreshing user data:', error);
     }
   };
 
@@ -133,7 +201,7 @@ export function Navbar({ username = "Hacker", level = 12, xp = 2450, onLogout }:
               transition={{ delay: 0.3 }}
               className="hidden lg:block"
             >
-              <NeonBadge variant="default" className="px-3 py-1">
+              <NeonBadge variant="default" className="px-3 py-1 cursor-pointer" onClick={refreshUserData}>
                 <Zap className="w-3 h-3 mr-1" />
                 <span className="font-bold">Lv {userData.level}</span>
                 <span className="mx-2">•</span>

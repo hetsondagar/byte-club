@@ -155,7 +155,7 @@ export const questsData: Quest[] = [
         difficulty: "Very Hard",
         hint: "Sum of first n numbers.",
         successText: "Bridge extends. Recursion mastered.",
-        correctAnswer: "Linear",
+        correctAnswer: "quadratic",
       },
       {
         id: "mission-2c",

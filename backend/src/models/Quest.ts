@@ -151,7 +151,7 @@ const QUESTS_DATA: QuestData[] = [
         difficulty: "Very Hard",
         hint: "Sum of first n numbers.",
         successText: "Bridge extends. Recursion mastered.",
-        correctAnswer: "Linear",
+        correctAnswer: "quadratic",
       },
       {
         id: "mission-2c",
@@ -605,9 +605,19 @@ export class Quest {
     // Allow terminal missions to be marked complete when client test run passes.
     // We detect terminal missions heuristically by title/challenge content.
     const isTerminalMission = /terminal/i.test(missionData.title) || /terminal\s+challenge/i.test(missionData.challenge);
+    console.log(`🔍 Mission ${missionId} terminal check:`, {
+      title: missionData.title,
+      isTerminalMission,
+      submittedAnswer,
+      acceptableAnswers,
+      correctAnswer: missionData.correctAnswer
+    });
+    
     const isCorrect = isTerminalMission
       ? (submittedAnswer === 'passed' || acceptableAnswers.includes(submittedAnswer))
       : acceptableAnswers.includes(submittedAnswer);
+      
+    console.log(`🔍 Mission ${missionId} correctness:`, { isCorrect, isTerminalMission });
 
     if (!isCorrect) {
       return {
@@ -618,6 +628,8 @@ export class Quest {
 
     // Get or create quest progress
     let progress = await QuestProgress.findOne({ userId, questId });
+    let isNewCompletion = false;
+    let xpToAward = 0;
 
     if (!progress) {
       // Create new quest progress
@@ -630,6 +642,9 @@ export class Quest {
         isCompleted: questData.missions.length === 1
       });
       await progress.save();
+      isNewCompletion = true;
+      xpToAward = missionData.xp;
+      console.log(`🆕 New quest progress created for mission ${missionId}, awarding ${xpToAward} XP`);
     } else {
       // Update existing progress
       if (!progress.completedMissions.includes(missionId)) {
@@ -638,16 +653,28 @@ export class Quest {
         progress.progress = (progress.completedMissions.length / questData.missions.length) * 100;
         progress.isCompleted = progress.progress === 100;
         await progress.save();
+        isNewCompletion = true;
+        xpToAward = missionData.xp;
+        console.log(`🆕 New mission ${missionId} added to existing progress, awarding ${xpToAward} XP`);
+      } else {
+        console.log(`⚠️ Mission ${missionId} already completed, no XP awarded`);
       }
     }
 
-    // Update user's total XP
+    // Update user's total XP only for new completions
     const User = mongoose.model('User');
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $inc: { totalXP: missionData.xp } },
-      { new: true }
-    );
+    let user;
+    if (isNewCompletion && xpToAward > 0) {
+      user = await User.findByIdAndUpdate(
+        userId,
+        { $inc: { totalXP: xpToAward } },
+        { new: true }
+      );
+      console.log(`💰 Awarded ${xpToAward} XP to user ${userId} for mission ${missionId}`);
+    } else {
+      user = await User.findById(userId);
+      console.log(`🚫 No XP awarded for mission ${missionId} (already completed)`);
+    }
 
     const allMissionsCompleted = progress.completedMissions.length === questData.missions.length;
 
@@ -655,11 +682,12 @@ export class Quest {
       success: true,
       isCorrect: true,
       successText: missionData.successText,
-      xpEarned: missionData.xp,
+      xpEarned: xpToAward, // Return actual XP awarded (0 for duplicates)
       totalXP: user?.totalXP || 0,
       questCompleted: allMissionsCompleted,
       allMissionsCompleted,
-      completedMissions: progress.completedMissions
+      completedMissions: progress.completedMissions,
+      isNewCompletion // Include flag to indicate if this was a new completion
     };
   }
 

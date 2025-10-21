@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Challenge, Attempt, User } from '../models';
-import { calculateXP, updateUserXP, updateStreak } from '../utils/xp';
+import { calculateXP, updateUserXP } from '../utils/xp';
 import { checkAndUnlockBadges } from '../utils/badges';
 import { executeCode } from '../utils/codeExecution';
 import logger from '../config/logger';
@@ -73,7 +73,7 @@ export const getChallenge = async (req: Request, res: Response) => {
 export const submitChallenge = async (req: any, res: Response) => {
   try {
     const { slug } = req.params;
-    const { answer } = req.body;
+    const { answer, completionTimeMs } = req.body;
     const userId = req.user._id;
 
     const challenge = await Challenge.findOne({ slug, isActive: true });
@@ -162,19 +162,28 @@ export const submitChallenge = async (req: any, res: Response) => {
 
     const prevBadges: string[] = ((user as any).badges || []).slice();
     if (isCorrect) {
-      xpEarned = calculateXP((challenge as any).difficulty);
+      xpEarned = (challenge as any).xpReward;
       
       // Update user XP and level
       await updateUserXP(userId, xpEarned);
       
       // Update streak
-      await updateStreak(userId);
+      // Streak is managed by frontend system only
       
       // Add to completed challenges
       (user as any).completedChallenges.push(slug);
+      
+      // Sync frontend streak to backend for accurate badge checking
+      // This ensures streak badges use the correct streak value
+      const frontendStreak = req.body.frontendStreak || (user as any).currentStreak;
+      if (frontendStreak !== (user as any).currentStreak) {
+        (user as any).currentStreak = frontendStreak;
+        logger.info(`Synced frontend streak ${frontendStreak} to backend for user ${(user as any).username}`);
+      }
+      
       await user.save();
       
-      // Check for badge unlocks
+      // Check for badge unlocks AFTER streak sync
       await checkAndUnlockBadges(userId);
       
       // Add streak bonus if applicable
@@ -190,7 +199,8 @@ export const submitChallenge = async (req: any, res: Response) => {
       userId,
       challengeSlug: slug,
       isCorrect,
-      xpEarned
+      xpEarned,
+      completionTimeMs: completionTimeMs || null
     });
     await attempt.save();
 
@@ -201,6 +211,10 @@ export const submitChallenge = async (req: any, res: Response) => {
     const updatedBadges: string[] = (updatedUser as any)?.badges || [];
     const updatedCompleted: string[] = (updatedUser as any)?.completedChallenges || [];
     const badgesUnlocked = updatedBadges.filter(b => !prevBadges.includes(b));
+
+    logger.info(`Challenge submission response for user ${(user as any).username}:`);
+    logger.info(`- Streak being returned: ${(user as any).currentStreak}`);
+    logger.info(`- Total XP being returned: ${(user as any).totalXP + (isCorrect ? xpEarned : 0)}`);
 
     return res.json({
       success: true,

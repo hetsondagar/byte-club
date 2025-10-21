@@ -30,6 +30,16 @@ export function QuestCard({ quest, index, progress, isLocked = false, isComplete
     "Very Hard": "hard",
   }[quest.difficulty] as "easy" | "medium" | "hard";
 
+  const getDifficultyVariant = (difficulty: string) => {
+    switch (difficulty) {
+      case "Easy": return "cyan";
+      case "Medium": return "violet";
+      case "Hard": return "blue";
+      case "Very Hard": return "blue";
+      default: return "cyan";
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -38,7 +48,7 @@ export function QuestCard({ quest, index, progress, isLocked = false, isComplete
       whileHover={!isLocked ? { scale: 1.02 } : {}}
     >
       <NeonCard
-        variant="cyan"
+        variant={getDifficultyVariant(quest.difficulty) as any}
         glow={!isLocked}
         className={`relative overflow-hidden cursor-pointer h-full ${
           isLocked ? "opacity-60" : ""

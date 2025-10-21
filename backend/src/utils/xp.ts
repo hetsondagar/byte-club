@@ -10,8 +10,38 @@ export const calculateXP = (difficulty: 'easy' | 'medium' | 'hard'): number => {
   return xpMap[difficulty];
 };
 
+// Progressive XP thresholds matching frontend
+function roundToNearest50(value: number): number {
+  return Math.round(value / 50) * 50;
+}
+
+function buildXpThresholds(maxLevels: number = 100): number[] {
+  const thresholds: number[] = [];
+  // Raised thresholds for a more gamified curve (dashboard starts at 5000)
+  thresholds[0] = 5000; // Level 1 -> 2
+  thresholds[1] = roundToNearest50(thresholds[0] * 1.25); // ~3750
+  thresholds[2] = roundToNearest50(thresholds[1] * 1.25); // ~4688 -> 4700
+  for (let i = 3; i < maxLevels; i++) {
+    const next = roundToNearest50(thresholds[i - 1] * 1.25);
+    thresholds[i] = Math.max(thresholds[i - 1] + 50, next);
+  }
+  return thresholds;
+}
+
+const DEFAULT_THRESHOLDS = buildXpThresholds(200);
+
 export const calculateLevel = (totalXP: number): number => {
-  return Math.floor(totalXP / 500) + 1;
+  let level = 1;
+  let remaining = Math.max(0, Math.floor(totalXP || 0));
+  let idx = 0;
+
+  while (idx < DEFAULT_THRESHOLDS.length && remaining >= DEFAULT_THRESHOLDS[idx]) {
+    remaining -= DEFAULT_THRESHOLDS[idx];
+    level += 1;
+    idx += 1;
+  }
+
+  return level;
 };
 
 export const updateUserXP = async (userId: string, xpToAdd: number): Promise<void> => {
@@ -25,35 +55,9 @@ export const updateUserXP = async (userId: string, xpToAdd: number): Promise<voi
   await user.save();
 
   if (user.currentLevel > oldLevel) {
-    logger.info(`User ${user.username} leveled up to level ${user.currentLevel}`);
+    logger.info(`User ${(user as any).username} leveled up to level ${user.currentLevel}`);
   }
 };
 
-export const updateStreak = async (userId: string): Promise<void> => {
-  const user = await User.findById(userId);
-  if (!user) return;
-
-  const now = new Date();
-  const lastChallenge = user.lastChallengeDate;
-
-  if (!lastChallenge) {
-    // First challenge
-    user.currentStreak = 1;
-    user.lastChallengeDate = now;
-  } else {
-    const timeDiff = now.getTime() - lastChallenge.getTime();
-    const hoursDiff = timeDiff / (1000 * 60 * 60);
-
-    if (hoursDiff <= 48) {
-      // Within 48 hours, increment streak
-      user.currentStreak += 1;
-    } else {
-      // More than 48 hours, reset streak
-      user.currentStreak = 1;
-    }
-    user.lastChallengeDate = now;
-  }
-
-  await user.save();
-  logger.info(`User ${user.username} streak updated to ${user.currentStreak}`);
-};
+// REMOVED: Backend streak system - using frontend streak system only
+// The frontend manages streaks based on daily activity, not per-challenge

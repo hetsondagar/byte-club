@@ -17,11 +17,9 @@ import ChallengeDetail from "./pages/ChallengeDetail";
 import Leaderboard from "./pages/Leaderboard";
 import LeaderboardDetail from "./pages/LeaderboardDetail";
 import Profile from "./pages/Profile";
-import Stats from "./pages/Stats";
 import Achievements from "./pages/Achievements";
 import Tutorial from "./pages/Tutorial";
 import Settings from "./pages/Settings";
-import DailyChallenge from "./pages/DailyChallenge";
 import Quests from "./pages/Quests";
 import QuestDetailPage from "./pages/QuestDetailPage";
 import Notifications from "./pages/Notifications";
@@ -59,11 +57,9 @@ const App = () => {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/leaderboard/:username" element={<LeaderboardDetail />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/stats" element={<Stats />} />
             <Route path="/achievements" element={<Achievements />} />
             <Route path="/tutorial" element={<Tutorial />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/daily-challenge" element={<DailyChallenge />} />
             <Route path="/quests" element={<Quests />} />
             <Route path="/quests/:id" element={<QuestDetailPage />} />
             <Route path="/quest/:id" element={<ChallengeDetail />} />

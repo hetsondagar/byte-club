@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { NeonCard } from "@/components/ui/neon-card";
 import { XPBar } from "@/components/ui/xp-bar";
 import { computeLevelProgress } from "@/lib/xp";
+import { loadUserStreak } from "@/lib/streak";
 import { NeonBadge } from "@/components/ui/neon-badge";
 import { Button } from "@/components/ui/button";
 import { FloatingParticles } from "@/components/ui/floating-particles";
@@ -18,17 +19,73 @@ export default function Quests() {
   const [completedQuests, setCompletedQuests] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    // Load progress from localStorage
-    const savedProgress = localStorage.getItem("byte_club_quest_progress");
-    if (savedProgress) {
-      try {
-        const data = JSON.parse(savedProgress);
-        setQuestProgress(data.progress || {});
-        setCompletedQuests(new Set(data.completed || []));
-      } catch (e) {
-        console.error("Failed to load quest progress", e);
-      }
+    // Get current user ID for user-specific quest progress
+    const userData = localStorage.getItem("byteclub_user");
+    if (!userData) {
+      console.log("📊 No user data found, initializing empty quest state");
+      setQuestProgress({});
+      setCompletedQuests(new Set());
+      return;
     }
+
+    try {
+      const user = JSON.parse(userData);
+      const userId = user._id || user.id || "anonymous";
+      const userSpecificKey = `byte_club_quest_progress_${userId}`;
+      
+      console.log("🔍 Loading user-specific quest progress for user:", userId);
+      const savedProgress = localStorage.getItem(userSpecificKey);
+      console.log("🔍 Quest progress from localStorage:", savedProgress);
+      
+      if (savedProgress) {
+        try {
+          const data = JSON.parse(savedProgress);
+          console.log("📊 Parsed quest progress data:", data);
+          console.log("📊 Progress object:", data.progress || {});
+          console.log("📊 Completed quests array:", data.completed || []);
+          
+          setQuestProgress(data.progress || {});
+          setCompletedQuests(new Set(data.completed || []));
+        } catch (e) {
+          console.error("Failed to parse quest progress", e);
+          // Reset to empty state on error
+          setQuestProgress({});
+          setCompletedQuests(new Set());
+        }
+      } else {
+        console.log("📊 No quest progress found for this user, initializing empty state");
+        // Ensure empty state for new users
+        setQuestProgress({});
+        setCompletedQuests(new Set());
+      }
+    } catch (e) {
+      console.error("Error parsing user data:", e);
+      setQuestProgress({});
+      setCompletedQuests(new Set());
+    }
+  }, []);
+
+  // Listen for streak updates
+  useEffect(() => {
+    const handleStreakMigrated = () => {
+      console.log('Streak migrated, refreshing Quests page...');
+      // Force re-render to update streak display
+      window.location.reload();
+    };
+
+    const handleChallengeCompleted = () => {
+      console.log('Challenge completed, refreshing Quests page...');
+      // Force re-render to update streak display
+      window.location.reload();
+    };
+
+    window.addEventListener('streakMigrated', handleStreakMigrated);
+    window.addEventListener('challengeCompleted', handleChallengeCompleted);
+
+    return () => {
+      window.removeEventListener('streakMigrated', handleStreakMigrated);
+      window.removeEventListener('challengeCompleted', handleChallengeCompleted);
+    };
   }, []);
 
   const getQuestProgress = (questId: string) => {
@@ -36,7 +93,9 @@ export default function Quests() {
   };
 
   const isQuestCompleted = (questId: string) => {
-    return completedQuests.has(questId);
+    const isCompleted = completedQuests.has(questId);
+    console.log(`🔍 Quest ${questId} completion check:`, isCompleted, "Completed quests:", Array.from(completedQuests));
+    return isCompleted;
   };
 
   const isQuestLocked = (index: number) => {
@@ -77,12 +136,13 @@ export default function Quests() {
     navigate("/");
   };
 
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       <FloatingParticles count={25} />
 
       {/* Navbar */}
-      <Navbar username={username} level={Math.floor(totalXP / 500)} xp={Math.round(totalXP)} onLogout={handleLogout} />
+      <Navbar username={username} level={level} xp={Math.round(totalXP)} onLogout={handleLogout} />
 
       {/* Animated Neon Circuits Background */}
       <div className="fixed inset-0 opacity-5 pointer-events-none">
@@ -130,7 +190,44 @@ export default function Quests() {
               </div>
               <div className="flex items-center gap-2">
                 <Flame className="w-5 h-5 text-orange-400" />
-                <span className="text-orange-400 font-bold">3 Day Streak</span>
+                <span className="text-orange-400 font-bold">
+                  {(() => {
+                    // Use frontend streak system for accurate streak data
+                    const streakData = loadUserStreak();
+                    let currentStreak = streakData.currentStreak;
+                    console.log('🔍 Quests page - Streak data:', streakData);
+                    
+                    // If user has activities but streak is 0, fix it
+                    const userData = localStorage.getItem('byteclub_user');
+                    if (userData && currentStreak === 0) {
+                      try {
+                        const user = JSON.parse(userData);
+                        const hasActivities = (user.totalXP > 0) || (user.completedChallenges?.length > 0) || (user.completedAdventureNodes?.length > 0);
+                        
+                        if (hasActivities) {
+                          console.log('🔧 Quests page - User has activities but streak is 0, fixing...');
+                          user.currentStreak = 1;
+                          user.longestStreak = Math.max(user.longestStreak || 0, 1);
+                          user.lastActiveDate = new Date().toISOString().slice(0, 10);
+                          user.lastActiveTime = new Date().toISOString();
+                          localStorage.setItem('byteclub_user', JSON.stringify(user));
+                          
+                          // Dispatch event to notify components
+                          window.dispatchEvent(new CustomEvent('streakMigrated', { 
+                            detail: { newStreak: 1 } 
+                          }));
+                          
+                          currentStreak = 1;
+                          console.log('✅ Quests page - Fixed broken streak for active user');
+                        }
+                      } catch (error) {
+                        console.log('Error fixing streak in Quests page:', error);
+                      }
+                    }
+                    
+                    return currentStreak === 0 ? "No Streak" : `${currentStreak} Day Streak`;
+                  })()}
+                </span>
               </div>
             </div>
           </motion.div>
@@ -143,26 +240,7 @@ export default function Quests() {
           transition={{ delay: 0.3 }}
           className="max-w-4xl mx-auto mb-12"
         >
-          <NeonCard variant="cyan" glow className="backdrop-blur-sm bg-card/80">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-primary/20 rounded-lg">
-                    <Zap className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                  <div className="text-sm text-muted-foreground">Level</div>
-                  <div className="text-2xl font-bold text-primary">Level {level}</div>
-                  </div>
-                </div>
-                <NeonBadge variant="success" className="text-lg px-4 py-2">
-                  <Trophy className="w-4 h-4 mr-2" />
-                  Quest Hunter
-                </NeonBadge>
-              </div>
-            <XPBar current={currentXP} max={requiredXP} level={level} />
-            </div>
-          </NeonCard>
+          
         </motion.div>
 
         {/* Witty Quote */}

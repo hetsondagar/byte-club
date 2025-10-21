@@ -1,5 +1,5 @@
 // Debug utility for streak system
-import { checkStreakStatus, loadUserStreak } from './streak';
+import { checkStreakStatus, loadUserStreak, migrateOldStreakData } from './streak';
 
 export function debugStreakSystem() {
   console.log('🔍 Debugging Streak System...');
@@ -35,10 +35,23 @@ export function debugStreakSystem() {
   console.log('✅ Debug complete!');
 }
 
+// Force refresh function for Home page
+export function forceRefreshHomePage() {
+  console.log('🔄 Forcing Home page refresh...');
+  window.dispatchEvent(new CustomEvent('streakMigrated', { 
+    detail: { newStreak: 1 } 
+  }));
+  console.log('✅ Home page refresh triggered');
+}
+
 // Make it available globally for console testing
 if (typeof window !== 'undefined') {
   (window as any).debugStreakSystem = debugStreakSystem;
+  (window as any).migrateOldStreakData = migrateOldStreakData;
+  (window as any).forceRefreshHomePage = forceRefreshHomePage;
   console.log('💡 Run debugStreakSystem() in the browser console to debug the streak system');
+  console.log('💡 Run migrateOldStreakData() to manually migrate old streak data');
+  console.log('💡 Run forceRefreshHomePage() to force Home page to refresh');
 }
 
 

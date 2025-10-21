@@ -3,6 +3,7 @@ export interface StreakState {
   longestStreak: number;
   lastActiveDate?: string; // ISO date string (YYYY-MM-DD)
   lastActiveTime?: string; // ISO datetime string for 48-hour tracking
+  isFirstActivity?: boolean; // Flag to track if this is truly the first activity
 }
 
 function getTodayISO(): string {
@@ -33,6 +34,48 @@ export function loadUserStreak(): StreakState {
     const raw = localStorage.getItem('byteclub_user');
     if (!raw) return { currentStreak: 0, longestStreak: 0 };
     const user = JSON.parse(raw);
+    
+    // Migration: If we have old streak data but no lastActiveTime, reset to 1 day
+    if (user.currentStreak > 0 && !user.lastActiveTime) {
+      console.log('🔄 Migrating old streak data to new system');
+      const now = new Date().toISOString();
+      const today = now.slice(0, 10);
+      
+      // Reset streak to 1 day and set current time as last active
+      user.currentStreak = 1;
+      user.lastActiveTime = now;
+      user.lastActiveDate = today;
+      
+      // Save the migrated data
+      localStorage.setItem('byteclub_user', JSON.stringify(user));
+      
+      // Trigger a custom event to notify components of the migration
+      window.dispatchEvent(new CustomEvent('streakMigrated', { 
+        detail: { newStreak: user.currentStreak } 
+      }));
+      
+      console.log('✅ Streak migrated: old streak reset to 1 day with current timestamp');
+    }
+    
+    // Additional migration: If streak is 3 and we have lastActiveTime, it might be old data
+    if (user.currentStreak === 3 && user.lastActiveTime) {
+      console.log('🔄 Detected old 3-day streak, resetting to 1 day');
+      const now = new Date().toISOString();
+      const today = now.slice(0, 10);
+      
+      user.currentStreak = 1;
+      user.lastActiveTime = now;
+      user.lastActiveDate = today;
+      
+      localStorage.setItem('byteclub_user', JSON.stringify(user));
+      
+      window.dispatchEvent(new CustomEvent('streakMigrated', { 
+        detail: { newStreak: user.currentStreak } 
+      }));
+      
+      console.log('✅ Old 3-day streak reset to 1 day');
+    }
+    
     return {
       currentStreak: Number(user.currentStreak || 0),
       longestStreak: Number(user.longestStreak || 0),
@@ -44,7 +87,7 @@ export function loadUserStreak(): StreakState {
   }
 }
 
-export function updateStreakOnActivity(): { updated: boolean; state: StreakState; bonusXP: number; streakBroken: boolean } {
+export function updateStreakOnActivity(): { updated: boolean; state: StreakState; bonusXP: number; streakBroken: boolean; isFirstActivity: boolean } {
   const now = getNowISO();
   const today = getTodayISO();
   const state = loadUserStreak();
@@ -52,31 +95,122 @@ export function updateStreakOnActivity(): { updated: boolean; state: StreakState
   let updated = false;
   let bonusXP = 0;
   let streakBroken = false;
+  let isFirstActivity = false;
 
-  if (!lastTime) {
-    // First activity
+  // Debug logging
+  console.log('🔍 Streak Debug - loadUserStreak result:', state);
+  console.log('🔍 Streak Debug - lastTime:', lastTime);
+  console.log('🔍 Streak Debug - has lastTime:', !!lastTime);
+  console.log('🔍 Streak Debug - Current time:', now);
+  console.log('🔍 Streak Debug - Today:', today);
+
+  // Check if this is a new user (currentStreak: 0, no completed challenges, low XP)
+  const userData = localStorage.getItem('byteclub_user');
+  let isNewUser = false;
+  if (userData) {
+    try {
+      const user = JSON.parse(userData);
+      console.log('🔍 Streak Debug - Full user data:', user);
+      const hasCompletedChallenges = (user.completedChallenges?.length || 0) > 0;
+      const hasAnyXP = (user.totalXP || 0) > 0;
+      const hasZeroStreak = (user.currentStreak || 0) === 0;
+      
+      // A user with ANY XP should not be considered a new user
+      // Only consider truly new users (no XP, no challenges, zero streak)
+      isNewUser = !hasCompletedChallenges && !hasAnyXP && hasZeroStreak;
+      console.log('🔍 Streak Debug - isNewUser:', isNewUser, { hasCompletedChallenges, hasAnyXP, hasZeroStreak });
+      console.log('🔍 Streak Debug - User values:', { 
+        completedChallenges: user.completedChallenges, 
+        totalXP: user.totalXP, 
+        currentStreak: user.currentStreak 
+      });
+    } catch (e) {
+      console.log('🔍 Streak Debug - Error parsing user data:', e);
+      isNewUser = true;
+    }
+  } else {
+    console.log('🔍 Streak Debug - No user data found');
+    isNewUser = true;
+  }
+
+  // If this is a new user, always treat as first activity regardless of old data
+  if (isNewUser) {
+    console.log('🔍 Streak Debug - NEW USER PATH: New user detected, treating as first activity');
+    console.log('🔍 Streak Debug - NEW USER PATH: Setting streakBroken = false for new user');
     state.currentStreak = 1;
     state.longestStreak = Math.max(state.longestStreak, state.currentStreak);
     state.lastActiveDate = today;
     state.lastActiveTime = now;
+    state.isFirstActivity = true;
     updated = true;
+    streakBroken = false;
+    isFirstActivity = true;
+    console.log('🔥 NEW USER PATH - streak started: 1 day, streakBroken = false');
+  } else if (!lastTime) {
+    // This should not happen now since new users are handled above, but keeping as fallback
+    console.log('🔍 Streak Debug - FALLBACK PATH: no lastTime but not detected as new user');
+    state.currentStreak = 1;
+    state.longestStreak = Math.max(state.longestStreak, state.currentStreak);
+    state.lastActiveDate = today;
+    state.lastActiveTime = now;
+    state.isFirstActivity = false; // Not first activity since not detected as new user
+    updated = true;
+    streakBroken = false;
+    isFirstActivity = false;
+    console.log('🔥 FALLBACK PATH - streak started: 1 day');
   } else {
-    const hoursDiff = hoursBetweenISO(lastTime, now);
+    console.log('🔍 Streak Debug - EXISTING USER PATH: User has lastTime, checking days difference');
+    const lastDate = state.lastActiveDate;
+    const daysDiff = daysBetweenISO(lastDate || '', today);
+    console.log(`📅 EXISTING USER PATH - Days since last activity: ${daysDiff} (last: ${lastDate}, today: ${today})`);
     
-    if (hoursDiff <= 48) {
-      // Within 48 hours, increment streak
+    if (daysDiff > 2) {
+      // Check if this is a new user to avoid showing "Streak Broken!" inappropriately
+      const userData = localStorage.getItem('byteclub_user');
+      let isNewUser = false;
+      
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          const hasCompletedChallenges = (user.completedChallenges?.length || 0) > 0;
+          const hasLowXP = (user.totalXP || 0) < 100;
+          isNewUser = !hasCompletedChallenges && hasLowXP;
+        } catch (e) {
+          isNewUser = true; // If we can't parse, assume new user
+        }
+      } else {
+        isNewUser = true; // No user data = new user
+      }
+      
+      // More than 2 days - streak broken (but don't show for new users)
+      streakBroken = !isNewUser; // Only show streak broken for existing users
+      state.currentStreak = 1; // Start new streak
+      state.lastActiveDate = today;
+      state.lastActiveTime = now;
+      state.isFirstActivity = false; // Not first activity, just streak reset
+      updated = true;
+      console.log(`💔 Streak broken (>2 days) - starting new streak: 1 day (new user: ${isNewUser}, streakBroken: ${streakBroken})`);
+    } else if (daysDiff === 1) {
+      // Exactly 1 day difference - increment streak (consecutive days)
       state.currentStreak += 1;
       state.longestStreak = Math.max(state.longestStreak, state.currentStreak);
       state.lastActiveDate = today;
       state.lastActiveTime = now;
+      state.isFirstActivity = false; // Not first activity
       updated = true;
-    } else {
-      // More than 48 hours, reset streak
-      streakBroken = true;
-      state.currentStreak = 1; // counts current activity as day 1
-      state.lastActiveDate = today;
+      console.log(`🔥 Streak updated: ${state.currentStreak} days (consecutive day)`);
+    } else if (daysDiff === 0) {
+      // Same day - no streak update, just update last active time
       state.lastActiveTime = now;
+      state.isFirstActivity = false; // Not first activity
       updated = true;
+      console.log(`⏳ Same day activity - no streak update, just updating last active time`);
+    } else {
+      // daysDiff < 0 (shouldn't happen) or other edge cases
+      state.lastActiveTime = now;
+      state.isFirstActivity = false; // Not first activity
+      updated = true;
+      console.log(`⚠️ Edge case: daysDiff=${daysDiff} - just updating last active time`);
     }
   }
 
@@ -99,38 +233,190 @@ export function updateStreakOnActivity(): { updated: boolean; state: StreakState
     localStorage.setItem('byteclub_user', JSON.stringify(user));
   } catch {}
 
-  return { updated, state, bonusXP, streakBroken };
+  console.log('🔍 Streak Debug - Final return values:', { updated, streakBroken, isFirstActivity, currentStreak: state.currentStreak });
+  
+  // Dispatch event to notify components of streak changes
+  if (updated) {
+    window.dispatchEvent(new CustomEvent('streakMigrated', { 
+      detail: { newStreak: state.currentStreak } 
+    }));
+    console.log('🔍 Streak Debug - Dispatched streakMigrated event with streak:', state.currentStreak);
+  }
+  
+  return { updated, state, bonusXP, streakBroken, isFirstActivity };
 }
 
-export function checkStreakStatus(): { shouldBreak: boolean; hoursSinceLastActivity: number } {
+export function checkStreakStatus(): { 
+  canUpdate: boolean; 
+  hoursSinceLastActivity: number; 
+  streakWillBreak: boolean;
+  currentStreak: number;
+} {
   const state = loadUserStreak();
   const lastTime = state.lastActiveTime;
-  const lastDate = state.lastActiveDate;
   
-  // If we have lastActiveTime, use it (new system)
-  if (lastTime) {
-    const now = getNowISO();
-    const hoursDiff = hoursBetweenISO(lastTime, now);
-    
+  if (!lastTime) {
     return {
-      shouldBreak: hoursDiff > 48,
-      hoursSinceLastActivity: hoursDiff
+      canUpdate: true,
+      hoursSinceLastActivity: 0,
+      streakWillBreak: false,
+      currentStreak: state.currentStreak
     };
   }
   
-  // Fallback to lastActiveDate (old system) - assume it was at start of day
-  if (lastDate) {
-    const now = new Date();
-    const lastDateObj = new Date(lastDate + 'T00:00:00Z');
-    const hoursDiff = (now.getTime() - lastDateObj.getTime()) / (1000 * 60 * 60);
-    
-    return {
-      shouldBreak: hoursDiff > 48,
-      hoursSinceLastActivity: hoursDiff
-    };
-  }
+  const now = getNowISO();
+  const hoursDiff = hoursBetweenISO(lastTime, now);
   
-  // No activity recorded
-  return { shouldBreak: false, hoursSinceLastActivity: 0 };
+  return {
+    canUpdate: hoursDiff >= 24,
+    hoursSinceLastActivity: hoursDiff,
+    streakWillBreak: hoursDiff > 48,
+    currentStreak: state.currentStreak
+  };
+}
+
+// Force reset streak to 1 day (for debugging)
+export function forceResetStreakTo1Day(): void {
+  try {
+    const raw = localStorage.getItem('byteclub_user');
+    if (!raw) {
+      console.log('No user data found');
+      return;
+    }
+    
+    const user = JSON.parse(raw);
+    console.log('Before force reset:', {
+      currentStreak: user.currentStreak,
+      lastActiveTime: user.lastActiveTime,
+      lastActiveDate: user.lastActiveDate
+    });
+    
+    const now = new Date().toISOString();
+    const today = now.slice(0, 10);
+    
+    user.currentStreak = 1;
+    user.lastActiveTime = now;
+    user.lastActiveDate = today;
+    
+    localStorage.setItem('byteclub_user', JSON.stringify(user));
+    
+    console.log('✅ Force reset complete:', {
+      currentStreak: user.currentStreak,
+      lastActiveTime: user.lastActiveTime,
+      lastActiveDate: user.lastActiveDate
+    });
+    
+    // Trigger event to notify components
+    window.dispatchEvent(new CustomEvent('streakMigrated', { 
+      detail: { newStreak: user.currentStreak } 
+    }));
+  } catch (error) {
+    console.error('Force reset failed:', error);
+  }
+}
+
+// Manual migration function for debugging
+export function migrateOldStreakData(): void {
+  try {
+    const raw = localStorage.getItem('byteclub_user');
+    if (!raw) {
+      console.log('No user data found');
+      return;
+    }
+    
+    const user = JSON.parse(raw);
+    console.log('Before migration:', {
+      currentStreak: user.currentStreak,
+      lastActiveTime: user.lastActiveTime,
+      lastActiveDate: user.lastActiveDate
+    });
+    
+    if (user.currentStreak > 0 && !user.lastActiveTime) {
+      const now = new Date().toISOString();
+      const today = now.slice(0, 10);
+      
+      user.currentStreak = 1;
+      user.lastActiveTime = now;
+      user.lastActiveDate = today;
+      
+      localStorage.setItem('byteclub_user', JSON.stringify(user));
+      
+      console.log('✅ Migration complete:', {
+        currentStreak: user.currentStreak,
+        lastActiveTime: user.lastActiveTime,
+        lastActiveDate: user.lastActiveDate
+      });
+    } else {
+      console.log('No migration needed - data already in new format');
+    }
+  } catch (error) {
+    console.error('Migration failed:', error);
+  }
+}
+
+export function fixBrokenStreakForActiveUser(): void {
+  try {
+    const raw = localStorage.getItem('byteclub_user');
+    if (!raw) {
+      console.log('🔧 fixBrokenStreakForActiveUser: No user data found');
+      return;
+    }
+    
+    const user = JSON.parse(raw);
+    const hasAnyXP = (user.totalXP || 0) > 0;
+    const hasCompletedChallenges = (user.completedChallenges?.length || 0) > 0;
+    const hasCompletedAdventureNodes = (user.completedAdventureNodes?.length || 0) > 0;
+    const hasZeroStreak = (user.currentStreak || 0) === 0;
+    
+    console.log('🔧 fixBrokenStreakForActiveUser: Checking user data:', {
+      totalXP: user.totalXP,
+      completedChallenges: user.completedChallenges?.length || 0,
+      completedAdventureNodes: user.completedAdventureNodes?.length || 0,
+      currentStreak: user.currentStreak,
+      hasAnyXP,
+      hasCompletedChallenges,
+      hasCompletedAdventureNodes,
+      hasZeroStreak
+    });
+    
+    // Check if user has any activities (XP, challenges, adventure nodes)
+    const hasAnyActivities = hasAnyXP || hasCompletedChallenges || hasCompletedAdventureNodes;
+    
+    console.log('🔧 fixBrokenStreakForActiveUser: hasAnyActivities =', hasAnyActivities);
+    
+    // If user has any activities but zero streak, fix it
+    if (hasAnyActivities && hasZeroStreak) {
+      console.log('🔧 Fixing broken streak for active user:', {
+        totalXP: user.totalXP,
+        completedChallenges: user.completedChallenges?.length || 0,
+        completedAdventureNodes: user.completedAdventureNodes?.length || 0,
+        currentStreak: user.currentStreak
+      });
+      
+      user.currentStreak = 1;
+      user.longestStreak = Math.max(user.longestStreak || 0, 1);
+      user.lastActiveDate = new Date().toISOString().slice(0, 10);
+      user.lastActiveTime = new Date().toISOString();
+      
+      localStorage.setItem('byteclub_user', JSON.stringify(user));
+      
+      // Trigger event to notify components
+      window.dispatchEvent(new CustomEvent('streakMigrated', { 
+        detail: { newStreak: 1 } 
+      }));
+      
+      console.log('✅ Fixed broken streak for active user');
+    } else {
+      console.log('🔍 No streak fix needed:', {
+        hasAnyActivities,
+        hasZeroStreak,
+        totalXP: user.totalXP,
+        completedChallenges: user.completedChallenges?.length || 0,
+        completedAdventureNodes: user.completedAdventureNodes?.length || 0
+      });
+    }
+  } catch (error) {
+    console.error('Error fixing broken streak:', error);
+  }
 }
 

@@ -20,6 +20,11 @@ const attemptSchema = new Schema<IAttempt>({
     type: Number,
     required: true,
     min: 0
+  },
+  completionTimeMs: {
+    type: Number,
+    required: false,
+    min: 0
   }
 }, {
   timestamps: true

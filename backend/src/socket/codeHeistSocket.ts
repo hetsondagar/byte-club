@@ -1,415 +1,491 @@
 import { Server, Socket } from 'socket.io';
-import { CodeHeistGameEngine } from '../controllers/codeHeistController';
-import { CodeHeistDB, Player, IGameRoom } from '../models/CodeHeist';
-import { verifyToken } from '../utils/jwt';
+import jwt from 'jsonwebtoken';
+import { CodeHeistController } from '../controllers/codeHeistController';
+import { IGameRoom, IPlayer } from '../models/CodeHeist';
 
-interface SocketUser {
-  userId: string;
-  username: string;
-  avatar?: string;
+interface AuthenticatedSocket extends Socket {
+  userId?: string;
+  username?: string;
 }
 
-// Store active socket connections
-const activeSockets = new Map<string, SocketUser>();
-const roomSockets = new Map<string, Set<string>>();
+export class CodeHeistSocketHandler {
+  private io: Server;
+  private userRooms: Map<string, string> = new Map(); // userId -> roomCode
 
-export function initializeCodeHeistSocket(io: Server) {
-  const codeHeistNamespace = io.of('/code-heist');
+  constructor(io: Server) {
+    this.io = io;
+  }
 
-  codeHeistNamespace.use(async (socket, next) => {
-    try {
-      const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
-      
-      if (!token) {
-        return next(new Error('Authentication required'));
-      }
+  public initialize(): void {
+    const codeHeistNamespace = this.io.of('/code-heist');
 
-      const decoded = verifyToken(token);
-      socket.data.user = {
-        userId: decoded.userId,
-        username: decoded.username || 'Hacker',
-        avatar: decoded.avatar
-      };
-
-      next();
-    } catch (error) {
-      next(new Error('Invalid token'));
-    }
-  });
-
-  codeHeistNamespace.on('connection', (socket: Socket) => {
-    const user: SocketUser = socket.data.user;
-    console.log(`[Code Heist] ${user.username} connected`);
-    activeSockets.set(socket.id, user);
-
-    // Create a new room
-    socket.on('createRoom', async (data: { roomName: string, maxPlayers: number }, callback) => {
+    // Authentication middleware
+    codeHeistNamespace.use(async (socket: AuthenticatedSocket, next) => {
       try {
-        const roomCode = CodeHeistGameEngine.generateRoomCode();
-        const room = await CodeHeistDB.createRoom({
-          roomCode,
-          roomName: data.roomName,
-          hostId: user.userId,
-          maxPlayers: data.maxPlayers || 6,
-          players: [{
-            userId: user.userId,
-            username: user.username,
-            avatar: user.avatar,
-            hand: [],
-            lives: 0,
-            isReady: false,
-            isActive: false,
-            points: 0
-          }],
-          currentPlayerIndex: 0,
-          deck: [],
-          discardPile: [],
-          gameState: 'waiting',
-          turnNumber: 0
-        });
-
-        socket.join(roomCode);
-        if (!roomSockets.has(roomCode)) {
-          roomSockets.set(roomCode, new Set());
+        const token = socket.handshake.auth.token;
+        if (!token) {
+          return next(new Error('Authentication required'));
         }
-        roomSockets.get(roomCode)!.add(socket.id);
 
-        callback({ success: true, room });
-      } catch (error: any) {
-        console.error('[Code Heist] Create room error:', error);
-        callback({ success: false, error: error.message });
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+        socket.userId = decoded.userId;
+        socket.username = decoded.username;
+        next();
+      } catch (error) {
+        next(new Error('Invalid token'));
       }
     });
 
-    // Join an existing room
-    socket.on('joinRoom', async (data: { roomCode: string }, callback) => {
-      try {
-        const room = await CodeHeistDB.getRoomByCode(data.roomCode);
-        
-        if (!room) {
-          return callback({ success: false, error: 'Room not found' });
-        }
+    codeHeistNamespace.on('connection', (socket: AuthenticatedSocket) => {
+      console.log(`Code Heist: User ${socket.username} connected`);
 
-        if (room.gameState === 'playing') {
-          return callback({ success: false, error: 'Game already in progress' });
-        }
-
-        if (room.players.length >= room.maxPlayers) {
-          return callback({ success: false, error: 'Room is full' });
-        }
-
-        // Check if player already in room
-        const existingPlayer = room.players.find(p => p.userId === user.userId);
-        if (existingPlayer) {
-          socket.join(data.roomCode);
-          if (!roomSockets.has(data.roomCode)) {
-            roomSockets.set(data.roomCode, new Set());
+      // Create room
+      socket.on('createRoom', async (data: { roomName: string; maxPlayers?: number }) => {
+        try {
+          if (!socket.userId || !socket.username) {
+            socket.emit('error', { message: 'Authentication required' });
+            return;
           }
-          roomSockets.get(data.roomCode)!.add(socket.id);
-          return callback({ success: true, room });
-        }
 
-        // Add new player
-        const newPlayer: Player = {
-          userId: user.userId,
-          username: user.username,
-          avatar: user.avatar,
-          hand: [],
-          lives: 0,
-          isReady: false,
-          isActive: false,
-          points: 0
-        };
+          const room = await CodeHeistController.createRoom(
+            socket.userId,
+            data.roomName,
+            data.maxPlayers || 6
+          );
 
-        room.players.push(newPlayer);
-        const updatedRoom = await CodeHeistDB.updateRoom(room._id, { players: room.players });
+          socket.join(room.roomCode);
+          this.userRooms.set(socket.userId, room.roomCode);
 
-        socket.join(data.roomCode);
-        if (!roomSockets.has(data.roomCode)) {
-          roomSockets.set(data.roomCode, new Set());
-        }
-        roomSockets.get(data.roomCode)!.add(socket.id);
-
-        // Notify others
-        socket.to(data.roomCode).emit('playerJoined', { player: newPlayer, room: updatedRoom });
-        callback({ success: true, room: updatedRoom });
-      } catch (error: any) {
-        console.error('[Code Heist] Join room error:', error);
-        callback({ success: false, error: error.message });
-      }
-    });
-
-    // Player ready toggle
-    socket.on('toggleReady', async (data: { roomCode: string }, callback) => {
-      try {
-        const room = await CodeHeistDB.getRoomByCode(data.roomCode);
-        if (!room) {
-          return callback({ success: false, error: 'Room not found' });
-        }
-
-        const playerIndex = room.players.findIndex(p => p.userId === user.userId);
-        if (playerIndex === -1) {
-          return callback({ success: false, error: 'Player not in room' });
-        }
-
-        room.players[playerIndex].isReady = !room.players[playerIndex].isReady;
-        const updatedRoom = await CodeHeistDB.updateRoom(room._id, { players: room.players });
-
-        codeHeistNamespace.to(data.roomCode).emit('roomUpdate', updatedRoom);
-        callback({ success: true, room: updatedRoom });
-      } catch (error: any) {
-        console.error('[Code Heist] Toggle ready error:', error);
-        callback({ success: false, error: error.message });
-      }
-    });
-
-    // Start game
-    socket.on('startGame', async (data: { roomCode: string }, callback) => {
-      try {
-        const room = await CodeHeistDB.getRoomByCode(data.roomCode);
-        if (!room) {
-          return callback({ success: false, error: 'Room not found' });
-        }
-
-        if (room.hostId !== user.userId) {
-          return callback({ success: false, error: 'Only host can start game' });
-        }
-
-        if (room.players.length < 3) {
-          return callback({ success: false, error: 'Need at least 3 players' });
-        }
-
-        const allReady = room.players.every(p => p.isReady || p.userId === room.hostId);
-        if (!allReady) {
-          return callback({ success: false, error: 'All players must be ready' });
-        }
-
-        const startedRoom = await CodeHeistGameEngine.startGame(room._id);
-        codeHeistNamespace.to(data.roomCode).emit('gameStarted', startedRoom);
-        callback({ success: true, room: startedRoom });
-      } catch (error: any) {
-        console.error('[Code Heist] Start game error:', error);
-        callback({ success: false, error: error.message });
-      }
-    });
-
-    // Draw card
-    socket.on('drawCard', async (data: { roomCode: string }, callback) => {
-      try {
-        const room = await CodeHeistDB.getRoomByCode(data.roomCode);
-        if (!room) {
-          return callback({ success: false, error: 'Room not found' });
-        }
-
-        const currentPlayer = room.players[room.currentPlayerIndex];
-        if (currentPlayer.userId !== user.userId) {
-          return callback({ success: false, error: 'Not your turn' });
-        }
-
-        if (currentPlayer.hand.length >= 2) {
-          return callback({ success: false, error: 'Hand limit reached' });
-        }
-
-        const { card, deck, discardPile } = CodeHeistGameEngine.drawCard(room.deck, room.discardPile);
-        currentPlayer.hand.push(card);
-
-        const updatedRoom = await CodeHeistDB.updateRoom(room._id, {
-          players: room.players,
-          deck,
-          discardPile
-        });
-
-        // Send full update to current player
-        socket.emit('cardDrawn', { room: updatedRoom, card });
-        
-        // Send sanitized update to others (no hand details)
-        socket.to(data.roomCode).emit('playerDrewCard', {
-          playerId: user.userId,
-          deckCount: deck.length
-        });
-
-        callback({ success: true, card, room: updatedRoom });
-      } catch (error: any) {
-        console.error('[Code Heist] Draw card error:', error);
-        callback({ success: false, error: error.message });
-      }
-    });
-
-    // Play card
-    socket.on('playCard', async (data: { roomCode: string, cardName: string, targetPlayerId?: string }, callback) => {
-      try {
-        const room = await CodeHeistDB.getRoomByCode(data.roomCode);
-        if (!room) {
-          return callback({ success: false, error: 'Room not found' });
-        }
-
-        const currentPlayer = room.players[room.currentPlayerIndex];
-        if (currentPlayer.userId !== user.userId) {
-          return callback({ success: false, error: 'Not your turn' });
-        }
-
-        const result = CodeHeistGameEngine.playCard(room, user.userId, data.cardName, data.targetPlayerId);
-        
-        if (result.requiresInput) {
-          return callback({ success: true, requiresInput: true, inputType: result.inputType });
-        }
-
-        const updatedRoom = await CodeHeistDB.updateRoom(room._id, result.room);
-
-        // Broadcast card play with log
-        codeHeistNamespace.to(data.roomCode).emit('cardPlayed', {
-          room: updatedRoom,
-          log: result.log,
-          playerId: user.userId,
-          cardName: data.cardName
-        });
-
-        callback({ success: true, room: updatedRoom, log: result.log });
-      } catch (error: any) {
-        console.error('[Code Heist] Play card error:', error);
-        callback({ success: false, error: error.message });
-      }
-    });
-
-    // End turn
-    socket.on('endTurn', async (data: { roomCode: string }, callback) => {
-      try {
-        const room = await CodeHeistDB.getRoomByCode(data.roomCode);
-        if (!room) {
-          return callback({ success: false, error: 'Room not found' });
-        }
-
-        const currentPlayer = room.players[room.currentPlayerIndex];
-        if (currentPlayer.userId !== user.userId) {
-          return callback({ success: false, error: 'Not your turn' });
-        }
-
-        const updatedRoom = await CodeHeistGameEngine.endTurn(room._id);
-
-        if (updatedRoom.gameState === 'ended') {
-          // Game over
-          codeHeistNamespace.to(data.roomCode).emit('gameEnded', {
-            room: updatedRoom,
-            winner: updatedRoom.winner
+          socket.emit('roomCreated', {
+            roomCode: room.roomCode,
+            roomName: room.roomName,
+            hostId: room.hostId
           });
 
-          // Update stats
-          for (const player of updatedRoom.players) {
-            const isWinner = player.username === updatedRoom.winner;
-            await CodeHeistDB.updateStats(player.userId, {
-              totalGames: 1,
-              wins: isWinner ? 1 : 0,
-              losses: isWinner ? 0 : 1,
-              totalPoints: player.points
-            });
-          }
-        } else {
-          codeHeistNamespace.to(data.roomCode).emit('turnEnded', {
-            room: updatedRoom,
-            nextPlayer: updatedRoom.players[updatedRoom.currentPlayerIndex].username
-          });
+          this.broadcastRoomUpdate(room);
+        } catch (error) {
+          socket.emit('error', { message: 'Failed to create room' });
         }
-
-        callback({ success: true, room: updatedRoom });
-      } catch (error: any) {
-        console.error('[Code Heist] End turn error:', error);
-        callback({ success: false, error: error.message });
-      }
-    });
-
-    // Chat message
-    socket.on('chatMessage', (data: { roomCode: string, message: string }) => {
-      codeHeistNamespace.to(data.roomCode).emit('chatMessage', {
-        userId: user.userId,
-        username: user.username,
-        message: data.message,
-        timestamp: new Date()
       });
-    });
 
-    // Leave room
-    socket.on('leaveRoom', async (data: { roomCode: string }, callback) => {
-      try {
-        const room = await CodeHeistDB.getRoomByCode(data.roomCode);
-        if (!room) {
-          return callback({ success: false, error: 'Room not found' });
-        }
-
-        const playerIndex = room.players.findIndex(p => p.userId === user.userId);
-        if (playerIndex !== -1) {
-          room.players.splice(playerIndex, 1);
-
-          if (room.players.length === 0) {
-            // Delete empty room
-            await CodeHeistDB.deleteRoom(room._id);
-          } else {
-            // Update host if needed
-            if (room.hostId === user.userId && room.players.length > 0) {
-              room.hostId = room.players[0].userId;
-            }
-            await CodeHeistDB.updateRoom(room._id, { 
-              players: room.players,
-              hostId: room.hostId
-            });
+      // Join room
+      socket.on('joinRoom', async (data: { roomCode: string }) => {
+        try {
+          if (!socket.userId || !socket.username) {
+            socket.emit('error', { message: 'Authentication required' });
+            return;
           }
 
-          socket.leave(data.roomCode);
-          roomSockets.get(data.roomCode)?.delete(socket.id);
+          const room = await CodeHeistController.joinRoom(
+            data.roomCode,
+            socket.userId,
+            socket.username
+          );
+
+          if (!room) {
+            socket.emit('error', { message: 'Room not found or full' });
+            return;
+          }
+
+          socket.join(room.roomCode);
+          this.userRooms.set(socket.userId, room.roomCode);
+
+          socket.emit('roomJoined', { roomCode: room.roomCode });
+          this.broadcastRoomUpdate(room);
+          this.broadcastPlayerJoined(room, socket.username!);
+        } catch (error) {
+          socket.emit('error', { message: 'Failed to join room' });
+        }
+      });
+
+      // Leave room
+      socket.on('leaveRoom', async () => {
+        try {
+          if (!socket.userId) return;
+
+          const roomCode = this.userRooms.get(socket.userId);
+          if (!roomCode) return;
+
+          const room = await CodeHeistController.leaveRoom(roomCode, socket.userId);
           
-          socket.to(data.roomCode).emit('playerLeft', {
-            userId: user.userId,
-            username: user.username,
-            room: room.players.length > 0 ? room : null
-          });
+          socket.leave(roomCode);
+          this.userRooms.delete(socket.userId);
+
+          if (room) {
+            this.broadcastRoomUpdate(room);
+            this.broadcastPlayerLeft(room, socket.username!);
+          } else {
+            // Room was deleted
+            codeHeistNamespace.to(roomCode).emit('roomDeleted');
+          }
+        } catch (error) {
+          socket.emit('error', { message: 'Failed to leave room' });
         }
+      });
 
-        callback({ success: true });
-      } catch (error: any) {
-        console.error('[Code Heist] Leave room error:', error);
-        callback({ success: false, error: error.message });
-      }
-    });
+      // Toggle ready
+      socket.on('toggleReady', async () => {
+        try {
+          if (!socket.userId) return;
 
-    // Get active rooms
-    socket.on('getActiveRooms', async (callback) => {
-      try {
-        const rooms = await CodeHeistDB.getActiveRooms();
-        callback({ success: true, rooms });
-      } catch (error: any) {
-        console.error('[Code Heist] Get active rooms error:', error);
-        callback({ success: false, error: error.message });
-      }
-    });
+          const roomCode = this.userRooms.get(socket.userId);
+          if (!roomCode) return;
 
-    // Get leaderboard
-    socket.on('getLeaderboard', async (data: { limit?: number }, callback) => {
-      try {
-        const leaderboard = await CodeHeistDB.getLeaderboard(data.limit || 10);
-        callback({ success: true, leaderboard });
-      } catch (error: any) {
-        console.error('[Code Heist] Get leaderboard error:', error);
-        callback({ success: false, error: error.message });
-      }
-    });
+          const room = await CodeHeistController.toggleReady(roomCode, socket.userId);
+          if (room) {
+            this.broadcastRoomUpdate(room);
+          }
+        } catch (error) {
+          socket.emit('error', { message: 'Failed to toggle ready status' });
+        }
+      });
 
-    // Disconnect
-    socket.on('disconnect', () => {
-      console.log(`[Code Heist] ${user.username} disconnected`);
-      activeSockets.delete(socket.id);
+      // Start game
+      socket.on('startGame', async () => {
+        try {
+          if (!socket.userId) return;
 
-      // Clean up room associations
-      roomSockets.forEach((sockets, roomCode) => {
-        if (sockets.has(socket.id)) {
-          sockets.delete(socket.id);
-          socket.to(roomCode).emit('playerDisconnected', {
-            userId: user.userId,
-            username: user.username
+          const roomCode = this.userRooms.get(socket.userId);
+          if (!roomCode) return;
+
+          const room = await CodeHeistController.startGame(roomCode, socket.userId);
+          if (room) {
+            this.broadcastGameStarted(room);
+            this.broadcastRoomUpdate(room);
+          } else {
+            socket.emit('error', { message: 'Failed to start game' });
+          }
+        } catch (error) {
+          socket.emit('error', { message: 'Failed to start game' });
+        }
+      });
+
+      // Draw card
+      socket.on('drawCard', async () => {
+        try {
+          if (!socket.userId) return;
+
+          const roomCode = this.userRooms.get(socket.userId);
+          if (!roomCode) return;
+
+          const room = await CodeHeistController.drawCard(roomCode, socket.userId);
+          if (room) {
+            this.broadcastCardDrawn(room, socket.userId);
+            this.broadcastRoomUpdate(room);
+          } else {
+            socket.emit('error', { message: 'Failed to draw card' });
+          }
+        } catch (error) {
+          socket.emit('error', { message: 'Failed to draw card' });
+        }
+      });
+
+      // Play card
+      socket.on('playCard', async (data: { 
+        cardId: string; 
+        targetUserId?: string; 
+        targetCardId?: string 
+      }) => {
+        try {
+          if (!socket.userId) return;
+
+          const roomCode = this.userRooms.get(socket.userId);
+          if (!roomCode) return;
+
+          // Validate input
+          if (!data.cardId) {
+            socket.emit('error', { message: 'Card ID is required' });
+            return;
+          }
+
+          const result = await CodeHeistController.playCard(
+            roomCode,
+            socket.userId,
+            data.cardId,
+            data.targetUserId,
+            data.targetCardId
+          );
+
+          if (result.success && result.room) {
+            this.broadcastCardPlayed(result.room, socket.userId, data.cardId, result.message);
+            this.broadcastRoomUpdate(result.room);
+
+            // If card is challengeable, notify other players
+            if (result.challengeable) {
+              this.broadcastChallengeAvailable(result.room, socket.userId, data.cardId);
+            }
+
+            // Check for eliminations
+            const eliminatedPlayers = result.room.players.filter(p => p.isEliminated);
+            for (const player of eliminatedPlayers) {
+              this.broadcastPlayerEliminated(result.room, player);
+            }
+
+            // Check for game end
+            if (result.room.gameState === 'ended') {
+              this.broadcastGameEnded(result.room);
+            }
+          } else {
+            socket.emit('error', { message: result.message });
+          }
+        } catch (error) {
+          socket.emit('error', { message: 'Failed to play card' });
+        }
+      });
+
+      // Challenge a played card
+      socket.on('challengeCard', async () => {
+        try {
+          if (!socket.userId) return;
+
+          const roomCode = this.userRooms.get(socket.userId);
+          if (!roomCode) return;
+
+          const result = await CodeHeistController.challengeCard(roomCode, socket.userId);
+
+          if (result.success && result.room) {
+            this.broadcastChallengeResult(result.room, result.message);
+            this.broadcastRoomUpdate(result.room);
+
+            // Check for eliminations
+            const eliminatedPlayers = result.room.players.filter(p => p.isEliminated);
+            for (const player of eliminatedPlayers) {
+              this.broadcastPlayerEliminated(result.room, player);
+            }
+
+            // Check for game end
+            if (result.room.gameState === 'ended') {
+              this.broadcastGameEnded(result.room);
+            }
+          } else {
+            socket.emit('error', { message: result.message });
+          }
+        } catch (error) {
+          socket.emit('error', { message: 'Failed to challenge card' });
+        }
+      });
+
+      // End turn
+      socket.on('endTurn', async () => {
+        try {
+          if (!socket.userId) return;
+
+          const roomCode = this.userRooms.get(socket.userId);
+          if (!roomCode) return;
+
+          const room = await CodeHeistController.endTurn(roomCode, socket.userId);
+          if (room) {
+            this.broadcastTurnEnded(room);
+            this.broadcastRoomUpdate(room);
+
+            if (room.gameState === 'ended') {
+              this.broadcastGameEnded(room);
+            }
+          } else {
+            socket.emit('error', { message: 'Failed to end turn' });
+          }
+        } catch (error) {
+          socket.emit('error', { message: 'Failed to end turn' });
+        }
+      });
+
+      // Chat message
+      socket.on('chatMessage', async (data: { message: string }) => {
+        try {
+          if (!socket.userId || !socket.username) return;
+
+          const roomCode = this.userRooms.get(socket.userId);
+          if (!roomCode) return;
+
+          // Validate message
+          if (!data.message || data.message.trim().length === 0) {
+            socket.emit('error', { message: 'Message cannot be empty' });
+            return;
+          }
+
+          if (data.message.length > 200) {
+            socket.emit('error', { message: 'Message too long (max 200 characters)' });
+            return;
+          }
+
+          codeHeistNamespace.to(roomCode).emit('chatMessage', {
+            userId: socket.userId,
+            username: socket.username,
+            message: data.message.trim(),
+            timestamp: new Date()
           });
+        } catch (error) {
+          socket.emit('error', { message: 'Failed to send message' });
+        }
+      });
+
+      // Get active rooms
+      socket.on('getActiveRooms', async () => {
+        try {
+          const rooms = await CodeHeistController.getActiveRooms();
+          socket.emit('activeRooms', rooms);
+        } catch (error) {
+          socket.emit('error', { message: 'Failed to get active rooms' });
+        }
+      });
+
+      // Disconnect
+      socket.on('disconnect', async () => {
+        try {
+          if (!socket.userId) return;
+
+          const roomCode = this.userRooms.get(socket.userId);
+          if (roomCode) {
+            const room = await CodeHeistController.leaveRoom(roomCode, socket.userId);
+            
+            if (room) {
+              this.broadcastRoomUpdate(room);
+              this.broadcastPlayerLeft(room, socket.username || 'Unknown');
+            } else {
+              codeHeistNamespace.to(roomCode).emit('roomDeleted');
+            }
+          }
+
+          this.userRooms.delete(socket.userId);
+          console.log(`Code Heist: User ${socket.username} disconnected`);
+        } catch (error) {
+          console.error('Error handling disconnect:', error);
         }
       });
     });
-  });
+  }
 
-  console.log('[Code Heist] Socket.IO namespace initialized');
+  // Broadcast methods
+  private broadcastRoomUpdate(room: IGameRoom): void {
+    const codeHeistNamespace = this.io.of('/code-heist');
+    
+    // Send public room data to all players
+    const publicRoomData = {
+      roomCode: room.roomCode,
+      roomName: room.roomName,
+      hostId: room.hostId,
+      maxPlayers: room.maxPlayers,
+      players: room.players.map(p => ({
+        userId: p.userId,
+        username: p.username,
+        lifeTokens: p.lifeTokens,
+        handSize: p.hand.length,
+        ready: p.ready,
+        isEliminated: p.isEliminated,
+        hasFirewall: p.hasFirewall,
+        hasVPNCloak: p.hasVPNCloak,
+        canChallenge: p.canChallenge
+      })),
+      gameState: room.gameState,
+      currentPlayerIndex: room.currentPlayerIndex,
+      turnNumber: room.turnNumber,
+      winner: room.winner,
+      deckSize: room.deck.length,
+      discardPileSize: room.discardPile.length
+    };
+
+    codeHeistNamespace.to(room.roomCode).emit('roomUpdate', publicRoomData);
+
+    // Send private hand data to each player
+    room.players.forEach(player => {
+      const privateData = {
+        hand: player.hand,
+        isCurrentPlayer: room.players[room.currentPlayerIndex]?.userId === player.userId
+      };
+      codeHeistNamespace.to(room.roomCode).emit('privateData', privateData);
+    });
+  }
+
+  private broadcastPlayerJoined(room: IGameRoom, username: string): void {
+    const codeHeistNamespace = this.io.of('/code-heist');
+    codeHeistNamespace.to(room.roomCode).emit('playerJoined', { username });
+  }
+
+  private broadcastPlayerLeft(room: IGameRoom, username: string): void {
+    const codeHeistNamespace = this.io.of('/code-heist');
+    codeHeistNamespace.to(room.roomCode).emit('playerLeft', { username });
+  }
+
+  private broadcastGameStarted(room: IGameRoom): void {
+    const codeHeistNamespace = this.io.of('/code-heist');
+    codeHeistNamespace.to(room.roomCode).emit('gameStarted', {
+      currentPlayer: room.players[room.currentPlayerIndex]?.username,
+      turnNumber: room.turnNumber
+    });
+  }
+
+  private broadcastCardDrawn(room: IGameRoom, userId: string): void {
+    const codeHeistNamespace = this.io.of('/code-heist');
+    const player = room.players.find(p => p.userId === userId);
+    if (player) {
+      codeHeistNamespace.to(room.roomCode).emit('cardDrawn', {
+        username: player.username,
+        handSize: player.hand.length
+      });
+    }
+  }
+
+  private broadcastCardPlayed(room: IGameRoom, userId: string, cardId: string, message: string): void {
+    const codeHeistNamespace = this.io.of('/code-heist');
+    const player = room.players.find(p => p.userId === userId);
+    if (player) {
+      codeHeistNamespace.to(room.roomCode).emit('cardPlayed', {
+        username: player.username,
+        cardId,
+        message
+      });
+    }
+  }
+
+  private broadcastTurnEnded(room: IGameRoom): void {
+    const codeHeistNamespace = this.io.of('/code-heist');
+    const currentPlayer = room.players[room.currentPlayerIndex];
+    if (currentPlayer) {
+      codeHeistNamespace.to(room.roomCode).emit('turnEnded', {
+        currentPlayer: currentPlayer.username,
+        turnNumber: room.turnNumber
+      });
+    }
+  }
+
+  private broadcastPlayerEliminated(room: IGameRoom, player: IPlayer): void {
+    const codeHeistNamespace = this.io.of('/code-heist');
+    codeHeistNamespace.to(room.roomCode).emit('playerEliminated', {
+      username: player.username,
+      reason: 'eliminated'
+    });
+  }
+
+  private broadcastGameEnded(room: IGameRoom): void {
+    const codeHeistNamespace = this.io.of('/code-heist');
+    codeHeistNamespace.to(room.roomCode).emit('gameEnded', {
+      winner: room.winner,
+      turnNumber: room.turnNumber
+    });
+  }
+
+  private broadcastChallengeAvailable(room: IGameRoom, playerId: string, cardId: string): void {
+    const codeHeistNamespace = this.io.of('/code-heist');
+    const player = room.players.find(p => p.userId === playerId);
+    if (player) {
+      codeHeistNamespace.to(room.roomCode).emit('challengeAvailable', {
+        playedBy: player.username,
+        cardId,
+        message: `${player.username} played a card that can be challenged!`
+      });
+    }
+  }
+
+  private broadcastChallengeResult(room: IGameRoom, message: string): void {
+    const codeHeistNamespace = this.io.of('/code-heist');
+    codeHeistNamespace.to(room.roomCode).emit('challengeResult', {
+      message
+    });
+  }
 }
 
+// Export function for server initialization
+export function initializeCodeHeistSocket(io: Server): void {
+  const handler = new CodeHeistSocketHandler(io);
+  handler.initialize();
+}

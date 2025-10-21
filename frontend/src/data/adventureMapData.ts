@@ -1577,7 +1577,7 @@ export function getNodeById(id: number): AdventureNode | undefined {
 }
 
 // Helper to check if node is unlocked (previous node completed)
-export function isNodeUnlocked(nodeId: number, completedNodes: number[]): boolean {
+export function isNodeUnlocked(nodeId: number, completedNodes: (number | string)[]): boolean {
   if (nodeId === 1) return true; // First node always unlocked
   
   const node = getNodeById(nodeId);
@@ -1585,5 +1585,14 @@ export function isNodeUnlocked(nodeId: number, completedNodes: number[]): boolea
   
   // Check if any of the nodes that connect TO this node are completed
   const parentNodes = adventureNodes.filter(n => n.connections.includes(nodeId));
-  return parentNodes.some(parent => completedNodes.includes(parent.id));
+  const isUnlocked = parentNodes.some(parent => 
+    completedNodes.includes(parent.id) || completedNodes.includes(parent.id.toString())
+  );
+  
+  // Debug logging for first few nodes
+  if (nodeId <= 3) {
+    console.log(`🔓 isNodeUnlocked(${nodeId}): parentNodes=`, parentNodes.map(p => p.id), 'completedNodes=', completedNodes, 'result=', isUnlocked);
+  }
+  
+  return isUnlocked;
 }
