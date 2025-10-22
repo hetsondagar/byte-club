@@ -101,6 +101,11 @@ app.use((req, res, next) => {
       timestamp: new Date().toISOString(),
       body: req.method !== 'GET' ? JSON.stringify(req.body).substring(0, 200) : undefined
     });
+    
+    // Log CORS-related headers for debugging
+    if (req.method === 'OPTIONS' || origin !== 'Unknown') {
+      console.log(`🔌 CORS Debug - Origin: ${origin}, Method: ${req.method}, Path: ${req.path}`);
+    }
   }
   next();
 });
@@ -136,8 +141,22 @@ app.get('/ping', (req, res) => {
 app.get('/cors-test', (req, res) => {
   console.log('🔌 CORS test endpoint hit');
   console.log('Origin:', req.headers.origin);
+  console.log('Headers:', req.headers);
   res.json({ 
     message: 'CORS test successful', 
+    origin: req.headers.origin,
+    headers: req.headers,
+    timestamp: new Date().toISOString() 
+  });
+});
+
+// API CORS test endpoint
+app.get('/api/cors-test', (req, res) => {
+  console.log('🔌 API CORS test endpoint hit');
+  console.log('Origin:', req.headers.origin);
+  res.json({ 
+    success: true,
+    message: 'API CORS test successful', 
     origin: req.headers.origin,
     timestamp: new Date().toISOString() 
   });
