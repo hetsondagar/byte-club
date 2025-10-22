@@ -6,7 +6,7 @@ export const questController = {
   // Get all quests for a user
   async getUserQuests(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?._id;
 
       if (!userId) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -28,7 +28,7 @@ export const questController = {
   // Get a specific quest by ID
   async getQuestById(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?._id;
       const { questId } = req.params;
 
       if (!userId) {
@@ -51,7 +51,7 @@ export const questController = {
   // Submit a mission answer
   async submitMission(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?._id;
       const { questId, missionId } = req.params;
       const { answer } = req.body;
 
@@ -115,7 +115,7 @@ export const questController = {
   // Get user's quest progress
   async getQuestProgress(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?._id;
       const { questId } = req.params;
 
       if (!userId) {
@@ -134,7 +134,7 @@ export const questController = {
   // Get all completed missions for a quest
   async getCompletedMissions(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?._id;
       const { questId } = req.params;
 
       if (!userId) {
@@ -156,7 +156,7 @@ export const questController = {
   // Get quest statistics
   async getQuestStats(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?._id;
 
       if (!userId) {
         return res.status(401).json({ error: 'User not authenticated' });

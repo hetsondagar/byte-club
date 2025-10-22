@@ -6,7 +6,7 @@ import logger from '../config/logger';
 
 export const completeAdventureNode = async (req: any, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?._id;
     const { nodeId, xp } = req.body;
 
     if (!userId) {
@@ -99,7 +99,7 @@ export const completeAdventureNode = async (req: any, res: Response) => {
 
 export const getAdventureProgress = async (req: any, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?._id;
 
     if (!userId) {
       return res.status(401).json({
