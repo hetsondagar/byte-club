@@ -29,7 +29,12 @@ const allowedOrigins = config.nodeEnv === 'production'
   ? [
       'https://byte-club.vercel.app',
       'https://www.byte-club.vercel.app',
-      'https://byte-club-frontend.vercel.app'
+      'https://byte-club-frontend.vercel.app',
+      'https://byte-club-git-main.vercel.app',
+      'https://byte-club-git-main-hetsondagar.vercel.app',
+      'https://byteclub-forgeyourlogic.vercel.app',
+      // Allow any Vercel domain for this project
+      /^https:\/\/.*\.vercel\.app$/
     ]
   : [
       'http://localhost:3000',
@@ -45,7 +50,17 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.includes(origin)) {
+    // Check if origin is in allowed origins (including regex patterns)
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return allowedOrigin === origin;
+      } else if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
       return callback(null, true);
     }
     
@@ -54,6 +69,7 @@ app.use(cors({
       return callback(null, true);
     }
     
+    console.log(`❌ CORS blocked origin: ${origin}`);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
