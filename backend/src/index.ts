@@ -192,11 +192,20 @@ app.get('/debug/users', async (req, res) => {
 // API routes
 app.use('/api', routes);
 
+// Debug: Log all incoming requests
+app.use((req, res, next) => {
+  console.log(`🔍 Request: ${req.method} ${req.path} from ${req.headers.origin || 'Unknown'}`);
+  next();
+});
+
 // 404 handler
 app.use('*', (req, res) => {
+  console.log(`❌ 404 - Route not found: ${req.method} ${req.path}`);
   res.status(404).json({
     success: false,
-    message: 'Route not found'
+    message: 'Route not found',
+    path: req.path,
+    method: req.method
   });
 });
 
