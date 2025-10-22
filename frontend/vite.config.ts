@@ -18,10 +18,15 @@ export default defineConfig({
     outDir: "dist",
     sourcemap: false,
     minify: "esbuild",
-    target: "esnext",
+    target: "es2022",
     rollupOptions: {
       output: {
         format: "es",
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          router: ["react-router-dom"],
+          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu"],
+        },
       },
     },
   },
