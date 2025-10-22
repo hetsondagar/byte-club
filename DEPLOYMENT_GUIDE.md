@@ -83,8 +83,15 @@ After deployment, Render will provide you with a URL like: `https://byte-club-ba
 4. Configure the project:
    - **Framework Preset**: `Vite`
    - **Root Directory**: `frontend`
-   - **Build Command**: `npm run build`
+   - **Build Command**: `npm run build` (Vercel automatically runs `npm install` first)
    - **Output Directory**: `dist`
+
+**Important Note**: Vercel automatically runs `npm install` during deployment, so you don't need to include it in the build command. Vercel will:
+1. Automatically detect your `package.json` in the frontend directory
+2. Run `npm install` to install dependencies
+3. Then run your specified build command (`npm run build`)
+
+**Why this matters**: Including `npm install` in your build command can cause conflicts and deployment failures because Vercel already handles dependency installation automatically.
 
 ### 3.2 Set Environment Variables in Vercel
 Add these environment variables in the Vercel dashboard:
