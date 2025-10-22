@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc --noEmitOnError",
     "start": "node dist/index.js",
     "seed": "tsx src/seed/index.ts",
     "migrate": "tsx src/migrations/index.ts",
