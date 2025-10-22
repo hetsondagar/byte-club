@@ -4,9 +4,9 @@ import { config } from '../config';
 import { User } from '../models';
 import logger from '../config/logger';
 
-export interface AuthRequest extends Request {
+export type AuthRequest = Request & {
   user?: any;
-}
+};
 
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
