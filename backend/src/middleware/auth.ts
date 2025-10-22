@@ -4,9 +4,8 @@ import { config } from '../config';
 import { User } from '../models';
 import logger from '../config/logger';
 
-export type AuthRequest = Request & {
-  user?: any;
-};
+// AuthRequest is now just an alias for Request since we extended the Express Request interface
+export type AuthRequest = Request;
 
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
