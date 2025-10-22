@@ -9,7 +9,7 @@ import { FloatingParticles } from "@/components/ui/floating-particles";
 import { Navbar } from "@/components/Navbar";
 import { getDailyFact } from "@/data/cseFacts";
 import { apiService } from "@/services/api";
-import { checkStreakStatus, updateStreakOnActivity, loadUserStreak, fixBrokenStreakForActiveUser } from "@/lib/streak";
+import { checkStreakStatus, updateStreakOnActivity, loadUserStreak, fixBrokenStreakForActiveUser, fixCurrentUserStreakForNextActivity } from "@/lib/streak";
 import "@/lib/streak-debug"; // Import debug function
 import {
   Map,
@@ -107,6 +107,10 @@ export default function Home() {
         // Auto-fix broken streaks for users with XP
         console.log('Home page - Auto-fixing broken streaks...');
         fixBrokenStreakForActiveUser();
+        
+        // Fix current user's streak if lastActiveDate is today (allows next activity to increment)
+        console.log('Home page - Fixing current user streak for next activity...');
+        fixCurrentUserStreakForNextActivity();
         
         // Also check if user has activities but zero streak and fix it
         if (localUser) {

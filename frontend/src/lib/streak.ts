@@ -41,10 +41,15 @@ export function loadUserStreak(): StreakState {
       const now = new Date().toISOString();
       const today = now.slice(0, 10);
       
-      // Reset streak to 1 day and set current time as last active
+      // Reset streak to 1 day and set yesterday as last active date
+      // This allows the next activity to increment the streak to 2 days
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayISO = yesterday.toISOString().slice(0, 10);
+      
       user.currentStreak = 1;
       user.lastActiveTime = now;
-      user.lastActiveDate = today;
+      user.lastActiveDate = yesterdayISO; // Set to yesterday so next activity increments streak
       
       // Save the migrated data
       localStorage.setItem('byteclub_user', JSON.stringify(user));
@@ -54,7 +59,7 @@ export function loadUserStreak(): StreakState {
         detail: { newStreak: user.currentStreak } 
       }));
       
-      console.log('✅ Streak migrated: old streak reset to 1 day with current timestamp');
+      console.log('✅ Streak migrated: old streak reset to 1 day with yesterday as last active date');
     }
     
     // Additional migration: If streak is 3 and we have lastActiveTime, it might be old data
@@ -63,9 +68,14 @@ export function loadUserStreak(): StreakState {
       const now = new Date().toISOString();
       const today = now.slice(0, 10);
       
+      // Set yesterday as last active date so next activity increments streak
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayISO = yesterday.toISOString().slice(0, 10);
+      
       user.currentStreak = 1;
       user.lastActiveTime = now;
-      user.lastActiveDate = today;
+      user.lastActiveDate = yesterdayISO; // Set to yesterday so next activity increments streak
       
       localStorage.setItem('byteclub_user', JSON.stringify(user));
       
@@ -73,7 +83,7 @@ export function loadUserStreak(): StreakState {
         detail: { newStreak: user.currentStreak } 
       }));
       
-      console.log('✅ Old 3-day streak reset to 1 day');
+      console.log('✅ Old 3-day streak reset to 1 day with yesterday as last active date');
     }
     
     return {
@@ -417,6 +427,57 @@ export function fixBrokenStreakForActiveUser(): void {
     }
   } catch (error) {
     console.error('Error fixing broken streak:', error);
+  }
+}
+
+// Fix the current user's streak by setting lastActiveDate to yesterday
+// This allows the next activity to properly increment the streak
+export function fixCurrentUserStreakForNextActivity(): void {
+  try {
+    const raw = localStorage.getItem('byteclub_user');
+    if (!raw) {
+      console.log('🔧 fixCurrentUserStreakForNextActivity: No user data found');
+      return;
+    }
+    
+    const user = JSON.parse(raw);
+    const currentStreak = user.currentStreak || 0;
+    const lastActiveDate = user.lastActiveDate;
+    const today = new Date().toISOString().slice(0, 10);
+    
+    console.log('🔧 fixCurrentUserStreakForNextActivity: Current state:', {
+      currentStreak,
+      lastActiveDate,
+      today
+    });
+    
+    // If user has a streak but lastActiveDate is today, fix it by setting to yesterday
+    if (currentStreak > 0 && lastActiveDate === today) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayISO = yesterday.toISOString().slice(0, 10);
+      
+      user.lastActiveDate = yesterdayISO;
+      user.lastActiveTime = new Date().toISOString();
+      
+      localStorage.setItem('byteclub_user', JSON.stringify(user));
+      
+      // Trigger event to notify components
+      window.dispatchEvent(new CustomEvent('streakMigrated', { 
+        detail: { newStreak: currentStreak } 
+      }));
+      
+      console.log('✅ Fixed current user streak - set lastActiveDate to yesterday so next activity will increment streak');
+    } else {
+      console.log('🔍 No fix needed for current user streak:', {
+        currentStreak,
+        lastActiveDate,
+        today,
+        needsFix: currentStreak > 0 && lastActiveDate === today
+      });
+    }
+  } catch (error) {
+    console.error('Error fixing current user streak:', error);
   }
 }
 
