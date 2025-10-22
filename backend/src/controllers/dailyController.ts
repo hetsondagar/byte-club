@@ -35,7 +35,7 @@ export const getDailyChallenge = async (req: Request, res: Response) => {
 
     logger.info(`Daily challenge selected: ${dailyChallenge.slug}`);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Daily challenge retrieved successfully',
       data: {
@@ -45,7 +45,7 @@ export const getDailyChallenge = async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error('Get daily challenge error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Internal server error'
     });

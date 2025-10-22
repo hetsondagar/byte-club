@@ -82,4 +82,4 @@ userSchema.methods.updateLevel = function() {
   return Promise.resolve(this);
 };
 
-export default mongoose.model<IUser & Document>('User', userSchema);
+export default mongoose.model<IUser>('User', userSchema);

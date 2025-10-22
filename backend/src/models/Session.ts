@@ -3,8 +3,7 @@ import { Session as ISession } from '../types';
 
 const sessionSchema = new Schema<ISession>({
   userId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true
   },
   tokenHash: {
@@ -26,4 +25,4 @@ sessionSchema.index({ tokenHash: 1 });
 // TTL index to automatically expire sessions
 sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-export default mongoose.model<ISession & Document>('Session', sessionSchema);
+export default mongoose.model<ISession>('Session', sessionSchema);

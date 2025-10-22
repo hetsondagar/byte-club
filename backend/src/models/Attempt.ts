@@ -3,8 +3,7 @@ import { Attempt as IAttempt } from '../types';
 
 const attemptSchema = new Schema<IAttempt>({
   userId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true
   },
   challengeSlug: {
@@ -40,4 +39,4 @@ attemptSchema.index({ isCorrect: 1 });
 // TTL index to clean up old attempts (optional - 90 days)
 attemptSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7776000 });
 
-export default mongoose.model<IAttempt & Document>('Attempt', attemptSchema);
+export default mongoose.model<IAttempt>('Attempt', attemptSchema);

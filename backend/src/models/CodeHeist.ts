@@ -104,7 +104,7 @@ const GameRoomSchema = new Schema<IGameRoom>({
 });
 
 // Index for faster room lookups
-GameRoomSchema.index({ roomCode: 1 });
+// Note: roomCode index is automatically created by unique: true property
 GameRoomSchema.index({ gameState: 1 });
 
 export const GameRoom = mongoose.model<IGameRoom>('GameRoom', GameRoomSchema);

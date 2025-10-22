@@ -47,7 +47,7 @@ export const purchaseReward = async (req: any, res: Response) => {
 
     logger.info(`User ${user.username} purchased reward: ${key}`);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Reward purchased successfully',
       data: {
@@ -62,7 +62,7 @@ export const purchaseReward = async (req: any, res: Response) => {
     });
   } catch (error) {
     logger.error('Purchase reward error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Internal server error'
     });

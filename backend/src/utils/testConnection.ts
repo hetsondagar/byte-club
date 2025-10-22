@@ -18,6 +18,10 @@ export const testConnection = async (): Promise<boolean> => {
     
     // Test basic operations
     const db = mongoose.connection.db;
+    if (!db) {
+      throw new Error('Database connection not established');
+    }
+    
     const collections = await db.listCollections().toArray();
     
     logger.info('Database connection test successful');

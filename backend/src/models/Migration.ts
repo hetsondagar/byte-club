@@ -18,4 +18,4 @@ const migrationSchema = new Schema<IMigration>({
 
 // Index for performance - name is already unique
 
-export default mongoose.model<IMigration & Document>('Migration', migrationSchema);
+export default mongoose.model<IMigration>('Migration', migrationSchema);

@@ -43,4 +43,4 @@ const metaSchema = new Schema<IMeta>({
 metaSchema.index({ type: 1 });
 metaSchema.index({ type: 1, key: 1 });
 
-export default mongoose.model<IMeta & Document>('Meta', metaSchema);
+export default mongoose.model<IMeta>('Meta', metaSchema);

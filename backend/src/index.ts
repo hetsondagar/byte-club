@@ -24,36 +24,43 @@ const io = new Server(httpServer, {
 // Security middleware
 app.use(helmet());
 
-// CORS configuration - more permissive for development
+// CORS configuration - environment-aware
+const allowedOrigins = config.nodeEnv === 'production' 
+  ? [
+      'https://byte-club.vercel.app',
+      'https://www.byte-club.vercel.app',
+      'https://byte-club-frontend.vercel.app'
+    ]
+  : [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:4173',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:4173'
+    ];
+
 app.use(cors({
-  origin: true, // Allow all origins in development
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // In development, allow any localhost origin
+    if (config.nodeEnv === 'development' && origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin'],
   optionsSuccessStatus: 200
 }));
-
-// Handle preflight requests
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost:5173');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.sendStatus(200);
-});
-
-// CORS headers middleware - ensures CORS headers are set on ALL responses
-app.use((req, res, next) => {
-  // Set CORS headers for all requests
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  // CORS headers set
-  
-  next();
-});
 
 // Compression middleware
 app.use(compression());

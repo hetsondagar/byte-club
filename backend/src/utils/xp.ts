@@ -48,14 +48,15 @@ export const updateUserXP = async (userId: string, xpToAdd: number): Promise<voi
   const user = await User.findById(userId);
   if (!user) return;
 
-  const oldLevel = user.currentLevel;
-  user.totalXP += xpToAdd;
-  user.currentLevel = calculateLevel(user.totalXP);
+  const userDoc = user as any;
+  const oldLevel = userDoc.currentLevel;
+  userDoc.totalXP += xpToAdd;
+  userDoc.currentLevel = calculateLevel(userDoc.totalXP);
 
-  await user.save();
+  await userDoc.save();
 
-  if (user.currentLevel > oldLevel) {
-    logger.info(`User ${(user as any).username} leveled up to level ${user.currentLevel}`);
+  if (userDoc.currentLevel > oldLevel) {
+    logger.info(`User ${userDoc.username} leveled up to level ${userDoc.currentLevel}`);
   }
 };
 

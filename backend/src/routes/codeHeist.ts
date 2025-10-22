@@ -48,9 +48,9 @@ router.get('/room/:roomCode', authenticateToken, async (req, res) => {
       discardPileSize: room.discardPile.length
     };
 
-    res.json({ success: true, room: publicRoomData });
+    return res.json({ success: true, room: publicRoomData });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to get room details' });
+    return res.status(500).json({ success: false, message: 'Failed to get room details' });
   }
 });
 

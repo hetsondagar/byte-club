@@ -68,7 +68,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
     });
 
     req.user = user;
-    next();
+    return next();
   } catch (error) {
     const ip = req.ip || req.connection.remoteAddress || 'Unknown';
     const origin = req.headers.origin || 'Unknown';
@@ -100,5 +100,5 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
   }
   
   logger.info(`✅ Admin access granted for user: ${(req.user as any).username}`);
-  next();
+  return next();
 };

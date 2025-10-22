@@ -214,37 +214,6 @@ export default function Challenges() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchChallenges}
-              className="text-white border-white/20 hover:bg-white/10"
-            >
-              <Loader2 className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                try {
-                  console.log('Refreshing user data...');
-                  const userData = await apiService.getCurrentUser();
-                  localStorage.setItem("byteclub_user", JSON.stringify(userData));
-                  console.log('User data refreshed:', userData);
-                  // Refresh challenges
-                  fetchChallenges();
-                } catch (error) {
-                  console.error('Failed to refresh user data:', error);
-                }
-              }}
-              className="text-white border-white/20 hover:bg-white/10"
-            >
-              <Loader2 className="h-4 w-4 mr-2" />
-              Refresh User
-            </Button>
-          </div>
         </div>
 
         <Tabs defaultValue="all" className="max-w-6xl mx-auto" onValueChange={(v) => setFilter(v as any)}>

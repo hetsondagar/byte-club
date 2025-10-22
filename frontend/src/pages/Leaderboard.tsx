@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { NeonCard } from "@/components/ui/neon-card";
-import { Button } from "@/components/ui/button";
 import { FloatingParticles } from "@/components/ui/floating-particles";
 import { Navbar } from "@/components/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -313,39 +312,6 @@ export default function Leaderboard() {
             Leaderboard
           </h1>
           <p className="text-muted-foreground mt-2">Top hackers in the realm</p>
-          <div className="flex gap-2 justify-center mt-4">
-            <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline"
-              size="sm"
-            >
-              Refresh Data
-            </Button>
-            <Button 
-              onClick={() => {
-                console.log('Force resetting all streaks to 1 day');
-                fetchLeaderboardData();
-              }}
-              variant="outline"
-              size="sm"
-              className="text-xs"
-            >
-              🔥 Reset All Streaks
-            </Button>
-            <Button 
-              onClick={() => {
-                console.log('Testing weekly/monthly data...');
-                console.log('Current weekly data:', weeklyData);
-                console.log('Current monthly data:', monthlyData);
-                console.log('Current leaderboard data:', leaderboardData);
-              }}
-              variant="outline"
-              size="sm"
-              className="text-xs"
-            >
-              🔍 Debug Data
-            </Button>
-          </div>
         </div>
 
         <div className="max-w-4xl mx-auto">
@@ -392,13 +358,6 @@ export default function Leaderboard() {
                          category === 'quests' ? 'Complete quest missions to climb the ranks!' :
                          'Start your coding journey to appear here!'}
                       </p>
-                      <Button 
-                        onClick={() => window.location.reload()} 
-                        className="mt-4"
-                        variant="outline"
-                      >
-                        Refresh
-                      </Button>
                     </div>
                   );
                 }
