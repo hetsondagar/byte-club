@@ -325,6 +325,54 @@ class ApiService {
     const response = await this.request<any>('/adventure/progress');
     return response.data!;
   }
+
+  // BYTECLUB: Generic HTTP methods for Byte Rush and other components
+  async get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { method: 'GET' });
+  }
+
+  async post<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  async put<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  async delete<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { method: 'DELETE' });
+  }
+
+  // BYTECLUB: Byte Rush specific methods
+  async getByteRushLeaderboard(limit: number = 50): Promise<any[]> {
+    const response = await this.get<any>(`/byte-rush/leaderboard?limit=${limit}`);
+    if (response.success && response.data?.leaderboard) {
+      return response.data.leaderboard;
+    }
+    return [];
+  }
+
+  async getByteRushStats(): Promise<any> {
+    const response = await this.get<any>('/byte-rush/stats');
+    if (response.success && response.data) {
+      return response.data;
+    }
+    return null;
+  }
+
+  async submitByteRushScore(scoreData: any): Promise<any> {
+    const response = await this.post<any>('/byte-rush/score', scoreData);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.message || 'Failed to submit score');
+  }
 }
 
 export const apiService = new ApiService();

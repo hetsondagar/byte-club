@@ -61,14 +61,10 @@ export function ByteRushGameOverModal({
         clientGameVersion: '1.0.0'
       };
 
-      const response = await apiService.post('/byte-rush/score', scoreData);
+      const response = await apiService.submitByteRushScore(scoreData);
 
-      if (response.success) {
-        setSubmitted(true);
-        setRank(response.data.rank);
-      } else {
-        setError(response.message || 'Failed to submit score');
-      }
+      setSubmitted(true);
+      setRank(response.rank);
     } catch (err) {
       console.error('Error submitting score:', err);
       setError('Failed to submit score. Please try again.');

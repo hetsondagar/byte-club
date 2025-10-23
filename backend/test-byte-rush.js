@@ -8,13 +8,13 @@
 const axios = require('axios');
 
 // BYTECLUB: Configuration
-const BASE_URL = process.env.BACKEND_URL || 'http://localhost:4000';
+const BASE_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 const API_BASE = `${BASE_URL}/api/byte-rush`;
 
 // BYTECLUB: Test data
 const testScore = {
   displayName: 'TestPlayer',
-  score: 50000,
+  score: 5000,
   bricksBroken: 100,
   runDurationMs: 120000,
   powerupsUsed: ['tryCatch', 'optimizationBoost'],

@@ -179,10 +179,8 @@ export default function ByteRush() {
   // BYTECLUB: Fetch leaderboard data
   const fetchLeaderboard = async () => {
     try {
-      const response = await apiService.get('/byte-rush/leaderboard?limit=50');
-      if (response.success) {
-        setLeaderboard(response.data.leaderboard);
-      }
+      const leaderboardData = await apiService.getByteRushLeaderboard(50);
+      setLeaderboard(leaderboardData);
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
     }
@@ -191,10 +189,8 @@ export default function ByteRush() {
   // BYTECLUB: Fetch game statistics
   const fetchGameStats = async () => {
     try {
-      const response = await apiService.get('/byte-rush/stats');
-      if (response.success) {
-        setGameStats(response.data);
-      }
+      const statsData = await apiService.getByteRushStats();
+      setGameStats(statsData);
     } catch (error) {
       console.error('Error fetching game stats:', error);
     }

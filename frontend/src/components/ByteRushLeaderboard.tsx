@@ -42,15 +42,11 @@ export function ByteRushLeaderboard() {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const response = await apiService.get('/byte-rush/leaderboard?limit=50');
+      const leaderboardData = await apiService.getByteRushLeaderboard(50);
       
-      if (response.success) {
-        setLeaderboard(response.data.leaderboard);
-        setLastUpdated(new Date());
-        setError(null);
-      } else {
-        setError('Failed to fetch leaderboard');
-      }
+      setLeaderboard(leaderboardData);
+      setLastUpdated(new Date());
+      setError(null);
     } catch (err) {
       console.error('Error fetching leaderboard:', err);
       setError('Failed to fetch leaderboard');
@@ -62,11 +58,8 @@ export function ByteRushLeaderboard() {
   // BYTECLUB: Fetch game statistics
   const fetchGameStats = async () => {
     try {
-      const response = await apiService.get('/byte-rush/stats');
-      
-      if (response.success) {
-        setGameStats(response.data);
-      }
+      const statsData = await apiService.getByteRushStats();
+      setGameStats(statsData);
     } catch (err) {
       console.error('Error fetching game stats:', err);
     }
