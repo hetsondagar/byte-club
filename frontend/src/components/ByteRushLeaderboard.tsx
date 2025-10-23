@@ -8,8 +8,7 @@ interface LeaderboardEntry {
   rank: number;
   displayName: string;
   score: number;
-  distance: number;
-  commits: number;
+  bricksBroken: number;
   runDurationMs: number;
   powerupsUsed: string[];
   createdAt: Date;
@@ -22,7 +21,7 @@ interface GameStats {
   registeredPlayers: number;
   anonymousPlayers: number;
   averageScore: number;
-  averageDistance: number;
+  averageBricks: number;
   powerupUsage: Array<{
     powerup: string;
     count: number;
@@ -31,7 +30,7 @@ interface GameStats {
   lastUpdated: string;
 }
 
-// BYTECLUB: Byte Rush Leaderboard component
+// BYTECLUB: Byte Rush Leaderboard component for brick-breaker
 export function ByteRushLeaderboard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [gameStats, setGameStats] = useState<GameStats | null>(null);
@@ -79,11 +78,11 @@ export function ByteRushLeaderboard() {
     fetchGameStats();
   }, []);
 
-  // BYTECLUB: Auto-refresh leaderboard every 30 seconds
+  // BYTECLUB: Auto-refresh leaderboard every 15 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       fetchLeaderboard();
-    }, 30000);
+    }, 15000);
 
     return () => clearInterval(interval);
   }, []);
@@ -193,10 +192,10 @@ export function ByteRushLeaderboard() {
           
           <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-600/30">
             <div className="flex items-center mb-2">
-              <Clock className="w-5 h-5 text-cyan-400 mr-2" />
-              <span className="text-sm text-gray-400">Avg Distance</span>
+              <Zap className="w-5 h-5 text-cyan-400 mr-2" />
+              <span className="text-sm text-gray-400">Avg Bricks</span>
             </div>
-            <div className="text-2xl font-bold text-white">{Math.floor(gameStats.averageDistance)}m</div>
+            <div className="text-2xl font-bold text-white">{Math.floor(gameStats.averageBricks)}</div>
           </div>
         </motion.div>
       )}
@@ -245,7 +244,7 @@ export function ByteRushLeaderboard() {
                     {formatNumber(entry.score)}
                   </div>
                   <div className="text-sm text-gray-400">
-                    {Math.floor(entry.distance)}m • {entry.commits} commits
+                    {entry.bricksBroken} bricks
                   </div>
                 </div>
               </div>
@@ -276,7 +275,7 @@ export function ByteRushLeaderboard() {
         <div className="text-center py-12">
           <Trophy className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-400 mb-2">No Scores Yet</h3>
-          <p className="text-gray-500">Be the first to play Byte Rush and set a high score!</p>
+          <p className="text-gray-500">Be the first to play Byte Rush and break some bricks!</p>
         </div>
       )}
 

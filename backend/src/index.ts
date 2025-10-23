@@ -3,23 +3,14 @@ import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
 import { createServer } from 'http';
-import { Server } from 'socket.io';
 import { config } from './config';
 import connectDB from './config/database';
 import logger from './config/logger';
 import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
-import { initializeByteRushSocket } from './socket/byteRushSocket';
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST']
-  }
-});
 
 // Security middleware
 app.use(helmet());
@@ -221,9 +212,8 @@ const startServer = async () => {
     // Check if migrations and seeds need to be run
     logger.info('🔍 Checking database state...');
     
-    // Initialize Socket.IO for Byte Rush
-    const byteRushHandler = initializeByteRushSocket(io);
-    logger.info('🎮 Byte Rush Socket.IO initialized');
+    // BYTECLUB: Byte Rush REST API initialized
+    logger.info('🎮 Byte Rush REST API initialized');
     
     // Start server
     httpServer.listen(config.port, () => {
@@ -231,7 +221,7 @@ const startServer = async () => {
       console.log(`📊 Environment: ${config.nodeEnv}`);
       console.log(`🔗 Health check: http://localhost:${config.port}/health`);
       console.log(`📚 API Documentation: http://localhost:${config.port}/api`);
-      console.log(`🎮 Byte Rush WebSocket: ws://localhost:${config.port}/byte-rush`);
+      console.log(`🎮 Byte Rush API: http://localhost:${config.port}/api/byte-rush`);
       console.log('');
       console.log('💡 To run migrations: npm run migrate');
       console.log('💡 To seed database: npm run seed');
@@ -241,7 +231,7 @@ const startServer = async () => {
       logger.info(`📊 Environment: ${config.nodeEnv}`);
       logger.info(`🔗 Health check: http://localhost:${config.port}/health`);
       logger.info(`📚 API Documentation: http://localhost:${config.port}/api`);
-      logger.info(`🎮 Byte Rush WebSocket: ws://localhost:${config.port}/byte-rush`);
+      logger.info(`🎮 Byte Rush API: http://localhost:${config.port}/api/byte-rush`);
       logger.info('');
       logger.info('💡 To run migrations: npm run migrate');
       logger.info('💡 To seed database: npm run seed');

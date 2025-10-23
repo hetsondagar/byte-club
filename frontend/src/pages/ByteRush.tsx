@@ -4,11 +4,13 @@ import { Navbar } from '@/components/Navbar';
 import { FloatingParticles } from '@/components/ui/floating-particles';
 import { NeonCard } from '@/components/ui/neon-card';
 import { Button } from '@/components/ui/button';
-import { GameCanvas } from '@/components/GameCanvas';
+import { GameCanvas, GameCanvasRef } from '@/components/GameCanvas';
 import { ByteRushHUD } from '@/components/ByteRushHUD';
 import { ByteRushGameOverModal } from '@/components/ByteRushGameOverModal';
-import { useByteRushSocket } from '@/hooks/useByteRushSocket';
+import { ByteRushLeaderboard } from '@/components/ByteRushLeaderboard';
+import { GameState } from '@/hooks/useGameEngine';
 import { useAuth } from '@/contexts/AuthContext';
+import { apiService } from '@/services/api';
 import { 
   Play, 
   Trophy, 
@@ -25,18 +27,15 @@ import {
   Sparkles
 } from 'lucide-react';
 
-// BYTECLUB: Game state interface
-interface GameState {
+// BYTECLUB: Leaderboard entry interface
+interface LeaderboardEntry {
+  rank: number;
+  displayName: string;
   score: number;
-  distance: number;
-  commits: number;
-  isRunning: boolean;
-  isPaused: boolean;
-  gameSpeed: number;
-  playerPosition: { x: number; y: number; z: number };
-  activePowerups: string[];
-  obstacles: any[];
-  collectibles: any[];
+  bricksBroken: number;
+  runDurationMs: number;
+  powerupsUsed: string[];
+  createdAt: Date;
 }
 
 // BYTECLUB: Byte Rush main page component
@@ -46,39 +45,29 @@ export default function ByteRush() {
   const [showGameCanvas, setShowGameCanvas] = useState(false);
   const [gameState, setGameState] = useState<GameState>({
     score: 0,
-    distance: 0,
-    commits: 0,
+    lives: 3,
+    level: 1,
+    bricksBroken: 0,
+    combos: 0,
     isRunning: false,
     isPaused: false,
     gameSpeed: 1,
-    playerPosition: { x: 0, y: 0, z: 0 },
     activePowerups: [],
-    obstacles: [],
-    collectibles: []
+    powerupTimers: {}
   });
   const [showGameOver, setShowGameOver] = useState(false);
   const [gameStartTime, setGameStartTime] = useState<number>(0);
   const [runDuration, setRunDuration] = useState<number>(0);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [gameStats, setGameStats] = useState<any>(null);
 
-  // BYTECLUB: Socket connection for real-time features
-  const {
-    isConnected,
-    connectedUsers,
-    leaderboard,
-    gameStats,
-    error: socketError,
-    submitScore,
-    refreshLeaderboard,
-    getGameStats,
-    activatePowerup,
-    updatePlayerPosition
-  } = useByteRushSocket();
+  const gameCanvasRef = useRef<GameCanvasRef>(null);
 
   const features = [
     {
       icon: <Zap className="w-8 h-8" />,
-      title: 'Lightning Fast',
-      description: 'Endless runner with WebGL-powered 3D graphics'
+      title: 'Brick-Breaker Fun',
+      description: 'Classic brick-breaker with ByteClub neon aesthetic'
     },
     {
       icon: <Target className="w-8 h-8" />,
@@ -87,13 +76,13 @@ export default function ByteRush() {
     },
     {
       icon: <Trophy className="w-8 h-8" />,
-      title: 'Real-time Leaderboard',
-      description: 'Compete with players worldwide in live rankings'
+      title: 'Live Leaderboard',
+      description: 'Compete with players worldwide in REST-based rankings'
     },
     {
       icon: <Shield className="w-8 h-8" />,
       title: 'Neon Aesthetic',
-      description: 'Immersive cyber-terminal universe with glow effects'
+      description: 'Immersive cyber-terminal theme with HTML5 Canvas'
     }
   ];
 
@@ -101,49 +90,35 @@ export default function ByteRush() {
     {
       name: 'Try-Catch Shield',
       icon: <Shield className="w-6 h-6" />,
-      description: 'Protects from one collision',
+      description: 'Paddle invincible for 3 seconds',
       color: 'text-cyan-400'
     },
     {
       name: 'Garbage Collector',
       icon: <Bug className="w-6 h-6" />,
-      description: 'Clears obstacles ahead',
+      description: 'Clears 1-2 rows of bricks',
       color: 'text-lime-400'
     },
     {
       name: 'Debugger Drone',
       icon: <Code className="w-6 h-6" />,
-      description: 'Collects nearby commits automatically',
+      description: 'Auto-bounce for 3 seconds (ball never misses)',
       color: 'text-pink-400'
     },
     {
       name: 'Optimization Boost',
       icon: <Sparkles className="w-6 h-6" />,
-      description: 'Slows time and increases score multiplier',
+      description: 'Slows ball speed temporarily',
       color: 'text-purple-400'
-    },
-    {
-      name: 'Hotfix',
-      icon: <Zap className="w-6 h-6" />,
-      description: 'Respawn with invincibility',
-      color: 'text-orange-400'
     }
   ];
 
   // BYTECLUB: Handle game state changes from GameCanvas
   const handleGameStateChange = (newGameState: GameState) => {
     setGameState(newGameState);
-    
-    // BYTECLUB: Update player position via socket
-    updatePlayerPosition({
-      x: newGameState.playerPosition.x,
-      y: newGameState.playerPosition.y,
-      z: newGameState.playerPosition.z,
-      speed: newGameState.gameSpeed
-    });
 
     // BYTECLUB: Check for game over
-    if (!newGameState.isRunning && gameStarted) {
+    if (!newGameState.isRunning && gameStarted && newGameState.lives === 0) {
       setShowGameOver(true);
       setRunDuration(Date.now() - gameStartTime);
     }
@@ -178,16 +153,20 @@ export default function ByteRush() {
     // Reset game state
     setGameState({
       score: 0,
-      distance: 0,
-      commits: 0,
+      lives: 3,
+      level: 1,
+      bricksBroken: 0,
+      combos: 0,
       isRunning: false,
       isPaused: false,
       gameSpeed: 1,
-      playerPosition: { x: 0, y: 0, z: 0 },
       activePowerups: [],
-      obstacles: [],
-      collectibles: []
+      powerupTimers: {}
     });
+    // Restart the game canvas
+    if (gameCanvasRef.current) {
+      gameCanvasRef.current.initializeGame();
+    }
   };
 
   // BYTECLUB: Handle exit game
@@ -197,18 +176,35 @@ export default function ByteRush() {
     setShowGameOver(false);
   };
 
-  // BYTECLUB: Handle powerup activation
-  const handlePowerupActivation = (powerup: string, position: { x: number; y: number; z: number }) => {
-    activatePowerup(powerup, position);
+  // BYTECLUB: Fetch leaderboard data
+  const fetchLeaderboard = async () => {
+    try {
+      const response = await apiService.get('/byte-rush/leaderboard?limit=50');
+      if (response.success) {
+        setLeaderboard(response.data.leaderboard);
+      }
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+    }
+  };
+
+  // BYTECLUB: Fetch game statistics
+  const fetchGameStats = async () => {
+    try {
+      const response = await apiService.get('/byte-rush/stats');
+      if (response.success) {
+        setGameStats(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching game stats:', error);
+    }
   };
 
   // BYTECLUB: Load game stats on component mount
   useEffect(() => {
-    if (isConnected) {
-      refreshLeaderboard();
-      getGameStats();
-    }
-  }, [isConnected]);
+    fetchLeaderboard();
+    fetchGameStats();
+  }, []);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -263,8 +259,8 @@ export default function ByteRush() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            Endless runner inside a glowing cyber-terminal universe. Dodge bugs, collect commits, 
-            and activate powerups in this WebGL-powered ByteClub mini-game.
+            Classic brick-breaker with ByteClub neon aesthetic. Break code bricks, collect powerups, 
+            and compete on the leaderboard in this HTML5 Canvas-powered mini-game.
           </motion.p>
 
           <motion.div
@@ -297,7 +293,7 @@ export default function ByteRush() {
               <div className="flex h-full">
                 {/* BYTECLUB: Game Canvas - Left 70% */}
                 <div className="w-[70%] h-full relative">
-                  <GameCanvas onGameStateChange={handleGameStateChange} />
+                  <GameCanvas ref={gameCanvasRef} onGameStateChange={handleGameStateChange} />
                 </div>
 
                 {/* BYTECLUB: HUD Panel - Right 30% */}
@@ -308,8 +304,6 @@ export default function ByteRush() {
                   onResume={handleResume}
                   onRestart={handleRestart}
                   onExit={handleExit}
-                  isConnected={isConnected}
-                  connectedUsers={connectedUsers}
                 />
               </div>
             </motion.div>
@@ -401,8 +395,8 @@ export default function ByteRush() {
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <Users className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-white">{connectedUsers}</div>
-                  <div className="text-gray-400">Players Online</div>
+                  <div className="text-2xl font-bold text-white">{gameStats?.totalPlayers || 0}</div>
+                  <div className="text-gray-400">Total Players</div>
                 </div>
                 <div className="text-center">
                   <Trophy className="w-8 h-8 text-cyan-400 mx-auto mb-2" />

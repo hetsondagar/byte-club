@@ -10,25 +10,13 @@ import {
   X,
   Star,
   TrendingUp,
-  Award
+  Award,
+  Bug
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { apiService } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
-
-// BYTECLUB: Game state interface
-interface GameState {
-  score: number;
-  distance: number;
-  commits: number;
-  isRunning: boolean;
-  isPaused: boolean;
-  gameSpeed: number;
-  playerPosition: { x: number; y: number; z: number };
-  activePowerups: string[];
-  obstacles: any[];
-  collectibles: any[];
-}
+import { GameState } from '@/hooks/useGameEngine';
 
 interface ByteRushGameOverModalProps {
   gameState: GameState;
@@ -39,7 +27,7 @@ interface ByteRushGameOverModalProps {
   runDuration: number;
 }
 
-// BYTECLUB: Byte Rush Game Over Modal component
+// BYTECLUB: Byte Rush Game Over Modal component for brick-breaker
 export function ByteRushGameOverModal({
   gameState,
   isOpen,
@@ -67,10 +55,9 @@ export function ByteRushGameOverModal({
         userId: user?.id,
         displayName: displayName.trim() || 'Anonymous',
         score: gameState.score,
-        distance: Math.floor(gameState.distance),
-        commits: gameState.commits,
-        runDurationMs: runDuration,
+        bricksBroken: gameState.bricksBroken,
         powerupsUsed: gameState.activePowerups,
+        runDurationMs: runDuration,
         clientGameVersion: '1.0.0'
       };
 
@@ -92,7 +79,7 @@ export function ByteRushGameOverModal({
 
   // BYTECLUB: Share score
   const shareScore = async () => {
-    const shareText = `I just scored ${gameState.score.toLocaleString()} points in Byte Rush! 🎮⚡\n\nDistance: ${Math.floor(gameState.distance)}m\nCommits: ${gameState.commits}\nDuration: ${Math.floor(runDuration / 1000)}s\n\nPlay Byte Rush at ByteClub! 🚀`;
+    const shareText = `I just broke ${gameState.bricksBroken} bricks and scored ${gameState.score.toLocaleString()} points in Byte Rush! 🎮⚡\n\nLevel: ${gameState.level}\nCombos: ${gameState.combos}\nDuration: ${Math.floor(runDuration / 1000)}s\n\nPlay Byte Rush at ByteClub! 🚀`;
 
     if (navigator.share) {
       try {
@@ -108,7 +95,6 @@ export function ByteRushGameOverModal({
       // Fallback to clipboard
       try {
         await navigator.clipboard.writeText(shareText);
-        // You could show a toast notification here
         alert('Score copied to clipboard!');
       } catch (err) {
         console.error('Failed to copy to clipboard:', err);
@@ -127,11 +113,11 @@ export function ByteRushGameOverModal({
   };
 
   const getScoreRating = (score: number) => {
-    if (score >= 100000) return { rating: 'LEGENDARY', color: 'text-yellow-400', icon: <Award className="w-6 h-6" /> };
-    if (score >= 50000) return { rating: 'EPIC', color: 'text-purple-400', icon: <Star className="w-6 h-6" /> };
-    if (score >= 25000) return { rating: 'GREAT', color: 'text-cyan-400', icon: <Trophy className="w-6 h-6" /> };
-    if (score >= 10000) return { rating: 'GOOD', color: 'text-green-400', icon: <TrendingUp className="w-6 h-6" /> };
-    return { rating: 'NICE TRY', color: 'text-orange-400', icon: <Target className="w-6 h-6" /> };
+    if (score >= 50000) return { rating: 'LEGENDARY', color: 'text-yellow-400', icon: <Award className="w-6 h-6" /> };
+    if (score >= 25000) return { rating: 'EPIC', color: 'text-purple-400', icon: <Star className="w-6 h-6" /> };
+    if (score >= 10000) return { rating: 'GREAT', color: 'text-cyan-400', icon: <Trophy className="w-6 h-6" /> };
+    if (score >= 5000) return { rating: 'GOOD', color: 'text-green-400', icon: <TrendingUp className="w-6 h-6" /> };
+    return { rating: 'NICE TRY', color: 'text-orange-400', icon: <Bug className="w-6 h-6" /> };
   };
 
   const scoreRating = getScoreRating(gameState.score);
@@ -200,20 +186,20 @@ export function ByteRushGameOverModal({
               
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="text-center">
-                  <div className="text-white font-semibold">{Math.floor(gameState.distance)}m</div>
-                  <div className="text-gray-400">Distance</div>
+                  <div className="text-white font-semibold">{gameState.bricksBroken}</div>
+                  <div className="text-gray-400">Bricks Broken</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-white font-semibold">{gameState.commits}</div>
-                  <div className="text-gray-400">Commits</div>
+                  <div className="text-white font-semibold">{gameState.level}</div>
+                  <div className="text-gray-400">Level Reached</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-white font-semibold">{gameState.combos}</div>
+                  <div className="text-gray-400">Combos</div>
                 </div>
                 <div className="text-center">
                   <div className="text-white font-semibold">{formatTime(runDuration)}</div>
                   <div className="text-gray-400">Duration</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-white font-semibold">{gameState.activePowerups.length}</div>
-                  <div className="text-gray-400">Powerups</div>
                 </div>
               </div>
             </motion.div>
@@ -324,7 +310,7 @@ export function ByteRushGameOverModal({
               className="text-center mt-6 pt-4 border-t border-gray-600/30"
             >
               <div className="text-xs text-gray-500 font-mono">
-                [BYTECLUB] Game session complete. Great run! 🚀
+                [BYTECLUB] Brick-breaking session complete. Great work! 🚀
               </div>
             </motion.div>
           </motion.div>

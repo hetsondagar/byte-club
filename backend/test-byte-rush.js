@@ -15,8 +15,7 @@ const API_BASE = `${BASE_URL}/api/byte-rush`;
 const testScore = {
   displayName: 'TestPlayer',
   score: 50000,
-  distance: 2500,
-  commits: 25,
+  bricksBroken: 100,
   runDurationMs: 120000,
   powerupsUsed: ['tryCatch', 'optimizationBoost'],
   clientGameVersion: '1.0.0'

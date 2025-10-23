@@ -10,31 +10,18 @@ import {
   Sparkles,
   Play,
   Pause,
-  RotateCcw
+  RotateCcw,
+  Heart
 } from 'lucide-react';
 import { Button } from './ui/button';
-
-// BYTECLUB: Game state interface
-interface GameState {
-  score: number;
-  distance: number;
-  commits: number;
-  isRunning: boolean;
-  isPaused: boolean;
-  gameSpeed: number;
-  playerPosition: { x: number; y: number; z: number };
-  activePowerups: string[];
-  obstacles: any[];
-  collectibles: any[];
-}
+import { GameState } from '@/hooks/useGameEngine';
 
 // BYTECLUB: Leaderboard entry interface
 interface LeaderboardEntry {
   rank: number;
   displayName: string;
   score: number;
-  distance: number;
-  commits: number;
+  bricksBroken: number;
   runDurationMs: number;
   powerupsUsed: string[];
   createdAt: Date;
@@ -69,13 +56,6 @@ const POWERUP_DEFINITIONS = {
     color: 'text-purple-400',
     bgColor: 'bg-purple-400/20',
     borderColor: 'border-purple-400/50'
-  },
-  hotfix: {
-    name: 'Hotfix',
-    icon: <Zap className="w-4 h-4" />,
-    color: 'text-orange-400',
-    bgColor: 'bg-orange-400/20',
-    borderColor: 'border-orange-400/50'
   }
 };
 
@@ -86,20 +66,16 @@ interface ByteRushHUDProps {
   onResume: () => void;
   onRestart: () => void;
   onExit: () => void;
-  isConnected: boolean;
-  connectedUsers: number;
 }
 
-// BYTECLUB: Byte Rush HUD component
+// BYTECLUB: Byte Rush HUD component for brick-breaker
 export function ByteRushHUD({
   gameState,
   leaderboard,
   onPause,
   onResume,
   onRestart,
-  onExit,
-  isConnected,
-  connectedUsers
+  onExit
 }: ByteRushHUDProps) {
   const formatTime = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
@@ -111,19 +87,17 @@ export function ByteRushHUD({
     return num.toLocaleString();
   };
 
+  // BYTECLUB: Console messages for ByteClub theme
+  const getConsoleMessage = () => {
+    if (gameState.isPaused) return '[SYS] Game paused. Press P to resume.';
+    if (!gameState.isRunning && gameState.lives === 0) return '[BYTECLUB] Game over! Breaking code is hard work.';
+    if (gameState.activePowerups.length > 0) return '[DEBUG] Powerup active! Breaking bricks with style.';
+    if (gameState.combos > 0) return '[SYS] Combo streak! Keep breaking those bugs!';
+    return '[BYTECLUB] Breaking deprecated code...';
+  };
+
   return (
     <div className="w-[30%] h-full bg-gradient-to-b from-gray-900 to-black border-l border-cyan-400/30 p-6 overflow-y-auto">
-      {/* BYTECLUB: Connection Status */}
-      <div className="mb-4">
-        <div className={`flex items-center text-sm ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
-          <div className={`w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-400' : 'bg-red-400'} animate-pulse`} />
-          {isConnected ? 'Connected' : 'Disconnected'}
-          {isConnected && (
-            <span className="ml-2 text-gray-400">({connectedUsers} online)</span>
-          )}
-        </div>
-      </div>
-
       {/* BYTECLUB: Game Stats */}
       <div className="mb-6">
         <h3 className="text-lg font-bold text-cyan-400 mb-3 flex items-center">
@@ -136,16 +110,29 @@ export function ByteRushHUD({
             <span className="text-white font-mono font-bold">{formatNumber(gameState.score)}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-400">Distance:</span>
-            <span className="text-white font-mono">{Math.floor(gameState.distance)}m</span>
+            <span className="text-gray-400">Level:</span>
+            <span className="text-white font-mono">{gameState.level}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-400">Commits:</span>
-            <span className="text-white font-mono">{gameState.commits}</span>
+            <span className="text-gray-400">Bricks:</span>
+            <span className="text-white font-mono">{gameState.bricksBroken}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-400">Speed:</span>
-            <span className="text-white font-mono">{gameState.gameSpeed.toFixed(1)}x</span>
+            <span className="text-gray-400">Combos:</span>
+            <span className="text-white font-mono">{gameState.combos}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-400">Lives:</span>
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Heart
+                  key={i}
+                  className={`w-4 h-4 ${
+                    i < gameState.lives ? 'text-red-400 fill-current' : 'text-gray-600'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -162,6 +149,9 @@ export function ByteRushHUD({
               gameState.activePowerups.map((powerup, index) => {
                 const powerupDef = POWERUP_DEFINITIONS[powerup as keyof typeof POWERUP_DEFINITIONS];
                 if (!powerupDef) return null;
+                
+                const remainingTime = gameState.powerupTimers[powerup] || 0;
+                const progress = remainingTime / (powerup === 'optimizationBoost' ? 5000 : 3000);
                 
                 return (
                   <motion.div
@@ -185,9 +175,12 @@ export function ByteRushHUD({
                         <motion.div
                           className="bg-cyan-400 h-1 rounded-full"
                           initial={{ width: "100%" }}
-                          animate={{ width: "0%" }}
-                          transition={{ duration: 5, ease: "linear" }}
+                          animate={{ width: `${progress * 100}%` }}
+                          transition={{ duration: 0.1 }}
                         />
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        {Math.ceil(remainingTime / 1000)}s remaining
                       </div>
                     </div>
                   </motion.div>
@@ -236,8 +229,7 @@ export function ByteRushHUD({
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>{Math.floor(entry.distance)}m</span>
-                    <span>{entry.commits} commits</span>
+                    <span>{entry.bricksBroken} bricks</span>
                     <span>{formatTime(entry.runDurationMs)}</span>
                   </div>
                 </motion.div>
@@ -257,12 +249,8 @@ export function ByteRushHUD({
         </h3>
         <div className="space-y-2 text-sm text-gray-300">
           <div className="flex items-center justify-between">
-            <span>Jump</span>
-            <kbd className="bg-gray-700 px-2 py-1 rounded text-xs">Space</kbd>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Slide</span>
-            <kbd className="bg-gray-700 px-2 py-1 rounded text-xs">↓</kbd>
+            <span>Move Paddle</span>
+            <kbd className="bg-gray-700 px-2 py-1 rounded text-xs">← →</kbd>
           </div>
           <div className="flex items-center justify-between">
             <span>Pause</span>
@@ -320,14 +308,15 @@ export function ByteRushHUD({
         </h3>
         <div className="space-y-1 text-xs font-mono">
           <div className="text-green-400">[BYTECLUB] Game engine initialized</div>
-          <div className="text-cyan-400">[SYS] WebGL renderer active</div>
+          <div className="text-cyan-400">[SYS] Canvas renderer active</div>
           <div className="text-yellow-400">[DEBUG] Physics engine running</div>
           {gameState.isRunning && (
-            <div className="text-lime-400">[GAME] Runner active</div>
+            <div className="text-lime-400">[GAME] Breaking bricks active</div>
           )}
           {gameState.isPaused && (
             <div className="text-orange-400">[GAME] Paused</div>
           )}
+          <div className="text-cyan-400">{getConsoleMessage()}</div>
         </div>
       </div>
     </div>

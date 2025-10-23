@@ -1,13 +1,12 @@
 import { ByteRushScore, POWERUP_DEFINITIONS } from '../models/ByteRush';
 import logger from '../config/logger';
 
-// BYTECLUB: Demo data for Byte Rush leaderboard
+// BYTECLUB: Demo data for Byte Rush brick-breaker leaderboard
 const DEMO_SCORES = [
   {
     displayName: 'NeonHacker',
     score: 125000,
-    distance: 8500,
-    commits: 45,
+    bricksBroken: 250,
     runDurationMs: 120000,
     powerupsUsed: ['tryCatch', 'optimizationBoost', 'debuggerDrone'],
     clientGameVersion: '1.0.0'
@@ -15,17 +14,15 @@ const DEMO_SCORES = [
   {
     displayName: 'CodeNinja',
     score: 118000,
-    distance: 7800,
-    commits: 38,
+    bricksBroken: 236,
     runDurationMs: 115000,
-    powerupsUsed: ['garbageCollector', 'hotfix'],
+    powerupsUsed: ['garbageCollector'],
     clientGameVersion: '1.0.0'
   },
   {
     displayName: 'ByteMaster',
     score: 112000,
-    distance: 7200,
-    commits: 42,
+    bricksBroken: 224,
     runDurationMs: 108000,
     powerupsUsed: ['tryCatch', 'optimizationBoost'],
     clientGameVersion: '1.0.0'
@@ -33,8 +30,7 @@ const DEMO_SCORES = [
   {
     displayName: 'CyberRunner',
     score: 105000,
-    distance: 6800,
-    commits: 35,
+    bricksBroken: 210,
     runDurationMs: 102000,
     powerupsUsed: ['debuggerDrone', 'garbageCollector'],
     clientGameVersion: '1.0.0'
@@ -42,17 +38,15 @@ const DEMO_SCORES = [
   {
     displayName: 'TerminalWarrior',
     score: 98000,
-    distance: 6200,
-    commits: 32,
+    bricksBroken: 196,
     runDurationMs: 95000,
-    powerupsUsed: ['tryCatch', 'hotfix'],
+    powerupsUsed: ['tryCatch'],
     clientGameVersion: '1.0.0'
   },
   {
     displayName: 'GlitchHunter',
     score: 92000,
-    distance: 5800,
-    commits: 28,
+    bricksBroken: 184,
     runDurationMs: 88000,
     powerupsUsed: ['optimizationBoost'],
     clientGameVersion: '1.0.0'
@@ -60,8 +54,7 @@ const DEMO_SCORES = [
   {
     displayName: 'MatrixRunner',
     score: 87000,
-    distance: 5400,
-    commits: 25,
+    bricksBroken: 174,
     runDurationMs: 82000,
     powerupsUsed: ['garbageCollector', 'debuggerDrone'],
     clientGameVersion: '1.0.0'
@@ -69,8 +62,7 @@ const DEMO_SCORES = [
   {
     displayName: 'BinaryBeast',
     score: 82000,
-    distance: 5000,
-    commits: 22,
+    bricksBroken: 164,
     runDurationMs: 78000,
     powerupsUsed: ['tryCatch'],
     clientGameVersion: '1.0.0'
@@ -78,17 +70,15 @@ const DEMO_SCORES = [
   {
     displayName: 'SyntaxSprint',
     score: 78000,
-    distance: 4600,
-    commits: 20,
+    bricksBroken: 156,
     runDurationMs: 74000,
-    powerupsUsed: ['hotfix', 'optimizationBoost'],
+    powerupsUsed: ['optimizationBoost'],
     clientGameVersion: '1.0.0'
   },
   {
     displayName: 'DebugDynamo',
     score: 73000,
-    distance: 4200,
-    commits: 18,
+    bricksBroken: 146,
     runDurationMs: 70000,
     powerupsUsed: ['debuggerDrone'],
     clientGameVersion: '1.0.0'
@@ -96,8 +86,7 @@ const DEMO_SCORES = [
   {
     displayName: 'Anonymous',
     score: 68000,
-    distance: 3800,
-    commits: 15,
+    bricksBroken: 136,
     runDurationMs: 65000,
     powerupsUsed: ['garbageCollector'],
     clientGameVersion: '1.0.0'
@@ -105,8 +94,7 @@ const DEMO_SCORES = [
   {
     displayName: 'Anonymous',
     score: 62000,
-    distance: 3400,
-    commits: 12,
+    bricksBroken: 124,
     runDurationMs: 60000,
     powerupsUsed: ['tryCatch'],
     clientGameVersion: '1.0.0'
@@ -114,8 +102,7 @@ const DEMO_SCORES = [
   {
     displayName: 'Anonymous',
     score: 55000,
-    distance: 3000,
-    commits: 10,
+    bricksBroken: 110,
     runDurationMs: 55000,
     powerupsUsed: [],
     clientGameVersion: '1.0.0'
@@ -123,17 +110,15 @@ const DEMO_SCORES = [
   {
     displayName: 'Anonymous',
     score: 48000,
-    distance: 2600,
-    commits: 8,
+    bricksBroken: 96,
     runDurationMs: 50000,
-    powerupsUsed: ['hotfix'],
+    powerupsUsed: ['optimizationBoost'],
     clientGameVersion: '1.0.0'
   },
   {
     displayName: 'Anonymous',
     score: 42000,
-    distance: 2200,
-    commits: 6,
+    bricksBroken: 84,
     runDurationMs: 45000,
     powerupsUsed: [],
     clientGameVersion: '1.0.0'

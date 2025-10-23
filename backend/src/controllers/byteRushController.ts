@@ -2,15 +2,14 @@ import { Request, Response } from 'express';
 import { ByteRushScore, POWERUP_DEFINITIONS, GAME_CONFIG } from '../models/ByteRush';
 import logger from '../config/logger';
 
-// BYTECLUB: Interface for score submission request
+// BYTECLUB: Interface for brick-breaker score submission request
 interface ScoreSubmissionRequest {
   userId?: string;
   displayName?: string;
   score: number;
-  distance: number;
-  commits: number;
-  runDurationMs: number;
+  bricksBroken: number;
   powerupsUsed: string[];
+  runDurationMs: number;
   clientGameVersion?: string;
 }
 
@@ -19,8 +18,7 @@ interface LeaderboardEntry {
   rank: number;
   displayName: string;
   score: number;
-  distance: number;
-  commits: number;
+  bricksBroken: number;
   runDurationMs: number;
   powerupsUsed: string[];
   createdAt: Date;
@@ -34,19 +32,18 @@ export class ByteRushController {
         userId,
         displayName = 'Anonymous',
         score,
-        distance,
-        commits,
-        runDurationMs,
+        bricksBroken,
         powerupsUsed = [],
+        runDurationMs,
         clientGameVersion = '1.0.0'
       }: ScoreSubmissionRequest = req.body;
 
       // BYTECLUB: Validate required fields
-      if (typeof score !== 'number' || typeof distance !== 'number' || 
-          typeof commits !== 'number' || typeof runDurationMs !== 'number') {
+      if (typeof score !== 'number' || typeof bricksBroken !== 'number' || 
+          typeof runDurationMs !== 'number') {
         res.status(400).json({
           success: false,
-          message: 'Invalid score data: score, distance, commits, and runDurationMs must be numbers'
+          message: 'Invalid score data: score, bricksBroken, and runDurationMs must be numbers'
         });
         return;
       }
@@ -60,18 +57,10 @@ export class ByteRushController {
         return;
       }
 
-      if (distance < 0 || distance > GAME_CONFIG.MAX_DISTANCE) {
+      if (bricksBroken < 0 || bricksBroken > GAME_CONFIG.MAX_BRICKS) {
         res.status(400).json({
           success: false,
-          message: `Distance must be between 0 and ${GAME_CONFIG.MAX_DISTANCE}`
-        });
-        return;
-      }
-
-      if (commits < 0 || commits > GAME_CONFIG.MAX_COMMITS) {
-        res.status(400).json({
-          success: false,
-          message: `Commits must be between 0 and ${GAME_CONFIG.MAX_COMMITS}`
+          message: `Bricks broken must be between 0 and ${GAME_CONFIG.MAX_BRICKS}`
         });
         return;
       }
@@ -96,50 +85,32 @@ export class ByteRushController {
       }
 
       // BYTECLUB: Anti-cheat validation
-      const scorePerDistance = score / Math.max(distance, 1);
-      if (scorePerDistance > 10) {
-        logger.warn(`🚨 Suspicious score submission: ${scorePerDistance.toFixed(2)} points per distance unit`, {
+      const scorePerBrick = score / Math.max(bricksBroken, 1);
+      if (scorePerBrick > 200) {
+        logger.warn(`🚨 Suspicious score submission: ${scorePerBrick.toFixed(2)} points per brick`, {
           userId,
           score,
-          distance,
-          commits,
+          bricksBroken,
           runDurationMs
         });
         res.status(400).json({
           success: false,
-          message: 'Score-to-distance ratio appears suspicious'
+          message: 'Score-to-bricks ratio appears suspicious'
         });
         return;
       }
 
-      const commitsPerDistance = commits / Math.max(distance, 1);
-      if (commitsPerDistance > 0.1) {
-        logger.warn(`🚨 Suspicious commits submission: ${commitsPerDistance.toFixed(3)} commits per distance unit`, {
+      const bricksPerSecond = bricksBroken / (runDurationMs / 1000);
+      if (bricksPerSecond > 5) {
+        logger.warn(`🚨 Suspicious speed submission: ${bricksPerSecond.toFixed(2)} bricks per second`, {
           userId,
           score,
-          distance,
-          commits,
+          bricksBroken,
           runDurationMs
         });
         res.status(400).json({
           success: false,
-          message: 'Commits-to-distance ratio appears suspicious'
-        });
-        return;
-      }
-
-      const distancePerSecond = distance / (runDurationMs / 1000);
-      if (distancePerSecond > 50) {
-        logger.warn(`🚨 Suspicious speed submission: ${distancePerSecond.toFixed(2)} distance units per second`, {
-          userId,
-          score,
-          distance,
-          commits,
-          runDurationMs
-        });
-        res.status(400).json({
-          success: false,
-          message: 'Distance-to-duration ratio appears suspicious'
+          message: 'Bricks-per-second ratio appears suspicious'
         });
         return;
       }
@@ -149,10 +120,9 @@ export class ByteRushController {
         userId,
         displayName: displayName.trim().substring(0, 50),
         score,
-        distance,
-        commits,
-        runDurationMs,
+        bricksBroken,
         powerupsUsed,
+        runDurationMs,
         clientGameVersion
       });
 
@@ -162,8 +132,7 @@ export class ByteRushController {
         userId,
         displayName,
         score,
-        distance,
-        commits,
+        bricksBroken,
         runDurationMs,
         powerupsUsed: powerupsUsed.length
       });
@@ -204,8 +173,7 @@ export class ByteRushController {
         rank: index + 1,
         displayName: entry.displayName,
         score: entry.score,
-        distance: entry.distance,
-        commits: entry.commits,
+        bricksBroken: entry.bricksBroken,
         runDurationMs: entry.runDurationMs,
         powerupsUsed: entry.powerupsUsed,
         createdAt: entry.createdAt
@@ -325,9 +293,9 @@ export class ByteRushController {
         { $group: { _id: null, avgScore: { $avg: '$score' } } }
       ]).then(result => result[0]?.avgScore || 0);
 
-      const averageDistance = await ByteRushScore.aggregate([
-        { $group: { _id: null, avgDistance: { $avg: '$distance' } } }
-      ]).then(result => result[0]?.avgDistance || 0);
+      const averageBricks = await ByteRushScore.aggregate([
+        { $group: { _id: null, avgBricks: { $avg: '$bricksBroken' } } }
+      ]).then(result => result[0]?.avgBricks || 0);
 
       const powerupUsage = await ByteRushScore.aggregate([
         { $unwind: '$powerupsUsed' },
@@ -343,7 +311,7 @@ export class ByteRushController {
           registeredPlayers: totalPlayers,
           anonymousPlayers: totalAnonymousPlayers,
           averageScore: Math.round(averageScore),
-          averageDistance: Math.round(averageDistance),
+          averageBricks: Math.round(averageBricks),
           powerupUsage: powerupUsage.map(p => ({
             powerup: p._id,
             count: p.count,

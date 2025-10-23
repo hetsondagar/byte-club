@@ -34,8 +34,6 @@
     "node-fetch": "^2.7.0",
     "pino": "^8.16.2",
     "pino-pretty": "^10.2.3",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
     "vm2": "^3.9.19",
     "zod": "^3.22.4",
     "express-rate-limit": "^7.1.5"

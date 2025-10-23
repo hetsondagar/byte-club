@@ -1,19 +1,18 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-// BYTECLUB: Byte Rush score interface for MongoDB storage
+// BYTECLUB: Byte Rush brick-breaker score interface for MongoDB storage
 export interface IByteRushScore extends Document {
   userId?: string;
   displayName: string;
   score: number;
-  distance: number;
-  commits: number;
-  runDurationMs: number;
+  bricksBroken: number;
   powerupsUsed: string[];
+  runDurationMs: number;
   clientGameVersion: string;
   createdAt: Date;
 }
 
-// BYTECLUB: Schema for storing Byte Rush game scores with anti-cheat validation
+// BYTECLUB: Schema for storing Byte Rush brick-breaker scores with anti-cheat validation
 const ByteRushScoreSchema = new Schema<IByteRushScore>({
   userId: {
     type: String,
@@ -34,28 +33,22 @@ const ByteRushScoreSchema = new Schema<IByteRushScore>({
     max: 1000000, // Reasonable max score limit
     index: true
   },
-  distance: {
+  bricksBroken: {
     type: Number,
     required: true,
     min: 0,
-    max: 50000 // Reasonable max distance limit
+    max: 1000 // Reasonable max bricks limit
   },
-  commits: {
-    type: Number,
-    required: true,
-    min: 0,
-    max: 1000 // Reasonable max commits limit
-  },
+  powerupsUsed: [{
+    type: String,
+    enum: ['tryCatch', 'garbageCollector', 'debuggerDrone', 'optimizationBoost']
+  }],
   runDurationMs: {
     type: Number,
     required: true,
     min: 1000, // Minimum 1 second run
     max: 600000 // Maximum 10 minutes run
   },
-  powerupsUsed: [{
-    type: String,
-    enum: ['tryCatch', 'garbageCollector', 'debuggerDrone', 'optimizationBoost', 'hotfix']
-  }],
   clientGameVersion: {
     type: String,
     required: true,
@@ -82,22 +75,22 @@ ByteRushScoreSchema.index({ userId: 1, createdAt: -1 });
 
 // BYTECLUB: Pre-save validation to prevent cheating
 ByteRushScoreSchema.pre('save', function(next) {
-  // Validate score-distance ratio (should be reasonable)
-  const scorePerDistance = this.score / Math.max(this.distance, 1);
-  if (scorePerDistance > 10) { // More than 10 points per distance unit seems suspicious
-    return next(new Error('Invalid score-to-distance ratio detected'));
+  // Validate score-bricks ratio (should be reasonable)
+  const scorePerBrick = this.score / Math.max(this.bricksBroken, 1);
+  if (scorePerBrick > 200) { // More than 200 points per brick seems suspicious
+    return next(new Error('Invalid score-to-bricks ratio detected'));
   }
 
-  // Validate commits-distance ratio (should be reasonable)
-  const commitsPerDistance = this.commits / Math.max(this.distance, 1);
-  if (commitsPerDistance > 0.1) { // More than 0.1 commits per distance unit seems suspicious
-    return next(new Error('Invalid commits-to-distance ratio detected'));
+  // Validate bricks per second (should be reasonable)
+  const bricksPerSecond = this.bricksBroken / (this.runDurationMs / 1000);
+  if (bricksPerSecond > 5) { // More than 5 bricks per second seems suspicious
+    return next(new Error('Invalid bricks-per-second ratio detected'));
   }
 
-  // Validate run duration vs distance (should be reasonable)
-  const distancePerSecond = this.distance / (this.runDurationMs / 1000);
-  if (distancePerSecond > 50) { // More than 50 distance units per second seems suspicious
-    return next(new Error('Invalid distance-to-duration ratio detected'));
+  // Validate minimum score for given bricks
+  const expectedMinScore = this.bricksBroken * 50; // 50 points per brick minimum
+  if (this.score < expectedMinScore * 0.5) { // Allow some variance
+    return next(new Error('Score too low for number of bricks broken'));
   }
 
   next();
@@ -131,54 +124,46 @@ ByteRushScoreSchema.statics.getUserRecentScores = async function(userId: string,
 
 export const ByteRushScore = mongoose.model<IByteRushScore>('ByteRushScore', ByteRushScoreSchema);
 
-// BYTECLUB: Powerup definitions for game logic
+// BYTECLUB: Powerup definitions for brick-breaker game logic
 export const POWERUP_DEFINITIONS = {
   tryCatch: {
     name: 'Try-Catch Shield',
-    description: 'Protects from one collision',
-    duration: 5000, // 5 seconds
+    description: 'Paddle invincible for 3 seconds',
+    duration: 3000, // 3 seconds
     color: '#00fff9' // Neon cyan
   },
   garbageCollector: {
     name: 'Garbage Collector',
-    description: 'Clears obstacles ahead',
-    duration: 3000, // 3 seconds
+    description: 'Clears 1-2 rows of bricks',
+    duration: 0, // Instant effect
     color: '#7fff00' // Lime
   },
   debuggerDrone: {
     name: 'Debugger Drone',
-    description: 'Collects nearby commits automatically',
-    duration: 8000, // 8 seconds
+    description: 'Auto-bounce for 3 seconds (ball never misses)',
+    duration: 3000, // 3 seconds
     color: '#ff3bcf' // Magenta
   },
   optimizationBoost: {
     name: 'Optimization Boost',
-    description: 'Slows time and increases score multiplier',
-    duration: 4000, // 4 seconds
+    description: 'Slows ball speed temporarily',
+    duration: 5000, // 5 seconds
     color: '#a020f0' // Electric purple
-  },
-  hotfix: {
-    name: 'Hotfix',
-    description: 'Respawn with invincibility',
-    duration: 2000, // 2 seconds
-    color: '#ff6b35' // Orange
   }
 } as const;
 
-// BYTECLUB: Game configuration constants
+// BYTECLUB: Game configuration constants for brick-breaker
 export const GAME_CONFIG = {
   MAX_SCORE: 1000000,
-  MAX_DISTANCE: 50000,
-  MAX_COMMITS: 1000,
+  MAX_BRICKS: 1000,
   MIN_RUN_DURATION: 1000, // 1 second
   MAX_RUN_DURATION: 600000, // 10 minutes
   SCORE_MULTIPLIER: {
-    COMMIT: 100,
-    DISTANCE: 1,
-    POWERUP_USED: 50
+    BRICK: 50,
+    POWERUP_USED: 25,
+    COMBO: 100
   },
-  COLLISION_PENALTY: 1000,
-  POWERUP_SPAWN_RATE: 0.1, // 10% chance per obstacle
-  OBSTACLE_SPAWN_RATE: 0.3, // 30% chance per frame
-  COMMIT_SPAWN_RATE: 0.2 // 20% chance per frame
+  POWERUP_SPAWN_RATE: 0.1, // 10% chance per brick
+  BRICK_ROWS: 8, // Number of brick rows
+  BRICKS_PER_ROW: 10 // Number of bricks per row
 } as const;
