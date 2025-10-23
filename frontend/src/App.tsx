@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MatrixRain } from "@/components/ui/matrix-rain";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { CodeHeistProvider } from "@/contexts/CodeHeistContext";
 import { StreakNotificationWrapper } from "@/components/StreakNotificationWrapper";
 import { Footer } from "@/components/Footer";
 import { config } from "@/config/env";
@@ -27,9 +26,7 @@ import Notifications from "./pages/Notifications";
 import Archive from "./pages/Archive";
 import Rewards from "./pages/Rewards";
 import Test from "./pages/Test";
-import CodeHeist from "./pages/CodeHeist";
-import CodeHeistLobby from "./pages/CodeHeistLobby";
-import CodeHeistGame from "./pages/CodeHeistGame";
+import ByteRush from "./pages/ByteRush";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,7 +37,6 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <CodeHeistProvider>
           <TooltipProvider>
             <StreakNotificationWrapper>
               <Toaster />
@@ -70,11 +66,8 @@ const App = () => {
                       <Route path="/archive" element={<Archive />} />
                       <Route path="/rewards" element={<Rewards />} />
                       <Route path="/test" element={<Test />} />
-                      {/* Code Heist Game Routes */}
-                      <Route path="/code-heist" element={<CodeHeist />} />
-                      <Route path="/code-heist/lobby" element={<CodeHeistLobby />} />
-                      <Route path="/code-heist/join" element={<CodeHeistLobby />} />
-                      <Route path="/code-heist/game" element={<CodeHeistGame />} />
+                      {/* Byte Rush Game Route */}
+                      <Route path="/byte-rush" element={<ByteRush />} />
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                       <Route path="*" element={<NotFound />} />
                     </Routes>
@@ -84,7 +77,6 @@ const App = () => {
               </BrowserRouter>
             </StreakNotificationWrapper>
           </TooltipProvider>
-        </CodeHeistProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

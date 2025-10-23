@@ -133,7 +133,7 @@ export function Navbar({ username = "Hacker", level = 12, xp = 2450, onLogout }:
   const navLinks = [
     { name: "Adventure Map", path: "/adventure-map", icon: "🗺️" },
     { name: "Quests", path: "/quests", icon: "⚡" },
-    { name: "Code Heist", path: "/code-heist", icon: "🎮" },
+    { name: "Byte Rush", path: "/byte-rush", icon: "⚡" },
     { name: "Leaderboard", path: "/leaderboard", icon: "🏆" },
   ];
 

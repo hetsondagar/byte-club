@@ -9,7 +9,9 @@
     "start": "node dist/index.js",
     "seed": "tsx src/seed/index.ts",
     "migrate": "tsx src/migrations/index.ts",
-    "setup": "node scripts/setup.js"
+    "setup": "node scripts/setup.js",
+    "test:byte-rush": "node test-byte-rush.js",
+    "seed:byte-rush": "tsx src/seed/byteRushSeed.ts"
   },
   "keywords": [
     "byte-club",
@@ -35,7 +37,8 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "vm2": "^3.9.19",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "express-rate-limit": "^7.1.5"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
