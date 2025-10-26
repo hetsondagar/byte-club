@@ -186,7 +186,7 @@ export function ByteRushCanvas3D({
         ctx.fillRect(bullet.position.x + 1, bullet.position.y + 2, bullet.width - 2, bullet.height - 4);
       });
       
-      // BYTECLUB: Draw Galaga-style enemy ships
+      // BYTECLUB: Draw distinctive enemy ships
       enemies.forEach(enemy => {
         const colors = {
           normal: { main: '#4ecdc4', glow: '#00ffff' },
@@ -196,7 +196,7 @@ export function ByteRushCanvas3D({
         };
         
         const color = colors[enemy.type];
-        drawGalagaShip2D(ctx, enemy.position.x, enemy.position.y, enemy.width, enemy.height, color.main, color.glow);
+        drawEnemyShip(ctx, enemy.type, enemy.position.x, enemy.position.y, enemy.width, enemy.height, color.main, color.glow);
         
         // BYTECLUB: Health bar for tanks
         if (enemy.type === 'tank' && enemy.health > 1) {
@@ -207,8 +207,81 @@ export function ByteRushCanvas3D({
         }
       });
       
-      // BYTECLUB: Draw player ship
-      drawGalagaShip2D(ctx, player.position.x, player.position.y, player.width, player.height, '#00ffff', '#00ccff');
+      // BYTECLUB: Draw power-ups with pulsing animation
+      powerUps.forEach(powerUp => {
+        if (!powerUp.collected) {
+          const time = Date.now() * 0.005;
+          const pulse = Math.sin(time) * 0.2 + 1;
+          
+          const colors: Record<string, { main: string, glow: string, symbol: string }> = {
+            health: { main: '#ff6b6b', glow: '#ff0000', symbol: '❤' },
+            rapid: { main: '#4ecdc4', glow: '#00ffff', symbol: '⚡' },
+            shield: { main: '#ffe66d', glow: '#ffff00', symbol: '🛡' }
+          };
+          
+          const powerUpData = colors[powerUp.type];
+          const centerX = powerUp.position.x + 15;
+          const centerY = powerUp.position.y + 15;
+          const size = 15 * pulse;
+          
+          // BYTECLUB: Outer glow
+          ctx.fillStyle = powerUpData.glow + '40';
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, size + 8, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // BYTECLUB: Main circle
+          const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, size);
+          gradient.addColorStop(0, powerUpData.main);
+          gradient.addColorStop(1, powerUpData.glow);
+          
+          ctx.fillStyle = gradient;
+          ctx.shadowBlur = 20;
+          ctx.shadowColor = powerUpData.glow;
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          
+          // BYTECLUB: Symbol
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 20px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(powerUpData.symbol, centerX, centerY);
+        }
+      });
+      
+      // BYTECLUB: Draw player ship (always classic triangle)
+      ctx.fillStyle = '#00ffff';
+      ctx.shadowBlur = 25;
+      ctx.shadowColor = '#00ccff';
+      
+      ctx.beginPath();
+      ctx.moveTo(player.position.x + player.width / 2, player.position.y);
+      ctx.lineTo(player.position.x + player.width * 0.1, player.position.y + player.height * 0.4);
+      ctx.lineTo(player.position.x, player.position.y + player.height * 0.5);
+      ctx.lineTo(player.position.x + player.width * 0.2, player.position.y + player.height);
+      ctx.lineTo(player.position.x + player.width * 0.5, player.position.y + player.height * 0.9);
+      ctx.lineTo(player.position.x + player.width * 0.8, player.position.y + player.height);
+      ctx.lineTo(player.position.x + player.width, player.position.y + player.height * 0.5);
+      ctx.lineTo(player.position.x + player.width * 0.9, player.position.y + player.height * 0.4);
+      ctx.closePath();
+      ctx.fill();
+      
+      // BYTECLUB: Cockpit
+      ctx.fillStyle = '#00ffff';
+      ctx.beginPath();
+      ctx.arc(player.position.x + player.width / 2, player.position.y + player.height * 0.3, player.width * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // BYTECLUB: Thruster
+      ctx.fillStyle = '#ffaa00';
+      ctx.beginPath();
+      ctx.arc(player.position.x + player.width / 2, player.position.y + player.height * 0.9, player.width * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.shadowBlur = 0;
       
       // BYTECLUB: Draw exhaust trail
       const exhaustGradient = ctx.createLinearGradient(
@@ -238,9 +311,10 @@ export function ByteRushCanvas3D({
     };
   }, [player, bullets, enemies, particles]);
 
-  // BYTECLUB: Galaga-style ship drawing function
-  const drawGalagaShip2D = (
+  // BYTECLUB: Draw different ship types with distinctive shapes
+  const drawEnemyShip = (
     ctx: CanvasRenderingContext2D,
+    type: string,
     x: number,
     y: number,
     width: number,
@@ -253,15 +327,49 @@ export function ByteRushCanvas3D({
     ctx.shadowColor = glowColor;
     
     ctx.beginPath();
-    // BYTECLUB: Classic Galaga triangle fighter shape
-    ctx.moveTo(x + width / 2, y);
-    ctx.lineTo(x + width * 0.1, y + height * 0.4);
-    ctx.lineTo(x, y + height * 0.5);
-    ctx.lineTo(x + width * 0.2, y + height);
-    ctx.lineTo(x + width * 0.5, y + height * 0.9);
-    ctx.lineTo(x + width * 0.8, y + height);
-    ctx.lineTo(x + width, y + height * 0.5);
-    ctx.lineTo(x + width * 0.9, y + height * 0.4);
+    
+    if (type === 'normal') {
+      // BYTECLUB: Classic triangle fighter
+      ctx.moveTo(x + width / 2, y);
+      ctx.lineTo(x + width * 0.1, y + height * 0.4);
+      ctx.lineTo(x, y + height * 0.5);
+      ctx.lineTo(x + width * 0.2, y + height);
+      ctx.lineTo(x + width * 0.5, y + height * 0.9);
+      ctx.lineTo(x + width * 0.8, y + height);
+      ctx.lineTo(x + width, y + height * 0.5);
+      ctx.lineTo(x + width * 0.9, y + height * 0.4);
+    } else if (type === 'fast') {
+      // BYTECLUB: Sleek arrow shape
+      ctx.moveTo(x + width / 2, y);
+      ctx.lineTo(x + width * 0.3, y + height * 0.3);
+      ctx.lineTo(x + width * 0.1, y + height * 0.6);
+      ctx.lineTo(x + width * 0.4, y + height);
+      ctx.lineTo(x + width * 0.6, y + height);
+      ctx.lineTo(x + width * 0.9, y + height * 0.6);
+      ctx.lineTo(x + width * 0.7, y + height * 0.3);
+    } else if (type === 'tank') {
+      // BYTECLUB: Wide heavy shape
+      ctx.moveTo(x + width / 2, y);
+      ctx.lineTo(x + width * 0.2, y + height * 0.3);
+      ctx.lineTo(x, y + height * 0.5);
+      ctx.lineTo(x, y + height * 0.8);
+      ctx.lineTo(x + width * 0.2, y + height);
+      ctx.lineTo(x + width * 0.8, y + height);
+      ctx.lineTo(x + width, y + height * 0.8);
+      ctx.lineTo(x + width, y + height * 0.5);
+      ctx.lineTo(x + width * 0.8, y + height * 0.3);
+    } else if (type === 'zigzag') {
+      // BYTECLUB: Diamond with wings
+      ctx.moveTo(x + width / 2, y);
+      ctx.lineTo(x + width * 0.7, y + height * 0.3);
+      ctx.lineTo(x + width, y + height * 0.5);
+      ctx.lineTo(x + width * 0.7, y + height * 0.7);
+      ctx.lineTo(x + width / 2, y + height * 0.9);
+      ctx.lineTo(x + width * 0.3, y + height * 0.7);
+      ctx.lineTo(x, y + height * 0.5);
+      ctx.lineTo(x + width * 0.3, y + height * 0.3);
+    }
+    
     ctx.closePath();
     ctx.fill();
     

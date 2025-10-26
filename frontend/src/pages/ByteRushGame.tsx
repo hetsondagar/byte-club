@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useByteRushGame } from '../hooks/useByteRushGame';
-import { ByteRushCanvas } from '../components/ByteRushCanvas';
+import { ByteRushCanvas3D } from '../components/ByteRushCanvas3D';
 import { apiService } from '../services/api';
 import { Button } from '../components/ui/button';
 import { Trophy, Play, Pause, RotateCcw, Home, Zap, Heart } from 'lucide-react';
@@ -109,14 +109,14 @@ export default function ByteRushGame() {
 
       {/* BYTECLUB: Game Canvas - Fullscreen */}
       <div className="relative">
-        <ByteRushCanvas
+        <ByteRushCanvas3D
           player={player}
           bullets={bullets}
           enemies={enemies}
           powerUps={powerUps}
           particles={particles}
-          gameConfig={GAME_CONFIG}
-        />
+                      gameConfig={GAME_CONFIG}
+          />
 
         {/* BYTECLUB: Game Over Overlay */}
         {gameState.gameOver && (
