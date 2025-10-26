@@ -1,29 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useByteRushGame } from '../hooks/useByteRushGame';
-import { ByteRushCanvas } from '../components/ByteRushCanvas';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Trophy, Play, Pause, RotateCcw, Zap, Heart, Shield } from 'lucide-react';
+import { Trophy, Play, Keyboard, Target, Zap, Heart, Shield, Rocket, Flame, Move } from 'lucide-react';
 
 export default function ByteRush() {
-  const { gameState, player, bullets, enemies, powerUps, particles, startGame, pauseGame, GAME_CONFIG } = useByteRushGame();
-  
+  const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
 
   // BYTECLUB: Fetch leaderboard on mount
   useEffect(() => {
     fetchLeaderboard();
   }, []);
-
-  // BYTECLUB: Submit score on game over
-  useEffect(() => {
-    if (gameState.gameOver && gameState.score > 0) {
-      submitScore();
-    }
-  }, [gameState.gameOver, gameState.score]);
 
   const fetchLeaderboard = async () => {
     try {
@@ -36,178 +26,176 @@ export default function ByteRush() {
     }
   };
 
-  const submitScore = async () => {
-    try {
-      setSubmitting(true);
-      await apiService.submitByteRushScore({
-        score: gameState.score,
-        wave: gameState.wave,
-        enemiesKilled: gameState.enemiesKilled
-      });
-      await fetchLeaderboard(); // Refresh leaderboard
-    } catch (error) {
-      console.error('Failed to submit score:', error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleStartGame = () => {
-    startGame();
-  };
-
-  const handlePauseResume = () => {
-    pauseGame();
-  };
-
-  const handleRestart = () => {
-    if (confirm('Are you sure you want to restart? Your current score will be lost!')) {
-      startGame();
-    }
+    navigate('/byte-rush/game');
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-card/50 to-background p-4 md:p-8">
       <div className="container mx-auto max-w-7xl">
         {/* BYTECLUB: Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-4">
-            🎮 Byte Rush
+        <div className="mb-12 text-center">
+          <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-4">
+            🚀 Byte Rush
           </h1>
-          <p className="text-lg text-muted-foreground font-mono">
+          <p className="text-xl text-muted-foreground font-mono mb-6">
             Top-down arcade shooter • Defeat waves of enemies • Achieve the highest score!
           </p>
+          
+          {/* BYTECLUB: Start Game Button */}
+          <Button 
+            size="lg" 
+            onClick={handleStartGame}
+            className="text-lg px-8 py-6 h-auto"
+          >
+            <Play className="mr-2 h-6 w-6" />
+            Start Game
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* BYTECLUB: Game Canvas */}
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* BYTECLUB: Left Column - Game Info */}
+          <div className="space-y-6">
+            {/* BYTECLUB: How to Play */}
             <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-primary" />
-                    Game
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={gameState.isPlaying ? handlePauseResume : handleStartGame}
-                      disabled={submitting}
-                    >
-                      {gameState.isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                      {gameState.isPlaying ? 'Pause' : 'Start'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRestart}
-                      disabled={!gameState.isPlaying && !gameState.gameOver}
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                      Restart
-                    </Button>
-                  </div>
-                </div>
+                <CardTitle className="flex items-center gap-2">
+                  <Keyboard className="h-5 w-5 text-primary" />
+                  How to Play
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                {/* BYTECLUB: Game Stats */}
-                <div className="grid grid-cols-4 gap-4 mb-6">
-                  <div className="bg-background/50 rounded-lg p-3 border border-primary/10">
-                    <div className="text-xs text-muted-foreground font-mono mb-1">Score</div>
-                    <div className="text-2xl font-bold text-primary">{gameState.score}</div>
-                  </div>
-                  <div className="bg-background/50 rounded-lg p-3 border border-secondary/10">
-                    <div className="text-xs text-muted-foreground font-mono mb-1">Wave</div>
-                    <div className="text-2xl font-bold text-secondary">{gameState.wave}</div>
-                  </div>
-                  <div className="bg-background/50 rounded-lg p-3 border border-accent/10">
-                    <div className="text-xs text-muted-foreground font-mono mb-1 flex items-center gap-1">
-                      <Heart className="h-3 w-3" />
-                      Lives
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3">
+                    <Move className="h-5 w-5 text-accent mt-0.5" />
+                    <div>
+                      <p className="font-semibold">Movement</p>
+                      <p className="text-sm text-muted-foreground">
+                        Use <kbd className="px-2 py-1 bg-background rounded border">A</kbd> or <kbd className="px-2 py-1 bg-background rounded border">←</kbd> to move left
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Use <kbd className="px-2 py-1 bg-background rounded border">D</kbd> or <kbd className="px-2 py-1 bg-background rounded border">→</kbd> to move right
+                      </p>
                     </div>
-                    <div className="text-2xl font-bold text-accent">{gameState.lives}</div>
                   </div>
-                  <div className="bg-background/50 rounded-lg p-3 border border-primary/10">
-                    <div className="text-xs text-muted-foreground font-mono mb-1">Kills</div>
-                    <div className="text-2xl font-bold text-primary">{gameState.enemiesKilled}</div>
+                  
+                  <div className="flex items-start gap-3">
+                    <Rocket className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-semibold">Shooting</p>
+                      <p className="text-sm text-muted-foreground">
+                        Hold <kbd className="px-2 py-1 bg-background rounded border">Space</kbd> to continuously shoot bullets
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Keep spacebar pressed to fire rapidly!
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <Target className="h-5 w-5 text-secondary mt-0.5" />
+                    <div>
+                      <p className="font-semibold">Objective</p>
+                      <p className="text-sm text-muted-foreground">
+                        Destroy enemies to score points and collect power-ups
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Avoid enemy collisions - you have 3 lives!
+                      </p>
+                    </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* BYTECLUB: Game Canvas */}
-                <div className="relative">
-                  <ByteRushCanvas
-                    player={player}
-                    bullets={bullets}
-                    enemies={enemies}
-                    powerUps={powerUps}
-                    particles={particles}
-                    gameConfig={GAME_CONFIG}
-                  />
+            {/* BYTECLUB: Enemy Types */}
+            <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-secondary" />
+                  Enemy Ships
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-cyan-500/30">
+                  <div className="w-12 h-12 bg-cyan-500/20 rounded flex items-center justify-center">
+                    <span className="text-2xl">👾</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-cyan-400">Normal Enemy</p>
+                    <p className="text-sm text-muted-foreground">Standard speed • <span className="text-primary font-bold">10 points</span></p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-yellow-500/30">
+                  <div className="w-12 h-12 bg-yellow-500/20 rounded flex items-center justify-center">
+                    <span className="text-2xl">⚡</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-yellow-400">Fast Enemy</p>
+                    <p className="text-sm text-muted-foreground">High speed • <span className="text-primary font-bold">20 points</span></p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-red-500/30">
+                  <div className="w-12 h-12 bg-red-500/20 rounded flex items-center justify-center">
+                    <span className="text-2xl">🛡️</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-red-400">Tank Enemy</p>
+                    <p className="text-sm text-muted-foreground">High health • <span className="text-primary font-bold">50 points</span></p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-green-500/30">
+                  <div className="w-12 h-12 bg-green-500/20 rounded flex items-center justify-center">
+                    <span className="text-2xl">💫</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-green-400">Zigzag Enemy</p>
+                    <p className="text-sm text-muted-foreground">Zigzag pattern • <span className="text-primary font-bold">30 points</span></p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-                  {/* BYTECLUB: Game Over Overlay */}
-                  {gameState.gameOver && (
-                    <div className="absolute inset-0 bg-black/80 rounded-lg flex items-center justify-center">
-                      <div className="text-center p-8 bg-card rounded-lg border-2 border-primary">
-                        <Trophy className="h-16 w-16 mx-auto mb-4 text-primary" />
-                        <h2 className="text-4xl font-bold mb-2">Game Over!</h2>
-                        <p className="text-xl text-muted-foreground mb-4">
-                          Final Score: <span className="text-primary font-bold">{gameState.score}</span>
-                        </p>
-                        <p className="text-sm text-muted-foreground mb-6">
-                          Wave {gameState.wave} • {gameState.enemiesKilled} Enemies Destroyed
-                        </p>
-                        {submitting && (
-                          <p className="text-sm text-primary mb-4">Submitting score...</p>
-                        )}
-                        <Button onClick={handleStartGame} disabled={submitting}>
-                          Play Again
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* BYTECLUB: Paused Overlay */}
-                  {gameState.isPaused && (
-                    <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
-                      <div className="text-center p-8 bg-card rounded-lg border-2 border-secondary">
-                        <Pause className="h-16 w-16 mx-auto mb-4 text-secondary" />
-                        <h2 className="text-4xl font-bold mb-4">Paused</h2>
-                        <Button onClick={handlePauseResume}>Resume</Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* BYTECLUB: Instructions Overlay */}
-                  {!gameState.isPlaying && !gameState.gameOver && (
-                    <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
-                      <div className="text-center p-8 bg-card rounded-lg border-2 border-accent max-w-md">
-                        <Play className="h-16 w-16 mx-auto mb-4 text-accent" />
-                        <h2 className="text-3xl font-bold mb-4">Ready to Play?</h2>
-                        <div className="text-left space-y-2 text-sm text-muted-foreground mb-6">
-                          <p><strong>Controls:</strong></p>
-                          <p>• <kbd className="px-2 py-1 bg-background rounded">A</kbd> or <kbd className="px-2 py-1 bg-background rounded">←</kbd> - Move Left</p>
-                          <p>• <kbd className="px-2 py-1 bg-background rounded">D</kbd> or <kbd className="px-2 py-1 bg-background rounded">→</kbd> - Move Right</p>
-                          <p>• <kbd className="px-2 py-1 bg-background rounded">Space</kbd> - Shoot</p>
-                          <p className="mt-4"><strong>Enemy Types:</strong></p>
-                          <p>• <span className="text-[#4ecdc4]">Cyan</span> - Normal (10 pts)</p>
-                          <p>• <span className="text-[#ffd93d]">Yellow</span> - Fast (20 pts)</p>
-                          <p>• <span className="text-[#ff6b6b]">Red</span> - Tank (50 pts)</p>
-                          <p>• <span className="text-[#a8e6cf]">Green</span> - Zigzag (30 pts)</p>
-                        </div>
-                        <Button onClick={handleStartGame} size="lg">
-                          Start Game
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+            {/* BYTECLUB: Power-Ups */}
+            <Card className="bg-card/50 backdrop-blur-sm border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-accent" />
+                  Power-Ups
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg">
+                  <Heart className="h-8 w-8 text-red-500" />
+                  <div>
+                    <p className="font-semibold">Extra Life</p>
+                    <p className="text-sm text-muted-foreground">Gain an additional life</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg">
+                  <Zap className="h-8 w-8 text-yellow-500" />
+                  <div>
+                    <p className="font-semibold">Rapid Fire</p>
+                    <p className="text-sm text-muted-foreground">Increase bullet fire rate</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg">
+                  <Shield className="h-8 w-8 text-blue-500" />
+                  <div>
+                    <p className="font-semibold">Shield</p>
+                    <p className="text-sm text-muted-foreground">Temporary invincibility</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* BYTECLUB: Leaderboard */}
+          {/* BYTECLUB: Right Column - Leaderboard */}
           <div>
             <Card className="bg-card/50 backdrop-blur-sm border-primary/20 h-full">
               <CardHeader>
@@ -261,12 +249,6 @@ export default function ByteRush() {
               </CardContent>
             </Card>
           </div>
-        </div>
-
-        {/* BYTECLUB: Footer Info */}
-        <div className="mt-8 text-center text-sm text-muted-foreground font-mono">
-          <p>Byte Rush • A Byte Club Arcade Experience</p>
-          <p className="mt-1">Survive as long as possible and climb the leaderboard!</p>
         </div>
       </div>
     </div>

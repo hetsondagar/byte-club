@@ -27,6 +27,7 @@ import Archive from "./pages/Archive";
 import Rewards from "./pages/Rewards";
 import Test from "./pages/Test";
 import ByteRush from "./pages/ByteRush";
+import ByteRushGame from "./pages/ByteRushGame";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,8 +67,9 @@ const App = () => {
                     <Route path="/archive" element={<Archive />} />
                     <Route path="/rewards" element={<Rewards />} />
                     <Route path="/test" element={<Test />} />
-                    {/* Byte Rush Game Route */}
+                    {/* Byte Rush Game Routes */}
                     <Route path="/byte-rush" element={<ByteRush />} />
+                    <Route path="/byte-rush/game" element={<ByteRushGame />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
