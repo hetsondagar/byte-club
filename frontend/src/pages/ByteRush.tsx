@@ -4,11 +4,11 @@ import { Navbar } from '@/components/Navbar';
 import { FloatingParticles } from '@/components/ui/floating-particles';
 import { NeonCard } from '@/components/ui/neon-card';
 import { Button } from '@/components/ui/button';
-import { GameCanvas, GameCanvasRef } from '@/components/GameCanvas';
+import { ByteRushGameCanvas, ByteRushGameCanvasRef } from '@/components/ByteRushGameCanvas';
 import { ByteRushHUD } from '@/components/ByteRushHUD';
 import { ByteRushGameOverModal } from '@/components/ByteRushGameOverModal';
 import { ByteRushLeaderboard } from '@/components/ByteRushLeaderboard';
-import { GameState } from '@/hooks/useGameEngine';
+import { ByteRushGameState } from '@/hooks/useByteRushGameEngine';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import { 
@@ -43,17 +43,17 @@ export default function ByteRush() {
   const { user } = useAuth();
   const [gameStarted, setGameStarted] = useState(false);
   const [showGameCanvas, setShowGameCanvas] = useState(false);
-  const [gameState, setGameState] = useState<GameState>({
+  const [gameState, setGameState] = useState<ByteRushGameState>({
     score: 0,
     lives: 3,
     level: 1,
-    bricksBroken: 0,
-    combos: 0,
     isRunning: false,
     isPaused: false,
-    gameSpeed: 1,
-    activePowerups: [],
-    powerupTimers: {}
+    speed: 2,
+    blockSpawnRate: 60,
+    gameTime: 0,
+    multiplier: 1,
+    consecutiveGood: 0
   });
   const [showGameOver, setShowGameOver] = useState(false);
   const [gameStartTime, setGameStartTime] = useState<number>(0);
@@ -61,65 +61,67 @@ export default function ByteRush() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [gameStats, setGameStats] = useState<any>(null);
 
-  const gameCanvasRef = useRef<GameCanvasRef>(null);
+  const gameCanvasRef = useRef<ByteRushGameCanvasRef>(null);
 
   const features = [
     {
       icon: <Zap className="w-8 h-8" />,
-      title: 'Brick-Breaker Fun',
-      description: 'Classic brick-breaker with ByteClub neon aesthetic'
+      title: 'Fast-Paced Action',
+      description: 'Collect good blocks, avoid bad ones in this ByteClub-themed falling blocks game'
     },
     {
       icon: <Target className="w-8 h-8" />,
-      title: 'Powerups Galore',
-      description: 'Try-Catch Shield, Garbage Collector, Debugger Drone & more'
+      title: 'Powerups & Multipliers',
+      description: 'Shield, Speed Boost, Score Multiplier - activate by collecting 5 consecutive good blocks'
     },
     {
       icon: <Trophy className="w-8 h-8" />,
-      title: 'Live Leaderboard',
-      description: 'Compete with players worldwide in REST-based rankings'
+      title: 'Global Leaderboard',
+      description: 'Compete with players worldwide and climb the rankings'
     },
     {
       icon: <Shield className="w-8 h-8" />,
-      title: 'Neon Aesthetic',
-      description: 'Immersive cyber-terminal theme with HTML5 Canvas'
+      title: 'Progressive Difficulty',
+      description: 'Speed and spawn rate increase every 30 seconds - can you survive?'
     }
   ];
 
   const powerups = [
     {
-      name: 'Try-Catch Shield',
+      name: 'Shield Powerup',
       icon: <Shield className="w-6 h-6" />,
-      description: 'Paddle invincible for 3 seconds',
-      color: 'text-cyan-400'
-    },
-    {
-      name: 'Garbage Collector',
-      icon: <Bug className="w-6 h-6" />,
-      description: 'Clears 1-2 rows of bricks',
-      color: 'text-lime-400'
-    },
-    {
-      name: 'Debugger Drone',
-      icon: <Code className="w-6 h-6" />,
-      description: 'Auto-bounce for 3 seconds (ball never misses)',
-      color: 'text-pink-400'
-    },
-    {
-      name: 'Optimization Boost',
-      icon: <Sparkles className="w-6 h-6" />,
-      description: 'Slows ball speed temporarily',
+      description: 'Protects from bad blocks for 5 seconds',
       color: 'text-purple-400'
+    },
+    {
+      name: 'Speed Boost',
+      icon: <Zap className="w-6 h-6" />,
+      description: 'Increases player movement speed by 50% for 3 seconds',
+      color: 'text-yellow-400'
+    },
+    {
+      name: 'Score Multiplier',
+      icon: <Sparkles className="w-6 h-6" />,
+      description: 'Doubles your score for 5 seconds',
+      color: 'text-orange-400'
+    },
+    {
+      name: 'Combo System',
+      icon: <Code className="w-6 h-6" />,
+      description: 'Collect 5 consecutive good blocks to activate 2x multiplier',
+      color: 'text-cyan-400'
     }
   ];
 
-  // BYTECLUB: Handle game state changes from GameCanvas
-  const handleGameStateChange = (newGameState: GameState) => {
+  // BYTECLUB: Handle game state changes from ByteRushGameCanvas
+  const handleGameStateChange = (newGameState: ByteRushGameState) => {
     console.log('🎮 ByteRush: Game state changed:', {
       score: newGameState.score,
       lives: newGameState.lives,
+      level: newGameState.level,
       isRunning: newGameState.isRunning,
-      isPaused: newGameState.isPaused
+      isPaused: newGameState.isPaused,
+      multiplier: newGameState.multiplier
     });
     setGameState(newGameState);
 
@@ -164,13 +166,13 @@ export default function ByteRush() {
       score: 0,
       lives: 3,
       level: 1,
-      bricksBroken: 0,
-      combos: 0,
       isRunning: false,
       isPaused: false,
-      gameSpeed: 1,
-      activePowerups: [],
-      powerupTimers: {}
+      speed: 2,
+      blockSpawnRate: 60,
+      gameTime: 0,
+      multiplier: 1,
+      consecutiveGood: 0
     });
     // Restart the game canvas
     if (gameCanvasRef.current) {
@@ -287,8 +289,8 @@ export default function ByteRush() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            Classic brick-breaker with ByteClub neon aesthetic. Break code bricks, collect powerups, 
-            and compete on the leaderboard in this HTML5 Canvas-powered mini-game.
+                         Fast-paced falling blocks game with ByteClub neon aesthetic. Collect good blocks, avoid bad ones, 
+             use powerups strategically, and climb the global leaderboard!
           </motion.p>
 
           <motion.div
@@ -321,7 +323,7 @@ export default function ByteRush() {
               <div className="flex h-full">
                 {/* BYTECLUB: Game Canvas - Left 70% */}
                 <div className="w-[70%] h-full relative">
-                  <GameCanvas ref={gameCanvasRef} onGameStateChange={handleGameStateChange} />
+                  <ByteRushGameCanvas ref={gameCanvasRef} onGameStateChange={handleGameStateChange} />
                 </div>
 
                 {/* BYTECLUB: HUD Panel - Right 30% */}
