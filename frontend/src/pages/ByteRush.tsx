@@ -115,10 +115,17 @@ export default function ByteRush() {
 
   // BYTECLUB: Handle game state changes from GameCanvas
   const handleGameStateChange = (newGameState: GameState) => {
+    console.log('🎮 ByteRush: Game state changed:', {
+      score: newGameState.score,
+      lives: newGameState.lives,
+      isRunning: newGameState.isRunning,
+      isPaused: newGameState.isPaused
+    });
     setGameState(newGameState);
 
     // BYTECLUB: Check for game over
     if (!newGameState.isRunning && gameStarted && newGameState.lives === 0) {
+      console.log('🎮 ByteRush: Game Over! Score:', newGameState.score);
       setShowGameOver(true);
       setRunDuration(Date.now() - gameStartTime);
     }
@@ -126,11 +133,13 @@ export default function ByteRush() {
 
   // BYTECLUB: Handle game start
   const handleStartGame = () => {
+    console.log('🎮 ByteRush: Starting game...');
     setGameStarted(true);
     setShowGameCanvas(true);
     setGameStartTime(Date.now());
     setShowGameOver(false);
     setRunDuration(0);
+    console.log('🎮 ByteRush: Game started successfully');
   };
 
   // BYTECLUB: Handle game pause
@@ -178,26 +187,38 @@ export default function ByteRush() {
 
   // BYTECLUB: Fetch leaderboard data
   const fetchLeaderboard = async () => {
+    console.log('🎮 ByteRush: Fetching leaderboard...');
     try {
       const leaderboardData = await apiService.getByteRushLeaderboard(50);
+      console.log('🎮 ByteRush: Leaderboard fetched successfully:', leaderboardData?.length, 'entries');
       setLeaderboard(leaderboardData || []);
     } catch (error) {
-      console.warn('Could not fetch leaderboard:', error);
+      console.error('❌ ByteRush: Error fetching leaderboard:', error);
+      console.error('❌ ByteRush: Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       setLeaderboard([]); // Set empty array on error
     }
   };
 
   // BYTECLUB: Fetch game statistics
   const fetchGameStats = async () => {
+    console.log('🎮 ByteRush: Fetching game stats...');
     try {
       const statsData = await apiService.getByteRushStats();
+      console.log('🎮 ByteRush: Game stats fetched successfully:', statsData);
       setGameStats(statsData || {
         totalPlayers: 0,
         totalScores: 0,
         averageScore: 0
       });
     } catch (error) {
-      console.warn('Could not fetch game stats:', error);
+      console.error('❌ ByteRush: Error fetching game stats:', error);
+      console.error('❌ ByteRush: Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       setGameStats({
         totalPlayers: 0,
         totalScores: 0,
@@ -208,6 +229,7 @@ export default function ByteRush() {
 
   // BYTECLUB: Load game stats on component mount
   useEffect(() => {
+    console.log('🎮 ByteRush: Component mounted, fetching data...');
     fetchLeaderboard();
     fetchGameStats();
   }, []);

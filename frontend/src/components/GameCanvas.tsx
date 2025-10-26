@@ -47,7 +47,15 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(({ onGameSt
   // BYTECLUB: Set up canvas and event listeners
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      console.error('❌ GameCanvas: Canvas ref is null');
+      return;
+    }
+
+    console.log('🎮 GameCanvas: Setting up canvas...', {
+      width: GAME_CONFIG.CANVAS_WIDTH,
+      height: GAME_CONFIG.CANVAS_HEIGHT
+    });
 
     // BYTECLUB: Set canvas size
     canvas.width = GAME_CONFIG.CANVAS_WIDTH;
@@ -56,6 +64,8 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(({ onGameSt
     // BYTECLUB: Add event listeners
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+
+    console.log('🎮 GameCanvas: Canvas setup complete');
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -66,14 +76,26 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(({ onGameSt
   // BYTECLUB: Render game objects using animation frame loop
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      console.error('❌ GameCanvas: Canvas ref is null in render loop');
+      return;
+    }
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.error('❌ GameCanvas: Could not get 2D context');
+      return;
+    }
 
+    console.log('🎮 GameCanvas: Starting render loop...');
     let animationFrameId: number;
+    let frameCount = 0;
 
     const render = () => {
+      frameCount++;
+      if (frameCount === 1) {
+        console.log('🎮 GameCanvas: First frame rendered');
+      }
       // BYTECLUB: Clear canvas
       ctx.fillStyle = COLORS.BACKGROUND;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -203,10 +225,18 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(({ onGameSt
 
   // BYTECLUB: Start game when component mounts
   useEffect(() => {
-    initializeGame();
-    startGame();
+    console.log('🎮 GameCanvas: Component mounted, initializing game...');
+    try {
+      initializeGame();
+      console.log('🎮 GameCanvas: Game initialized successfully');
+      startGame();
+      console.log('🎮 GameCanvas: Game started successfully');
+    } catch (error) {
+      console.error('❌ GameCanvas: Error initializing game:', error);
+    }
     
     return () => {
+      console.log('🎮 GameCanvas: Component unmounting, stopping game...');
       stopGame();
     };
   }, [initializeGame, startGame, stopGame]);
