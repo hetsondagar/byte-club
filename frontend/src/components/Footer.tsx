@@ -38,9 +38,6 @@ export function Footer() {
                 <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent group-hover:animate-pulse">
                   Het Sondagar
                 </h3>
-                <p className="text-xs text-muted-foreground font-mono mt-1">
-                  &lt;Full Stack Code Ninja&gt;
-                </p>
               </motion.div>
               
               <span className="hidden md:block text-primary/50 text-2xl">×</span>
@@ -53,9 +50,6 @@ export function Footer() {
                 <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-secondary via-accent to-primary bg-clip-text text-transparent group-hover:animate-pulse">
                   Sanvi Shanishchara
                 </h3>
-                <p className="text-xs text-muted-foreground font-mono mt-1">
-                  &lt;Frontend Wizard&gt;
-                </p>
               </motion.div>
             </div>
           </motion.div>

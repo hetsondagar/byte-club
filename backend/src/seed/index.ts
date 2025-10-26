@@ -3,7 +3,7 @@ import { config } from '../config';
 import { seedChallengesPageData } from './challengesPageData';
 import { seed99Challenges } from '../scripts/seed99Challenges';
 import { seedFrontendAchievements } from './frontendAchievements';
-import { seedByteRushData } from './byteRushSeed';
+
 import { Migration } from '../models';
 import logger from '../config/logger';
 
@@ -80,20 +80,7 @@ const runSeeds = async () => {
       logger.info('⏭️  99 DSA enrichment v3 already applied, skipping');
     }
 
-    // Seed 3: Byte Rush demo data
-    const byteRushSeed = await Migration.findOne({ name: 'byte_rush_demo_data_seed_v1' });
-    if (!byteRushSeed) {
-      logger.info('🎮 Seeding Byte Rush demo leaderboard data...');
-      await seedByteRushData();
-      logger.info('✅ Byte Rush demo data seeded successfully');
 
-      logger.info('📝 Recording seed completion for Byte Rush demo data...');
-      const migration = new Migration({ name: 'byte_rush_demo_data_seed_v1' });
-      await migration.save();
-      logger.info('  ✅ Seed record saved to migrations collection (Byte Rush demo data)');
-    } else {
-      logger.info('⏭️  Byte Rush demo data seed already applied, skipping');
-    }
 
     const duration = Date.now() - startTime;
     logger.info(`🎉 Database seeding completed successfully in ${duration}ms`);
