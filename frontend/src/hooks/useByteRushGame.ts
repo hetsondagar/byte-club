@@ -54,7 +54,7 @@ export interface Particle {
 }
 
 // BYTECLUB: Game Configuration
-const GAME_CONFIG = {
+export const GAME_CONFIG = {
   CANVAS_WIDTH: 1200,
   CANVAS_HEIGHT: 800,
   PLAYER_SPEED: 8,
@@ -92,6 +92,7 @@ export function useByteRushGame() {
   const enemiesRef = useRef<Enemy[]>([]);
   const powerUpsRef = useRef<PowerUp[]>([]);
   const particlesRef = useRef<Particle[]>([]);
+  const playerRef = useRef<Player>(player);
 
   // BYTECLUB: Keyboard State
   const keysRef = useRef<{ [key: string]: boolean }>({});
@@ -101,12 +102,17 @@ export function useByteRushGame() {
 
   // BYTECLUB: Handle Keyboard Input
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // BYTECLUB: Prevent spacebar from scrolling page
+    if (event.key === ' ') {
+      event.preventDefault();
+    }
+    
     keysRef.current[event.key.toLowerCase()] = true;
     
     if (event.key === ' ' && gameState.isPlaying && !gameState.isPaused) {
       handleShoot();
     }
-  }, [gameState.isPlaying, gameState.isPaused]);
+  }, [gameState.isPlaying, gameState.isPaused, handleShoot]);
 
   const handleKeyUp = useCallback((event: KeyboardEvent) => {
     keysRef.current[event.key.toLowerCase()] = false;
@@ -119,10 +125,12 @@ export function useByteRushGame() {
 
     lastShotTimeRef.current = now;
     
+    // BYTECLUB: Use current player position from ref
+    const currentPlayer = playerRef.current;
     const newBullet: Bullet = {
       position: {
-        x: player.position.x + player.width / 2 - 5,
-        y: player.position.y
+        x: currentPlayer.position.x + currentPlayer.width / 2 - 5,
+        y: currentPlayer.position.y
       },
       width: 10,
       height: 20,
@@ -130,24 +138,27 @@ export function useByteRushGame() {
     };
 
     bulletsRef.current.push(newBullet);
-  }, [player.position]);
+  }, []);
 
   // BYTECLUB: Player Movement
   const updatePlayer = useCallback(() => {
     if (!gameState.isPlaying || gameState.isPaused) return;
 
     const keys = keysRef.current;
-    const newPosition = { ...player.position };
+    const currentPlayer = playerRef.current;
+    const newPosition = { ...currentPlayer.position };
 
     if (keys['a'] || keys['arrowleft']) {
-      newPosition.x = Math.max(0, newPosition.x - player.speed);
+      newPosition.x = Math.max(0, newPosition.x - currentPlayer.speed);
     }
     if (keys['d'] || keys['arrowright']) {
-      newPosition.x = Math.min(GAME_CONFIG.CANVAS_WIDTH - player.width, newPosition.x + player.speed);
+      newPosition.x = Math.min(GAME_CONFIG.CANVAS_WIDTH - currentPlayer.width, newPosition.x + currentPlayer.speed);
     }
 
-    setPlayer(prev => ({ ...prev, position: newPosition }));
-  }, [player.position, player.speed, gameState.isPlaying, gameState.isPaused]);
+    const updatedPlayer = { ...currentPlayer, position: newPosition };
+    playerRef.current = updatedPlayer;
+    setPlayer(updatedPlayer);
+  }, [gameState.isPlaying, gameState.isPaused]);
 
   // BYTECLUB: Update Bullets
   const updateBullets = useCallback(() => {
@@ -274,12 +285,13 @@ export function useByteRushGame() {
     });
 
     // BYTECLUB: Enemy vs Player collisions
+    const currentPlayer = playerRef.current;
     enemiesRef.current.forEach(enemy => {
       if (
-        enemy.position.x < player.position.x + player.width &&
-        enemy.position.x + enemy.width > player.position.x &&
-        enemy.position.y < player.position.y + player.height &&
-        enemy.position.y + enemy.height > player.position.y
+        enemy.position.x < currentPlayer.position.x + currentPlayer.width &&
+        enemy.position.x + enemy.width > currentPlayer.position.x &&
+        enemy.position.y < currentPlayer.position.y + currentPlayer.height &&
+        enemy.position.y + enemy.height > currentPlayer.position.y
       ) {
         // BYTECLUB: Player hit!
         setGameState(prev => {
@@ -313,10 +325,10 @@ export function useByteRushGame() {
     // BYTECLUB: Power-up collection
     powerUpsRef.current = powerUpsRef.current.map(powerUp => {
       if (!powerUp.collected &&
-          powerUp.position.x < player.position.x + player.width &&
-          powerUp.position.x + 30 > player.position.x &&
-          powerUp.position.y < player.position.y + player.height &&
-          powerUp.position.y + 30 > player.position.y
+          powerUp.position.x < currentPlayer.position.x + currentPlayer.width &&
+          powerUp.position.x + 30 > currentPlayer.position.x &&
+          powerUp.position.y < currentPlayer.position.y + currentPlayer.height &&
+          powerUp.position.y + 30 > currentPlayer.position.y
       ) {
         // BYTECLUB: Activate power-up
         if (powerUp.type === 'health') {
@@ -336,10 +348,10 @@ export function useByteRushGame() {
           x: particle.position.x + particle.velocity.x,
           y: particle.position.y + particle.velocity.y
         },
-        life: particle.life - 1
+        life:         particle.life - 1
       }))
       .filter(particle => particle.life > 0);
-  }, [gameState.isPlaying, gameState.isPaused, player, gameState.wave]);
+  }, [gameState.isPlaying, gameState.isPaused, gameState.wave]);
 
   // BYTECLUB: Spawn Power-ups
   const spawnPowerUp = useCallback(() => {
@@ -440,6 +452,11 @@ export function useByteRushGame() {
       gameLoop();
     }
   }, [gameState, gameLoop]);
+
+  // BYTECLUB: Update playerRef when player state changes
+  useEffect(() => {
+    playerRef.current = player;
+  }, [player]);
 
   // BYTECLUB: Set up keyboard listeners
   useEffect(() => {
