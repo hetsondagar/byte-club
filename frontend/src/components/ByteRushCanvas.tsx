@@ -20,6 +20,21 @@ export function ByteRushCanvas({
 }: ByteRushCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const starsRef = useRef<Array<{x: number, y: number, z: number, speed: number}>>([]);
+  
+  // BYTECLUB: Initialize stars for 3D space effect
+  useEffect(() => {
+    if (starsRef.current.length === 0) {
+      for (let i = 0; i < 200; i++) {
+        starsRef.current.push({
+          x: Math.random() * gameConfig.CANVAS_WIDTH,
+          y: Math.random() * gameConfig.CANVAS_HEIGHT,
+          z: Math.random() * 1000,
+          speed: 0.5 + Math.random() * 1
+        });
+      }
+    }
+  }, []);
 
   // BYTECLUB: Render game on canvas
   const render = () => {
@@ -29,70 +44,128 @@ export function ByteRushCanvas({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // BYTECLUB: Clear canvas with dark background and animated grid
     const time = Date.now() * 0.001;
-    ctx.fillStyle = '#0a0a0f';
+    
+    // BYTECLUB: Clear canvas with deep space background
+    ctx.fillStyle = '#000011';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // BYTECLUB: Draw animated grid background
-    ctx.strokeStyle = '#1a1a2e';
-    ctx.lineWidth = 1;
-    const gridOffset = (time * 10) % 50;
-    
-    // Vertical lines
-    for (let x = -50 + gridOffset; x < canvas.width; x += 50) {
+    // BYTECLUB: Draw 3D starfield effect
+    starsRef.current.forEach(star => {
+      star.z -= star.speed * 2;
+      
+      if (star.z < 1) {
+        star.z = 1000;
+        star.x = Math.random() * canvas.width;
+        star.y = Math.random() * canvas.height;
+      }
+      
+      const x = (star.x - canvas.width / 2) * (1000 / star.z) + canvas.width / 2;
+      const y = (star.y - canvas.height / 2) * (1000 / star.z) + canvas.height / 2;
+      const size = (1000 / star.z) * 2;
+      const brightness = (1000 / star.z);
+      
+      ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+      ctx.shadowBlur = size * 2;
+      ctx.shadowColor = '#ffffff';
       ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
-      ctx.stroke();
-    }
-    
-    // Horizontal lines
-    for (let y = -50 + gridOffset; y < canvas.height; y += 50) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
-      ctx.stroke();
-    }
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
 
-    // BYTECLUB: Draw particles (explosions) with enhanced effects
-    particles.forEach(particle => {
+    // BYTECLUB: Draw particles (explosions) with advanced fire and blast effects
+    particles.forEach((particle, index) => {
       const alpha = particle.life / particle.maxLife;
-      const size = 3 + (1 - alpha) * 3;
+      const size = 5 + (1 - alpha) * 8;
       
-      // BYTECLUB: Draw particle with glow
-      const gradient = ctx.createRadialGradient(
-        particle.position.x, particle.position.y,
-        0,
-        particle.position.x, particle.position.y,
-        size
+      // BYTECLUB: Draw outer fire ring
+      const outerRingGradient = ctx.createRadialGradient(
+        particle.position.x, particle.position.y, 0,
+        particle.position.x, particle.position.y, size * 1.5
       );
-      gradient.addColorStop(0, particle.color);
-      gradient.addColorStop(1, 'transparent');
+      outerRingGradient.addColorStop(0, particle.color);
+      outerRingGradient.addColorStop(0.5, particle.color + '80');
+      outerRingGradient.addColorStop(1, 'transparent');
       
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = outerRingGradient;
+      ctx.beginPath();
+      ctx.arc(particle.position.x, particle.position.y, size * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // BYTECLUB: Draw middle explosion layer
+      const middleGradient = ctx.createRadialGradient(
+        particle.position.x, particle.position.y, 0,
+        particle.position.x, particle.position.y, size
+      );
+      const brightColor = particle.color === '#ff0000' ? '#ff6600' : particle.color === '#ff6600' ? '#ffaa00' : '#ffff00';
+      middleGradient.addColorStop(0, brightColor);
+      middleGradient.addColorStop(0.7, particle.color);
+      middleGradient.addColorStop(1, 'transparent');
+      
+      ctx.fillStyle = middleGradient;
       ctx.beginPath();
       ctx.arc(particle.position.x, particle.position.y, size, 0, Math.PI * 2);
       ctx.fill();
+      
+      // BYTECLUB: Draw inner white hot core
+      const coreSize = size * 0.3;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(particle.position.x, particle.position.y, coreSize, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // BYTECLUB: Add sparkle effect for some particles
+      if (index % 5 === 0) {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(particle.position.x - size, particle.position.y);
+        ctx.lineTo(particle.position.x + size, particle.position.y);
+        ctx.moveTo(particle.position.x, particle.position.y - size);
+        ctx.lineTo(particle.position.x, particle.position.y + size);
+        ctx.stroke();
+      }
     });
 
-    // BYTECLUB: Draw bullets with glow effect
+    // BYTECLUB: Draw bullets with enhanced laser graphics and fire trail
     bullets.forEach(bullet => {
-      // BYTECLUB: Draw bullet with gradient
-      const gradient = ctx.createLinearGradient(bullet.position.x, bullet.position.y, bullet.position.x, bullet.position.y + bullet.height);
-      gradient.addColorStop(0, '#00ffff');
-      gradient.addColorStop(1, '#0099ff');
+      // BYTECLUB: Draw fire trail
+      const fireGradient = ctx.createLinearGradient(
+        bullet.position.x, bullet.position.y + bullet.height,
+        bullet.position.x, bullet.position.y + bullet.height + 8
+      );
+      fireGradient.addColorStop(0, '#ffaa00');
+      fireGradient.addColorStop(0.5, '#ff6600');
+      fireGradient.addColorStop(1, 'transparent');
       
-      ctx.fillStyle = gradient;
-      ctx.shadowBlur = 15;
+      ctx.fillStyle = fireGradient;
+      ctx.fillRect(bullet.position.x - 1, bullet.position.y + bullet.height - 2, bullet.width + 2, 10);
+      
+      // BYTECLUB: Draw main bullet with energy core
+      const coreGradient = ctx.createRadialGradient(
+        bullet.position.x + bullet.width / 2, bullet.position.y + bullet.height / 2, 0,
+        bullet.position.x + bullet.width / 2, bullet.position.y + bullet.height / 2, bullet.width / 2
+      );
+      coreGradient.addColorStop(0, '#ffffff');
+      coreGradient.addColorStop(0.5, '#00ffff');
+      coreGradient.addColorStop(1, '#0099ff');
+      
+      ctx.fillStyle = coreGradient;
+      ctx.shadowBlur = 20;
       ctx.shadowColor = '#00ffff';
       
-      // BYTECLUB: Draw bullet as elongated capsule
       ctx.beginPath();
       ctx.arc(bullet.position.x + bullet.width / 2, bullet.position.y + bullet.height / 2, bullet.width / 2, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillRect(bullet.position.x, bullet.position.y + bullet.height / 4, bullet.width, bullet.height / 2);
       ctx.shadowBlur = 0;
+      
+      // BYTECLUB: Draw outer glow
+      ctx.strokeStyle = '#00ffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(bullet.position.x + bullet.width / 2, bullet.position.y + bullet.height / 2, bullet.width / 2 + 2, 0, Math.PI * 2);
+      ctx.stroke();
     });
 
     // BYTECLUB: Draw enemies as detailed ships with animation
