@@ -103,24 +103,6 @@ export function useByteRushGame() {
   const lastShotTimeRef = useRef<number>(0);
   const frameCountRef = useRef<number>(0);
 
-  // BYTECLUB: Handle Keyboard Input
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    // BYTECLUB: Prevent spacebar from scrolling page
-    if (event.key === ' ') {
-      event.preventDefault();
-    }
-    
-    keysRef.current[event.key.toLowerCase()] = true;
-    
-    if (event.key === ' ' && gameState.isPlaying && !gameState.isPaused) {
-      handleShoot();
-    }
-  }, [gameState.isPlaying, gameState.isPaused, handleShoot]);
-
-  const handleKeyUp = useCallback((event: KeyboardEvent) => {
-    keysRef.current[event.key.toLowerCase()] = false;
-  }, []);
-
   // BYTECLUB: Shooting Mechanics
   const handleShoot = useCallback(() => {
     const now = Date.now();
@@ -141,6 +123,24 @@ export function useByteRushGame() {
     };
 
     bulletsRef.current.push(newBullet);
+  }, []);
+
+  // BYTECLUB: Handle Keyboard Input
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // BYTECLUB: Prevent spacebar from scrolling page
+    if (event.key === ' ') {
+      event.preventDefault();
+    }
+    
+    keysRef.current[event.key.toLowerCase()] = true;
+    
+    if (event.key === ' ' && gameState.isPlaying && !gameState.isPaused) {
+      handleShoot();
+    }
+  }, [gameState.isPlaying, gameState.isPaused, handleShoot]);
+
+  const handleKeyUp = useCallback((event: KeyboardEvent) => {
+    keysRef.current[event.key.toLowerCase()] = false;
   }, []);
 
   // BYTECLUB: Player Movement
