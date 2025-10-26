@@ -22,19 +22,19 @@ export function ByteRushCanvas({
   const animationFrameRef = useRef<number | null>(null);
   const starsRef = useRef<Array<{x: number, y: number, z: number, speed: number}>>([]);
 
-  // BYTECLUB: Initialize stars for enhanced 3D space effect
+  // BYTECLUB: Initialize optimized 2D starfield for performance
   useEffect(() => {
     if (starsRef.current.length === 0) {
-      for (let i = 0; i < 500; i++) {
+      for (let i = 0; i < 200; i++) {
         starsRef.current.push({
-          x: (Math.random() - 0.5) * 2000,
-          y: (Math.random() - 0.5) * 2000,
-          z: Math.random() * 1000,
-          speed: 0.5 + Math.random() * 2
+          x: Math.random() * gameConfig.CANVAS_WIDTH,
+          y: Math.random() * gameConfig.CANVAS_HEIGHT,
+          z: Math.random() * 100,
+          speed: 1 + Math.random() * 2
         });
       }
     }
-  }, []);
+  }, [gameConfig]);
 
   // BYTECLUB: Draw Galaga-style fighter ship
   const drawGalagaShip = (
@@ -48,8 +48,6 @@ export function ByteRushCanvas({
   ) => {
     // BYTECLUB: Ship body - main triangle
     ctx.fillStyle = color;
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = glowColor;
     
     ctx.beginPath();
     // Top point (nose)
@@ -82,50 +80,36 @@ export function ByteRushCanvas({
     ctx.beginPath();
     ctx.arc(x + width / 2, y + height * 0.9, width * 0.15, 0, Math.PI * 2);
     ctx.fill();
-    
-    ctx.shadowBlur = 0;
   };
 
-  // BYTECLUB: Draw enhanced explosion
+  // BYTECLUB: Draw simple explosion for performance
   const drawExplosion = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, alpha: number) => {
-    // BYTECLUB: Outer ring
-    ctx.fillStyle = `rgba(255, 165, 0, ${alpha * 0.5})`;
+    // BYTECLUB: Simple solid color explosion
+    ctx.fillStyle = `rgba(255, 165, 0, ${alpha})`;
     ctx.beginPath();
-    ctx.arc(x, y, size * 2, 0, Math.PI * 2);
+    ctx.arc(x, y, size, 0, Math.PI * 2);
     ctx.fill();
     
-    // BYTECLUB: Middle ring
-    ctx.fillStyle = `rgba(255, 100, 0, ${alpha})`;
+    // BYTECLUB: Inner bright core
+    ctx.fillStyle = `rgba(255, 255, 100, ${alpha * 0.8})`;
     ctx.beginPath();
-    ctx.arc(x, y, size * 1.2, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // BYTECLUB: Inner core
-    ctx.fillStyle = `rgba(255, 255, 100, ${alpha})`;
-    ctx.beginPath();
-    ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+    ctx.arc(x, y, size * 0.4, 0, Math.PI * 2);
     ctx.fill();
   };
 
-  // BYTECLUB: Draw enhanced bullet
+  // BYTECLUB: Draw simple bullet for performance
   const drawBullet = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) => {
-    // BYTECLUB: Bullet glow trail
-    const gradient = ctx.createLinearGradient(x, y, x, y + height + 10);
-    gradient.addColorStop(0, 'rgba(100, 200, 255, 0.8)');
-    gradient.addColorStop(1, 'rgba(0, 100, 255, 0)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(x - 1, y, width + 2, height + 10);
+    // BYTECLUB: Trail with solid color
+    ctx.fillStyle = 'rgba(100, 200, 255, 0.4)';
+    ctx.fillRect(x - 1, y, width + 2, height + 8);
     
     // BYTECLUB: Main bullet body
     ctx.fillStyle = '#00ffff';
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = '#00ffff';
     ctx.fillRect(x, y, width, height);
     
     // BYTECLUB: Bright core
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(x + 1, y + 1, width - 2, height - 2);
-    ctx.shadowBlur = 0;
   };
 
   // BYTECLUB: Render game on canvas
@@ -138,35 +122,23 @@ export function ByteRushCanvas({
 
     const time = Date.now() * 0.001;
     
-    // BYTECLUB: Clear canvas with deep space background
-    ctx.fillStyle = '#000020';
+    // BYTECLUB: Clear canvas with pure black background
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // BYTECLUB: Draw enhanced 3D starfield effect with motion
-    starsRef.current.forEach((star, index) => {
-      star.z -= star.speed * 3;
+    // BYTECLUB: Draw optimized 2D starfield with motion
+    starsRef.current.forEach((star) => {
+      star.y += star.speed;
       
-      if (star.z < 1) {
-        star.z = 1000;
-        star.x = (Math.random() - 0.5) * 2000;
-        star.y = (Math.random() - 0.5) * 2000;
+      if (star.y > canvas.height) {
+        star.y = 0;
+        star.x = Math.random() * canvas.width;
       }
       
-      const perspective = 1000 / star.z;
-      const x = star.x * perspective + canvas.width / 2;
-      const y = star.y * perspective + canvas.height / 2;
-      const size = Math.max(1, perspective * 3);
-      const brightness = Math.min(1, perspective);
-      
-      // BYTECLUB: Draw star with glow
-      ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
-      ctx.shadowBlur = size * 3;
-      ctx.shadowColor = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(x, y, size, 0, Math.PI * 2);
-      ctx.fill();
+      // BYTECLUB: Draw simple star (no glow for performance)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(star.x, star.y, 2, 2);
     });
-    ctx.shadowBlur = 0;
 
     // BYTECLUB: Draw explosions first
     particles.forEach((particle, index) => {
