@@ -96,120 +96,120 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(({ onGameSt
       if (frameCount === 1) {
         console.log('🎮 GameCanvas: First frame rendered');
       }
-      // BYTECLUB: Clear canvas
-      ctx.fillStyle = COLORS.BACKGROUND;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // BYTECLUB: Clear canvas
+    ctx.fillStyle = COLORS.BACKGROUND;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // BYTECLUB: Draw bricks
-      bricks.forEach(brick => {
-        if (!brick.broken) {
-          // BYTECLUB: Draw brick with glow effect
-          ctx.shadowColor = brick.color;
-          ctx.shadowBlur = 10;
-          ctx.fillStyle = brick.color;
-          ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
-          
-          // BYTECLUB: Draw brick border
-          ctx.shadowBlur = 0;
-          ctx.strokeStyle = COLORS.TEXT;
-          ctx.lineWidth = 1;
-          ctx.strokeRect(brick.x, brick.y, brick.width, brick.height);
-        }
-      });
+    // BYTECLUB: Draw bricks
+    bricks.forEach(brick => {
+      if (!brick.broken) {
+        // BYTECLUB: Draw brick with glow effect
+        ctx.shadowColor = brick.color;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = brick.color;
+        ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+        
+        // BYTECLUB: Draw brick border
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = COLORS.TEXT;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(brick.x, brick.y, brick.width, brick.height);
+      }
+    });
 
-      // BYTECLUB: Draw paddle with glow effect
-      ctx.shadowColor = COLORS.PADDLE;
-      ctx.shadowBlur = 15;
-      ctx.fillStyle = COLORS.PADDLE;
-      ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
-      ctx.shadowBlur = 0;
+    // BYTECLUB: Draw paddle with glow effect
+    ctx.shadowColor = COLORS.PADDLE;
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = COLORS.PADDLE;
+    ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+    ctx.shadowBlur = 0;
 
-      // BYTECLUB: Draw ball with glow effect
-      ctx.shadowColor = COLORS.BALL;
-      ctx.shadowBlur = 15;
-      ctx.fillStyle = COLORS.BALL;
-      ctx.beginPath();
-      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
+    // BYTECLUB: Draw ball with glow effect
+    ctx.shadowColor = COLORS.BALL;
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = COLORS.BALL;
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
 
-      // BYTECLUB: Draw powerups
-      powerups.forEach(powerup => {
-        if (!powerup.collected) {
-          const color = COLORS.POWERUPS[powerup.type as keyof typeof COLORS.POWERUPS] || COLORS.PADDLE;
-          
-          ctx.shadowColor = color;
-          ctx.shadowBlur = 10;
-          ctx.fillStyle = color;
-          ctx.beginPath();
-          ctx.arc(powerup.x, powerup.y, 8, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-          
-          // BYTECLUB: Draw powerup icon
-          ctx.fillStyle = COLORS.TEXT;
-          ctx.font = '12px monospace';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          
-          let icon = '';
-          switch (powerup.type) {
-            case 'tryCatch':
-              icon = '🛡️';
-              break;
-            case 'garbageCollector':
-              icon = '🗑️';
-              break;
-            case 'debuggerDrone':
-              icon = '🐛';
-              break;
-            case 'optimizationBoost':
-              icon = '⚡';
-              break;
-          }
-          
-          ctx.fillText(icon, powerup.x, powerup.y);
-        }
-      });
-
-      // BYTECLUB: Draw particles
-      particles.forEach(particle => {
-        const alpha = particle.life / particle.maxLife;
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = particle.color;
+    // BYTECLUB: Draw powerups
+    powerups.forEach(powerup => {
+      if (!powerup.collected) {
+        const color = COLORS.POWERUPS[powerup.type as keyof typeof COLORS.POWERUPS] || COLORS.PADDLE;
+        
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
+        ctx.arc(powerup.x, powerup.y, 8, 0, Math.PI * 2);
         ctx.fill();
-        ctx.globalAlpha = 1;
-      });
-
-      // BYTECLUB: Draw powerup effects
-      if (gameState.activePowerups.includes('tryCatch')) {
-        // BYTECLUB: Draw shield effect around paddle
-        ctx.strokeStyle = COLORS.POWERUPS.tryCatch;
-        ctx.lineWidth = 3;
-        ctx.setLineDash([5, 5]);
-        ctx.strokeRect(paddle.x - 5, paddle.y - 5, paddle.width + 10, paddle.height + 10);
-        ctx.setLineDash([]);
+        ctx.shadowBlur = 0;
+        
+        // BYTECLUB: Draw powerup icon
+        ctx.fillStyle = COLORS.TEXT;
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        let icon = '';
+        switch (powerup.type) {
+          case 'tryCatch':
+            icon = '🛡️';
+            break;
+          case 'garbageCollector':
+            icon = '🗑️';
+            break;
+          case 'debuggerDrone':
+            icon = '🐛';
+            break;
+          case 'optimizationBoost':
+            icon = '⚡';
+            break;
+        }
+        
+        ctx.fillText(icon, powerup.x, powerup.y);
       }
+    });
 
-      if (gameState.activePowerups.includes('debuggerDrone')) {
-        // BYTECLUB: Draw auto-aim effect
-        ctx.strokeStyle = COLORS.POWERUPS.debuggerDrone;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([3, 3]);
-        ctx.beginPath();
-        ctx.moveTo(ball.x, ball.y);
-        ctx.lineTo(paddle.x + paddle.width / 2, paddle.y);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
+    // BYTECLUB: Draw particles
+    particles.forEach(particle => {
+      const alpha = particle.life / particle.maxLife;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = particle.color;
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
 
-      if (gameState.activePowerups.includes('optimizationBoost')) {
-        // BYTECLUB: Draw slow-motion effect
-        ctx.fillStyle = 'rgba(160, 32, 240, 0.1)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
+    // BYTECLUB: Draw powerup effects
+    if (gameState.activePowerups.includes('tryCatch')) {
+      // BYTECLUB: Draw shield effect around paddle
+      ctx.strokeStyle = COLORS.POWERUPS.tryCatch;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([5, 5]);
+      ctx.strokeRect(paddle.x - 5, paddle.y - 5, paddle.width + 10, paddle.height + 10);
+      ctx.setLineDash([]);
+    }
+
+    if (gameState.activePowerups.includes('debuggerDrone')) {
+      // BYTECLUB: Draw auto-aim effect
+      ctx.strokeStyle = COLORS.POWERUPS.debuggerDrone;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(ball.x, ball.y);
+      ctx.lineTo(paddle.x + paddle.width / 2, paddle.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    if (gameState.activePowerups.includes('optimizationBoost')) {
+      // BYTECLUB: Draw slow-motion effect
+      ctx.fillStyle = 'rgba(160, 32, 240, 0.1)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 
       animationFrameId = requestAnimationFrame(render);
     };
@@ -227,9 +227,9 @@ export const GameCanvas = forwardRef<GameCanvasRef, GameCanvasProps>(({ onGameSt
   useEffect(() => {
     console.log('🎮 GameCanvas: Component mounted, initializing game...');
     try {
-      initializeGame();
+    initializeGame();
       console.log('🎮 GameCanvas: Game initialized successfully');
-      startGame();
+    startGame();
       console.log('🎮 GameCanvas: Game started successfully');
     } catch (error) {
       console.error('❌ GameCanvas: Error initializing game:', error);
