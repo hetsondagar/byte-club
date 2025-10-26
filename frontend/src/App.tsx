@@ -27,7 +27,6 @@ import Notifications from "./pages/Notifications";
 import Archive from "./pages/Archive";
 import Rewards from "./pages/Rewards";
 import Test from "./pages/Test";
-import CodeHeist from "./pages/CodeHeist";
 import CodeHeistLobby from "./pages/CodeHeistLobby";
 import CodeHeistGame from "./pages/CodeHeistGame";
 import ByteRush from "./pages/ByteRush";
@@ -72,7 +71,7 @@ const App = () => {
                       <Route path="/rewards" element={<Rewards />} />
                       <Route path="/test" element={<Test />} />
                       {/* Code Heist Game Routes */}
-                      <Route path="/code-heist" element={<CodeHeist />} />
+                      <Route path="/code-heist" element={<CodeHeistLobby />} />
                       <Route path="/code-heist/lobby" element={<CodeHeistLobby />} />
                       <Route path="/code-heist/join" element={<CodeHeistLobby />} />
                       <Route path="/code-heist/game" element={<CodeHeistGame />} />
