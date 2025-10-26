@@ -9,9 +9,9 @@ export function Footer() {
       transition={{ duration: 0.6, delay: 0.2 }}
       className="relative mt-auto bg-gradient-to-r from-background via-card to-background border-t border-primary/20"
     >
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4">
         {/* Main Footer Content */}
-        <div className="flex flex-col items-center space-y-6">
+        <div className="flex flex-col items-center space-y-3">
           
           {/* Developer Credits */}
           <motion.div
@@ -20,34 +20,34 @@ export function Footer() {
             transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
             className="text-center"
           >
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Code className="w-5 h-5 text-primary animate-pulse" />
-              <span className="text-muted-foreground text-sm font-mono">crafted with</span>
-              <Heart className="w-4 h-4 text-red-500 animate-pulse" />
-              <span className="text-muted-foreground text-sm font-mono">by the byte_club devs</span>
-              <Zap className="w-5 h-5 text-secondary animate-pulse" />
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Code className="w-4 h-4 text-primary animate-pulse" />
+              <span className="text-muted-foreground text-xs font-mono">crafted with</span>
+              <Heart className="w-3 h-3 text-red-500 animate-pulse" />
+              <span className="text-muted-foreground text-xs font-mono">by</span>
+              <Zap className="w-4 h-4 text-secondary animate-pulse" />
             </div>
             
             {/* Developer Names */}
-            <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
+            <div className="flex flex-col md:flex-row items-center gap-2 mb-2">
               <motion.div
                 whileHover={{ scale: 1.05, rotate: 1 }}
                 whileTap={{ scale: 0.95 }}
                 className="group cursor-pointer"
               >
-                <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent group-hover:animate-pulse">
+                <h3 className="text-sm md:text-base font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent group-hover:animate-pulse">
                   Het Sondagar
                 </h3>
               </motion.div>
               
-              <span className="hidden md:block text-primary/50 text-2xl">×</span>
+              <span className="hidden md:block text-primary/50 text-xl">×</span>
               
               <motion.div
                 whileHover={{ scale: 1.05, rotate: -1 }}
                 whileTap={{ scale: 0.95 }}
                 className="group cursor-pointer"
               >
-                <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-secondary via-accent to-primary bg-clip-text text-transparent group-hover:animate-pulse">
+                <h3 className="text-sm md:text-base font-bold bg-gradient-to-r from-secondary via-accent to-primary bg-clip-text text-transparent group-hover:animate-pulse">
                   Sanvi Shanishchara
                 </h3>
               </motion.div>
@@ -59,20 +59,19 @@ export function Footer() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex items-center gap-6"
+            className="flex items-center gap-4"
           >
             {/* Het's Links */}
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground font-mono">Het:</span>
+            <div className="flex items-center gap-2">
               <motion.a
                 href="https://github.com/hetsondagar"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.2, rotate: 5 }}
                 whileTap={{ scale: 0.9 }}
-                className="p-2 rounded-full bg-card/50 border border-primary/20 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
+                className="p-1.5 rounded-full bg-card/50 border border-primary/20 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
               >
-                <Github className="w-4 h-4 text-primary" />
+                <Github className="w-3.5 h-3.5 text-primary" />
               </motion.a>
               <motion.a
                 href="https://www.linkedin.com/in/het-sondagar-433095284/"
@@ -80,24 +79,23 @@ export function Footer() {
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.2, rotate: -5 }}
                 whileTap={{ scale: 0.9 }}
-                className="p-2 rounded-full bg-card/50 border border-secondary/20 hover:border-secondary/50 transition-all duration-300 hover:shadow-lg hover:shadow-secondary/20"
+                className="p-1.5 rounded-full bg-card/50 border border-secondary/20 hover:border-secondary/50 transition-all duration-300 hover:shadow-lg hover:shadow-secondary/20"
               >
-                <Linkedin className="w-4 h-4 text-secondary" />
+                <Linkedin className="w-3.5 h-3.5 text-secondary" />
               </motion.a>
             </div>
 
             {/* Sanvi's Links */}
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground font-mono">Sanvi:</span>
+            <div className="flex items-center gap-2">
               <motion.a
                 href="https://github.com/sanvi-s"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.2, rotate: 5 }}
                 whileTap={{ scale: 0.9 }}
-                className="p-2 rounded-full bg-card/50 border border-accent/20 hover:border-accent/50 transition-all duration-300 hover:shadow-lg hover:shadow-accent/20"
+                className="p-1.5 rounded-full bg-card/50 border border-accent/20 hover:border-accent/50 transition-all duration-300 hover:shadow-lg hover:shadow-accent/20"
               >
-                <Github className="w-4 h-4 text-accent" />
+                <Github className="w-3.5 h-3.5 text-accent" />
               </motion.a>
               <motion.a
                 href="https://www.linkedin.com/in/sanvi-shanishchara-368297287/"
@@ -105,25 +103,22 @@ export function Footer() {
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.2, rotate: -5 }}
                 whileTap={{ scale: 0.9 }}
-                className="p-2 rounded-full bg-card/50 border border-primary/20 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
+                className="p-1.5 rounded-full bg-card/50 border border-primary/20 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
               >
-                <Linkedin className="w-4 h-4 text-primary" />
+                <Linkedin className="w-3.5 h-3.5 text-primary" />
               </motion.a>
             </div>
           </motion.div>
 
-          {/* Witty Tagline */}
+          {/* Witty Tagline - Compact */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
             className="text-center"
           >
-            <p className="text-sm text-muted-foreground font-mono italic">
-              "Two developers, infinite bugs, zero sleep. Welcome to the digital chaos! 🚀"
-            </p>
-            <p className="text-xs text-muted-foreground/70 mt-2">
-              &lt;P.S. If you find any bugs, they're probably features we haven't documented yet&gt;
+            <p className="text-xs text-muted-foreground font-mono italic">
+              "Two developers, infinite bugs, zero sleep 🚀"
             </p>
           </motion.div>
 
@@ -132,10 +127,10 @@ export function Footer() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="text-center border-t border-primary/10 pt-4 w-full"
+            className="text-center border-t border-primary/10 pt-2 w-full"
           >
             <p className="text-xs text-muted-foreground/70 font-mono">
-              © 2024 byte_club • Built with ☕, 💻, and way too much caffeine
+              © 2025 byte_club • Built with ☕, 💻, and way too much caffeine
             </p>
           </motion.div>
         </div>

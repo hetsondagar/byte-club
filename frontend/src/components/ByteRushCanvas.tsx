@@ -259,7 +259,7 @@ export function ByteRushCanvas({
       width={gameConfig.CANVAS_WIDTH}
       height={gameConfig.CANVAS_HEIGHT}
       className="rounded-lg border-2 border-primary/30 shadow-2xl"
-      style={{ background: '#000020' }}
+      style={{ background: '#000000' }}
     />
   );
 }
