@@ -110,7 +110,7 @@ export function Footer() {
             </div>
           </motion.div>
 
-          {/* Witty Tagline - Compact */}
+          {/* Witty Tagline */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -118,7 +118,10 @@ export function Footer() {
             className="text-center"
           >
             <p className="text-xs text-muted-foreground font-mono italic">
-              "Two developers, infinite bugs, zero sleep 🚀"
+              "Two developers, infinite bugs, zero sleep. Welcome to the digital chaos! 🚀"
+            </p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              &lt;P.S. If you find any bugs, they're probably features we haven't documented yet&gt;
             </p>
           </motion.div>
 
