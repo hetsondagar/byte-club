@@ -113,6 +113,28 @@ export default function ByteRush() {
     }
   ];
 
+  // BYTECLUB: Submit score to backend
+  const submitScore = async (score: number, level: number) => {
+    try {
+      console.log('🎮 ByteRush: Submitting score...', score, 'level:', level);
+      const scoreData = {
+        score,
+        level,
+        powerupsUsed: [] as string[], // Track powerups if needed
+        gameVersion: '1.0.0'
+      };
+      
+      const result = await apiService.submitByteRushScore(scoreData);
+      console.log('🎮 ByteRush: Score submitted successfully:', result);
+      
+      // Refresh leaderboard after submission
+      fetchLeaderboard();
+    } catch (error) {
+      console.error('❌ ByteRush: Error submitting score:', error);
+      // Don't block game over screen if submission fails
+    }
+  };
+
   // BYTECLUB: Handle game state changes from ByteRushGameCanvas
   const handleGameStateChange = (newGameState: ByteRushGameState) => {
     console.log('🎮 ByteRush: Game state changed:', {
@@ -130,6 +152,9 @@ export default function ByteRush() {
       console.log('🎮 ByteRush: Game Over! Score:', newGameState.score);
       setShowGameOver(true);
       setRunDuration(Date.now() - gameStartTime);
+      
+      // BYTECLUB: Submit score to backend
+      submitScore(newGameState.score, newGameState.level);
     }
   };
 
