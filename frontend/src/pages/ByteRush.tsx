@@ -180,9 +180,10 @@ export default function ByteRush() {
   const fetchLeaderboard = async () => {
     try {
       const leaderboardData = await apiService.getByteRushLeaderboard(50);
-      setLeaderboard(leaderboardData);
+      setLeaderboard(leaderboardData || []);
     } catch (error) {
-      console.error('Error fetching leaderboard:', error);
+      console.warn('Could not fetch leaderboard:', error);
+      setLeaderboard([]); // Set empty array on error
     }
   };
 
@@ -190,9 +191,18 @@ export default function ByteRush() {
   const fetchGameStats = async () => {
     try {
       const statsData = await apiService.getByteRushStats();
-      setGameStats(statsData);
+      setGameStats(statsData || {
+        totalPlayers: 0,
+        totalScores: 0,
+        averageScore: 0
+      });
     } catch (error) {
-      console.error('Error fetching game stats:', error);
+      console.warn('Could not fetch game stats:', error);
+      setGameStats({
+        totalPlayers: 0,
+        totalScores: 0,
+        averageScore: 0
+      }); // Set default stats on error
     }
   };
 
