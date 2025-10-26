@@ -130,16 +130,17 @@ export function useByteRushGame() {
     // BYTECLUB: Prevent spacebar from scrolling page
     if (event.key === ' ') {
       event.preventDefault();
+      event.stopPropagation();
     }
     
     keysRef.current[event.key.toLowerCase()] = true;
-    
-    if (event.key === ' ' && gameState.isPlaying && !gameState.isPaused) {
-      handleShoot();
-    }
-  }, [gameState.isPlaying, gameState.isPaused, handleShoot]);
+  }, []);
 
   const handleKeyUp = useCallback((event: KeyboardEvent) => {
+    if (event.key === ' ') {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     keysRef.current[event.key.toLowerCase()] = false;
   }, []);
 
@@ -158,10 +159,15 @@ export function useByteRushGame() {
       newPosition.x = Math.min(GAME_CONFIG.CANVAS_WIDTH - currentPlayer.width, newPosition.x + currentPlayer.speed);
     }
 
+    // BYTECLUB: Continuous shooting when spacebar is held
+    if (keys[' ']) {
+      handleShoot();
+    }
+
     const updatedPlayer = { ...currentPlayer, position: newPosition };
     playerRef.current = updatedPlayer;
     setPlayer(updatedPlayer);
-  }, [gameState.isPlaying, gameState.isPaused]);
+  }, [gameState.isPlaying, gameState.isPaused, handleShoot]);
 
   // BYTECLUB: Update Bullets
   const updateBullets = useCallback(() => {
@@ -312,7 +318,7 @@ export function useByteRushGame() {
       return !hit;
     });
 
-    // BYTECLUB: Enemy vs Player collisions - ANY TOUCH = GAME OVER
+    // BYTECLUB: Enemy vs Player collisions - 3 Lives System
     const currentPlayer = playerRef.current;
     enemiesRef.current.forEach(enemy => {
       if (
@@ -321,30 +327,40 @@ export function useByteRushGame() {
         enemy.position.y < currentPlayer.position.y + currentPlayer.height &&
         enemy.position.y + enemy.height > currentPlayer.position.y
       ) {
-        // BYTECLUB: Game Over immediately on any contact
-        setGameState(prev => ({
-          ...prev,
-          isPlaying: false,
-          gameOver: true,
-          lives: 0
-        }));
-
-        // BYTECLUB: Remove enemy and create massive explosion
+        // BYTECLUB: Remove enemy and create explosion
         enemiesRef.current = enemiesRef.current.filter(e => e !== enemy);
         
-        // BYTECLUB: Create big explosion effect
-        for (let i = 0; i < 30; i++) {
-          particlesRef.current.push({
-            position: { ...currentPlayer.position },
-            velocity: {
-              x: (Math.random() - 0.5) * 12,
-              y: (Math.random() - 0.5) * 12
-            },
-            life: 60,
-            maxLife: 60,
-            color: i % 3 === 0 ? '#ff0000' : i % 3 === 1 ? '#ff6600' : '#ffff00'
-          });
-        }
+        // BYTECLUB: Update lives
+        setGameState(prev => {
+          const newLives = prev.lives - 1;
+          
+          // BYTECLUB: Create explosion effect
+          const explosionSize = 20 + (prev.lives * 5); // Bigger explosion for remaining lives
+          for (let i = 0; i < explosionSize; i++) {
+            particlesRef.current.push({
+              position: { ...currentPlayer.position },
+              velocity: {
+                x: (Math.random() - 0.5) * 15,
+                y: (Math.random() - 0.5) * 15
+              },
+              life: 60,
+              maxLife: 60,
+              color: i % 4 === 0 ? '#ff0000' : i % 4 === 1 ? '#ff6600' : i % 4 === 2 ? '#ffff00' : '#ff33ff'
+            });
+          }
+          
+          // BYTECLUB: Game over if no lives left
+          if (newLives <= 0) {
+            return {
+              ...prev,
+              isPlaying: false,
+              gameOver: true,
+              lives: 0
+            };
+          }
+          
+          return { ...prev, lives: newLives };
+        });
       }
     });
 
