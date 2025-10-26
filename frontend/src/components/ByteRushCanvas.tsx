@@ -29,31 +29,51 @@ export function ByteRushCanvas({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // BYTECLUB: Clear canvas with dark background
+    // BYTECLUB: Clear canvas with dark background and animated grid
+    const time = Date.now() * 0.001;
     ctx.fillStyle = '#0a0a0f';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // BYTECLUB: Draw grid background
+    // BYTECLUB: Draw animated grid background
     ctx.strokeStyle = '#1a1a2e';
     ctx.lineWidth = 1;
-    for (let x = 0; x < canvas.width; x += 50) {
+    const gridOffset = (time * 10) % 50;
+    
+    // Vertical lines
+    for (let x = -50 + gridOffset; x < canvas.width; x += 50) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, canvas.height);
       ctx.stroke();
     }
-    for (let y = 0; y < canvas.height; y += 50) {
+    
+    // Horizontal lines
+    for (let y = -50 + gridOffset; y < canvas.height; y += 50) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(canvas.width, y);
       ctx.stroke();
     }
 
-    // BYTECLUB: Draw particles (explosions)
+    // BYTECLUB: Draw particles (explosions) with enhanced effects
     particles.forEach(particle => {
       const alpha = particle.life / particle.maxLife;
-      ctx.fillStyle = particle.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
-      ctx.fillRect(particle.position.x, particle.position.y, 3, 3);
+      const size = 3 + (1 - alpha) * 3;
+      
+      // BYTECLUB: Draw particle with glow
+      const gradient = ctx.createRadialGradient(
+        particle.position.x, particle.position.y,
+        0,
+        particle.position.x, particle.position.y,
+        size
+      );
+      gradient.addColorStop(0, particle.color);
+      gradient.addColorStop(1, 'transparent');
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(particle.position.x, particle.position.y, size, 0, Math.PI * 2);
+      ctx.fill();
     });
 
     // BYTECLUB: Draw bullets with glow effect
@@ -75,8 +95,9 @@ export function ByteRushCanvas({
       ctx.shadowBlur = 0;
     });
 
-    // BYTECLUB: Draw enemies as detailed ships
-    enemies.forEach(enemy => {
+    // BYTECLUB: Draw enemies as detailed ships with animation
+    const animTime = Date.now() * 0.005;
+    enemies.forEach((enemy, index) => {
       const colors = {
         normal: { main: '#4ecdc4', glow: '#00ffcc', secondary: '#0088ff' },
         fast: { main: '#ffd93d', glow: '#ffaa00', secondary: '#ff6600' },
@@ -87,6 +108,9 @@ export function ByteRushCanvas({
       const color = colors[enemy.type];
       const centerX = enemy.position.x + enemy.width / 2;
       const centerY = enemy.position.y + enemy.height / 2;
+      
+      // BYTECLUB: Pulsing glow effect
+      const pulse = Math.sin(animTime + index) * 0.3 + 0.7;
 
       // BYTECLUB: Draw ship body with gradient
       const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, enemy.width / 2);

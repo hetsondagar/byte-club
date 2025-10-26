@@ -65,7 +65,10 @@ export const GAME_CONFIG = {
   POINTS_NORMAL: 10,
   POINTS_FAST: 20,
   POINTS_TANK: 50,
-  POINTS_ZIGZAG: 30
+  POINTS_ZIGZAG: 30,
+  // Progressive difficulty
+  DIFFICULTY_MULTIPLIER: 1.15, // 15% harder per wave
+  MAX_SPEED_MULTIPLIER: 3.0
 };
 
 export function useByteRushGame() {
@@ -170,24 +173,49 @@ export function useByteRushGame() {
       .filter(bullet => bullet.position.y > -bullet.height);
   }, []);
 
-  // BYTECLUB: Spawn Enemies
+  // BYTECLUB: Spawn Enemies with progressive difficulty
   const spawnEnemy = useCallback(() => {
     if (!gameState.isPlaying || gameState.isPaused) return;
 
     const enemyTypes: Enemy['type'][] = ['normal', 'fast', 'tank', 'zigzag'];
-    const randomType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+    
+    // Progressive difficulty: more difficult enemies appear later
+    let randomType: Enemy['type'];
+    if (gameState.wave <= 3) {
+      randomType = Math.random() < 0.7 ? 'normal' : 'fast';
+    } else if (gameState.wave <= 6) {
+      const rand = Math.random();
+      if (rand < 0.4) randomType = 'normal';
+      else if (rand < 0.7) randomType = 'fast';
+      else randomType = 'zigzag';
+    } else {
+      randomType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+    }
+    
+    // Progressive difficulty scaling
+    const difficultyMultiplier = Math.min(
+      Math.pow(GAME_CONFIG.DIFFICULTY_MULTIPLIER, gameState.wave - 1),
+      GAME_CONFIG.MAX_SPEED_MULTIPLIER
+    );
+    
+    const baseSpeeds = {
+      normal: 2,
+      fast: 4,
+      tank: 1,
+      zigzag: 2.5
+    };
     
     const speeds = {
-      normal: 2 + gameState.wave * 0.5,
-      fast: 4 + gameState.wave * 0.5,
-      tank: 1 + gameState.wave * 0.3,
-      zigzag: 2.5 + gameState.wave * 0.4
+      normal: baseSpeeds.normal * difficultyMultiplier,
+      fast: baseSpeeds.fast * difficultyMultiplier,
+      tank: baseSpeeds.tank * difficultyMultiplier,
+      zigzag: baseSpeeds.zigzag * difficultyMultiplier
     };
 
     const healthMap = {
       normal: 1,
       fast: 1,
-      tank: 3,
+      tank: Math.min(3 + Math.floor(gameState.wave / 3), 10),
       zigzag: 2
     };
 
@@ -284,7 +312,7 @@ export function useByteRushGame() {
       return !hit;
     });
 
-    // BYTECLUB: Enemy vs Player collisions
+    // BYTECLUB: Enemy vs Player collisions - ANY TOUCH = GAME OVER
     const currentPlayer = playerRef.current;
     enemiesRef.current.forEach(enemy => {
       if (
@@ -293,30 +321,28 @@ export function useByteRushGame() {
         enemy.position.y < currentPlayer.position.y + currentPlayer.height &&
         enemy.position.y + enemy.height > currentPlayer.position.y
       ) {
-        // BYTECLUB: Player hit!
-        setGameState(prev => {
-          const newLives = prev.lives - 1;
-          
-          if (newLives <= 0) {
-            return { ...prev, isPlaying: false, gameOver: true, lives: 0 };
-          }
-          
-          return { ...prev, lives: newLives };
-        });
+        // BYTECLUB: Game Over immediately on any contact
+        setGameState(prev => ({
+          ...prev,
+          isPlaying: false,
+          gameOver: true,
+          lives: 0
+        }));
 
-        // BYTECLUB: Remove enemy and create explosion
+        // BYTECLUB: Remove enemy and create massive explosion
         enemiesRef.current = enemiesRef.current.filter(e => e !== enemy);
         
-        for (let i = 0; i < 15; i++) {
+        // BYTECLUB: Create big explosion effect
+        for (let i = 0; i < 30; i++) {
           particlesRef.current.push({
-            position: { ...enemy.position },
+            position: { ...currentPlayer.position },
             velocity: {
-              x: (Math.random() - 0.5) * 8,
-              y: (Math.random() - 0.5) * 8
+              x: (Math.random() - 0.5) * 12,
+              y: (Math.random() - 0.5) * 12
             },
-            life: 40,
-            maxLife: 40,
-            color: '#ff0000'
+            life: 60,
+            maxLife: 60,
+            color: i % 3 === 0 ? '#ff0000' : i % 3 === 1 ? '#ff6600' : '#ffff00'
           });
         }
       }
@@ -399,9 +425,17 @@ export function useByteRushGame() {
     checkCollisions();
     updateWave();
 
-    // BYTECLUB: Spawn enemies periodically
-    if (frameCountRef.current % GAME_CONFIG.ENEMY_SPAWN_RATE === 0) {
-      spawnEnemy();
+    // BYTECLUB: Spawn enemies periodically - faster as waves increase
+    const spawnRate = Math.max(
+      20, 
+      GAME_CONFIG.ENEMY_SPAWN_RATE - Math.floor(gameState.wave / 2) * 5
+    );
+    if (frameCountRef.current % spawnRate === 0) {
+      // BYTECLUB: Spawn multiple enemies in later waves
+      const spawnCount = Math.floor(gameState.wave / 5) + 1;
+      for (let i = 0; i < Math.min(spawnCount, 3); i++) {
+        spawnEnemy();
+      }
     }
 
     // BYTECLUB: Spawn power-ups
