@@ -30,9 +30,9 @@ export function ByteRushCanvas3D({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // BYTECLUB: Create scene
+    // BYTECLUB: Create scene with deep black space
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000020);
+    scene.background = new THREE.Color(0x000000); // Pure black space
     sceneRef.current = scene;
 
     // BYTECLUB: Create camera
@@ -45,10 +45,10 @@ export function ByteRushCanvas3D({
     camera.position.z = 1000;
     cameraRef.current = camera;
 
-    // BYTECLUB: Create renderer
+    // BYTECLUB: Create renderer with black background
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(gameConfig.CANVAS_WIDTH, gameConfig.CANVAS_HEIGHT);
-    renderer.setClearColor(0x000020, 1);
+    renderer.setClearColor(0x000000, 1); // Pure black
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
