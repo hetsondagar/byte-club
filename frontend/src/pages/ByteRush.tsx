@@ -335,35 +335,33 @@ export default function ByteRush() {
           </motion.div>
         </motion.div>
 
-        {/* BYTECLUB: Game Canvas - Hidden until game starts */}
-        <AnimatePresence>
-          {showGameCanvas && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.5 }}
-              className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm"
-            >
-              <div className="flex h-full">
-                {/* BYTECLUB: Game Canvas - Left 70% */}
-                <div className="w-[70%] h-full relative">
-                  <ByteRushGameCanvas ref={gameCanvasRef} onGameStateChange={handleGameStateChange} />
-                </div>
-
-                {/* BYTECLUB: HUD Panel - Right 30% */}
-                <ByteRushHUD
-                  gameState={gameState}
-                  leaderboard={leaderboard}
-                  onPause={handlePause}
-                  onResume={handleResume}
-                  onRestart={handleRestart}
-                  onExit={handleExit}
-                />
+        {/* BYTECLUB: Game Canvas - Always mounted but conditionally shown */}
+        <div className={showGameCanvas ? 'block' : 'hidden'}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm"
+          >
+            <div className="flex h-full">
+              {/* BYTECLUB: Game Canvas - Left 70% */}
+              <div className="w-[70%] h-full relative">
+                <ByteRushGameCanvas ref={gameCanvasRef} onGameStateChange={handleGameStateChange} />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
+              {/* BYTECLUB: HUD Panel - Right 30% */}
+              <ByteRushHUD
+                gameState={gameState}
+                leaderboard={leaderboard}
+                onPause={handlePause}
+                onResume={handleResume}
+                onRestart={handleRestart}
+                onExit={handleExit}
+              />
+            </div>
+          </motion.div>
+        </div>
 
         {/* BYTECLUB: Game Over Modal */}
         <ByteRushGameOverModal
