@@ -349,6 +349,46 @@ class ApiService {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
+  // BYTECLUB: Byte Rush Game methods
+  async getByteRushLeaderboard(limit: number = 10): Promise<any[]> {
+    const response = await this.get<any>(`/byterush/leaderboard?limit=${limit}`);
+    if (response.success && response.data?.leaderboard) {
+      return response.data.leaderboard;
+    }
+    return [];
+  }
+
+  async getByteRushStats(): Promise<any> {
+    const response = await this.get<any>('/byterush/stats');
+    if (response.success && response.data) {
+      return response.data;
+    }
+    return null;
+  }
+
+  async submitByteRushScore(scoreData: { score: number; wave: number; enemiesKilled: number }): Promise<any> {
+    const response = await this.post<any>('/byterush/score', scoreData);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.message || 'Failed to submit score');
+  }
+
+  async getByteRushUserBestScore(): Promise<any> {
+    const response = await this.get<any>('/byterush/me/best');
+    if (response.success && response.data) {
+      return response.data;
+    }
+    return null;
+  }
+
+  async getByteRushUserRecentScores(limit: number = 10): Promise<any[]> {
+    const response = await this.get<any>(`/byterush/me/recent?limit=${limit}`);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    return [];
+  }
 }
 
 export const apiService = new ApiService();

@@ -7,7 +7,7 @@ import rewardRoutes from './rewards';
 import dailyRoutes from './daily';
 import questRoutes from './quests';
 import adventureRoutes from './adventure';
-
+import byteRushRoutes from './byteRush';
 
 const router = Router();
 
@@ -19,4 +19,5 @@ router.use('/rewards', rewardRoutes);
 router.use('/daily', dailyRoutes);
 router.use('/quests', questRoutes);
 router.use('/adventure', adventureRoutes);
+router.use('/byterush', byteRushRoutes);
 export default router;

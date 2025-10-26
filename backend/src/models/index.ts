@@ -5,3 +5,4 @@ export { default as Meta } from './Meta';
 export { default as Session } from './Session';
 export { default as Migration } from './Migration';
 export { Quest } from './Quest';
+export { default as ByteRushScore } from './ByteRush';

@@ -212,6 +212,9 @@ const startServer = async () => {
     // Check if migrations and seeds need to be run
     logger.info('🔍 Checking database state...');
     
+    // BYTECLUB: Byte Rush REST API initialized
+    logger.info('🎮 Byte Rush REST API initialized');
+    
 
     
     // Start server
@@ -220,6 +223,7 @@ const startServer = async () => {
       console.log(`📊 Environment: ${config.nodeEnv}`);
       console.log(`🔗 Health check: http://localhost:${config.port}/health`);
       console.log(`📚 API Documentation: http://localhost:${config.port}/api`);
+      console.log(`🎮 Byte Rush API: http://localhost:${config.port}/api/byterush`);
 
       console.log('');
       console.log('💡 To run migrations: npm run migrate');
@@ -230,6 +234,7 @@ const startServer = async () => {
       logger.info(`📊 Environment: ${config.nodeEnv}`);
       logger.info(`🔗 Health check: http://localhost:${config.port}/health`);
       logger.info(`📚 API Documentation: http://localhost:${config.port}/api`);
+      logger.info(`🎮 Byte Rush API: http://localhost:${config.port}/api/byterush`);
 
       logger.info('');
       logger.info('💡 To run migrations: npm run migrate');
