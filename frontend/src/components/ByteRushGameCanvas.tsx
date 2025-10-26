@@ -13,14 +13,16 @@ interface ByteRushGameCanvasProps {
   onGameStateChange: (gameState: ByteRushGameState) => void;
 }
 
-// BYTECLUB: HTML5 Canvas game component for Byte Rush
+// BYTECLUB: HTML5 Canvas component for top-down shooter
 export const ByteRushGameCanvas = forwardRef<ByteRushGameCanvasRef, ByteRushGameCanvasProps>(
   ({ onGameStateChange }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const {
       gameState,
       player,
-      blocks,
+      bullets,
+      enemies,
+      powerups,
       particles,
       initializeGame,
       startGame,
@@ -70,7 +72,7 @@ export const ByteRushGameCanvas = forwardRef<ByteRushGameCanvasRef, ByteRushGame
       };
     }, [handleKeyDown, handleKeyUp, GAME_CONFIG]);
 
-    // BYTECLUB: Render game objects using animation frame loop
+    // BYTECLUB: Render game using animation frame loop
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) {
@@ -98,43 +100,78 @@ export const ByteRushGameCanvas = forwardRef<ByteRushGameCanvasRef, ByteRushGame
         ctx.fillStyle = COLORS.BACKGROUND;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // BYTECLUB: Draw blocks
-        blocks.forEach(block => {
-          let blockColor = COLORS.BLOCK_GOOD;
-          
-          switch (block.type) {
-            case 'bad':
-              blockColor = COLORS.BLOCK_BAD;
-              break;
-            case 'powerup':
-              blockColor = COLORS.BLOCK_POWERUP;
-              break;
-            default:
-              blockColor = COLORS.BLOCK_GOOD;
-          }
-
-          // BYTECLUB: Draw block with glow effect
-          ctx.shadowColor = blockColor;
-          ctx.shadowBlur = 10;
-          ctx.fillStyle = blockColor;
-          ctx.fillRect(block.x, block.y, block.size, block.size);
-          ctx.shadowBlur = 0;
-
-          // BYTECLUB: Draw block border
-          ctx.strokeStyle = COLORS.TEXT;
-          ctx.lineWidth = 2;
-          ctx.strokeRect(block.x, block.y, block.size, block.size);
-        });
-
-        // BYTECLUB: Draw player (neon cube)
-        let playerColor = COLORS.PLAYER;
-        if (player.shieldActive) {
-          playerColor = COLORS.POWERUP_SHIELD;
-        } else if (player.speedBoostActive) {
-          playerColor = COLORS.POWERUP_SPEEDBOOST;
+        // BYTECLUB: Draw grid pattern
+        ctx.strokeStyle = COLORS.GRID;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < canvas.width; i += 40) {
+          ctx.beginPath();
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i, canvas.height);
+          ctx.stroke();
+        }
+        for (let i = 0; i < canvas.height; i += 40) {
+          ctx.beginPath();
+          ctx.moveTo(0, i);
+          ctx.lineTo(canvas.width, i);
+          ctx.stroke();
         }
 
-        // BYTECLUB: Draw shield effect
+        // BYTECLUB: Draw bullets
+        bullets.forEach(bullet => {
+          ctx.fillStyle = bullet.type === 'player' ? COLORS.BULLET_PLAYER : COLORS.BULLET_ENEMY;
+          ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+        });
+
+        // BYTECLUB: Draw enemies
+        enemies.forEach(enemy => {
+          let enemyColor = COLORS.ENEMY_BASIC;
+          switch (enemy.type) {
+            case 'fast':
+              enemyColor = COLORS.ENEMY_FAST;
+              break;
+            case 'tank':
+              enemyColor = COLORS.ENEMY_TANK;
+              break;
+            case 'zigzag':
+              enemyColor = COLORS.ENEMY_ZIGZAG;
+              break;
+          }
+
+          ctx.fillStyle = enemyColor;
+          ctx.shadowColor = enemyColor;
+          ctx.shadowBlur = 15;
+          ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+          ctx.shadowBlur = 0;
+
+          ctx.strokeStyle = COLORS.TEXT;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        });
+
+        // BYTECLUB: Draw powerups
+        powerups.forEach(powerup => {
+          let powerupColor = COLORS.POWERUP_HEALTH;
+          switch (powerup.type) {
+            case 'shield':
+              powerupColor = COLORS.POWERUP_SHIELD;
+              break;
+            case 'rapidFire':
+              powerupColor = COLORS.POWERUP_RAPIDFIRE;
+              break;
+          }
+
+          ctx.fillStyle = powerupColor;
+          ctx.shadowColor = powerupColor;
+          ctx.shadowBlur = 20;
+          ctx.fillRect(powerup.x, powerup.y, powerup.size, powerup.size);
+          ctx.shadowBlur = 0;
+
+          ctx.strokeStyle = COLORS.TEXT;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(powerup.x, powerup.y, powerup.size, powerup.size);
+        });
+
+        // BYTECLUB: Draw player with shield effect
         if (player.shieldActive) {
           ctx.strokeStyle = COLORS.POWERUP_SHIELD;
           ctx.lineWidth = 3;
@@ -143,14 +180,13 @@ export const ByteRushGameCanvas = forwardRef<ByteRushGameCanvasRef, ByteRushGame
           ctx.setLineDash([]);
         }
 
-        // BYTECLUB: Draw player with glow effect
-        ctx.shadowColor = playerColor;
-        ctx.shadowBlur = 15;
-        ctx.fillStyle = playerColor;
+        // BYTECLUB: Draw player
+        ctx.fillStyle = COLORS.PLAYER;
+        ctx.shadowColor = COLORS.PLAYER;
+        ctx.shadowBlur = 20;
         ctx.fillRect(player.x, player.y, player.width, player.height);
         ctx.shadowBlur = 0;
 
-        // BYTECLUB: Draw player border
         ctx.strokeStyle = COLORS.TEXT;
         ctx.lineWidth = 2;
         ctx.strokeRect(player.x, player.y, player.width, player.height);
@@ -161,7 +197,7 @@ export const ByteRushGameCanvas = forwardRef<ByteRushGameCanvasRef, ByteRushGame
           ctx.globalAlpha = alpha;
           ctx.fillStyle = particle.color;
           ctx.beginPath();
-          ctx.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
+          ctx.arc(particle.x, particle.y, 4, 0, Math.PI * 2);
           ctx.fill();
           ctx.globalAlpha = 1;
         });
@@ -178,13 +214,16 @@ export const ByteRushGameCanvas = forwardRef<ByteRushGameCanvasRef, ByteRushGame
         // BYTECLUB: Draw lives
         ctx.fillText(`Lives: ${gameState.lives}`, 10, 40);
         
-        // BYTECLUB: Draw level
-        ctx.fillText(`Level: ${gameState.level}`, 10, 70);
-        
-        // BYTECLUB: Draw multiplier
-        if (gameState.multiplier > 1) {
-          ctx.fillStyle = COLORS.POWERUP_MULTIPLIER;
-          ctx.fillText(`x${gameState.multiplier} Multiplier!`, 10, 100);
+        // BYTECLUB: Draw wave
+        ctx.fillText(`Wave: ${gameState.wave}`, 10, 70);
+
+        // BYTECLUB: Draw health
+        ctx.fillText(`Health: ${player.health}/${player.maxHealth}`, 10, 100);
+
+        // BYTECLUB: Draw active powerups
+        if (player.rapidFire) {
+          ctx.fillStyle = COLORS.POWERUP_RAPIDFIRE;
+          ctx.fillText('Rapid Fire Active!', 10, 130);
         }
 
         animationFrameId = requestAnimationFrame(render);
@@ -197,7 +236,7 @@ export const ByteRushGameCanvas = forwardRef<ByteRushGameCanvasRef, ByteRushGame
           cancelAnimationFrame(animationFrameId);
         }
       };
-    }, [player, blocks, particles, gameState, COLORS, GAME_CONFIG]);
+    }, [player, bullets, enemies, powerups, particles, gameState, COLORS, GAME_CONFIG]);
 
     // BYTECLUB: Start game when component mounts
     useEffect(() => {
@@ -243,17 +282,18 @@ export const ByteRushGameCanvas = forwardRef<ByteRushGameCanvasRef, ByteRushGame
             <div className="text-center">
               <div className="text-4xl font-bold text-red-400 mb-4">GAME OVER</div>
               <div className="text-white text-2xl">Final Score: {gameState.score.toLocaleString()}</div>
+              <div className="text-white text-xl mt-2">Wave Reached: {gameState.wave}</div>
             </div>
           </div>
         )}
 
         {/* BYTECLUB: Controls hint */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center text-sm text-gray-400">
-          <div>Arrow Keys to Move | P to Pause</div>
+          <div>Arrow Keys/WASD to Move | Space to Shoot | P to Pause</div>
           <div className="mt-1">
-            <span className="text-green-400">Green = +10pts</span> | {' '}
-            <span className="text-red-400">Red = -1 Life</span> | {' '}
-            <span className="text-blue-400">Blue = Powerup</span>
+            <span className="text-green-400">Green = Health</span> | {' '}
+            <span className="text-purple-400">Purple = Shield</span> | {' '}
+            <span className="text-yellow-400">Yellow = Rapid Fire</span>
           </div>
         </div>
       </div>

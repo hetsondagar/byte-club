@@ -32,9 +32,7 @@ interface LeaderboardEntry {
   rank: number;
   displayName: string;
   score: number;
-  bricksBroken: number;
-  runDurationMs: number;
-  powerupsUsed: string[];
+  wave: number;
   createdAt: Date;
 }
 
@@ -46,14 +44,10 @@ export default function ByteRush() {
   const [gameState, setGameState] = useState<ByteRushGameState>({
     score: 0,
     lives: 3,
-    level: 1,
+    wave: 1,
     isRunning: false,
     isPaused: false,
-    speed: 2,
-    blockSpawnRate: 60,
-    gameTime: 0,
-    multiplier: 1,
-    consecutiveGood: 0
+    gameTime: 0
   });
   const [showGameOver, setShowGameOver] = useState(false);
   const [gameStartTime, setGameStartTime] = useState<number>(0);
@@ -66,62 +60,55 @@ export default function ByteRush() {
   const features = [
     {
       icon: <Zap className="w-8 h-8" />,
-      title: 'Fast-Paced Action',
-      description: 'Collect good blocks, avoid bad ones in this ByteClub-themed falling blocks game'
+      title: 'Intense Top-Down Shooter',
+      description: 'Battle waves of enemies in this ByteClub-themed top-down shooter with smooth controls'
     },
     {
       icon: <Target className="w-8 h-8" />,
-      title: 'Powerups & Multipliers',
-      description: 'Shield, Speed Boost, Score Multiplier - activate by collecting 5 consecutive good blocks'
+      title: 'Multiple Enemy Types',
+      description: 'Face Basic, Fast, Tank, and Zigzag enemies with different movement patterns'
     },
     {
       icon: <Trophy className="w-8 h-8" />,
-      title: 'Global Leaderboard',
-      description: 'Compete with players worldwide and climb the rankings'
+      title: 'Progressive Waves',
+      description: 'Survive wave after wave with increasing difficulty and enemy variety'
     },
     {
       icon: <Shield className="w-8 h-8" />,
-      title: 'Progressive Difficulty',
-      description: 'Speed and spawn rate increase every 30 seconds - can you survive?'
+      title: 'Powerups & Strategy',
+      description: 'Collect Health packs, Shield protection, and Rapid Fire upgrades to survive longer'
     }
   ];
 
   const powerups = [
     {
+      name: 'Health Pack',
+      icon: <Shield className="w-6 h-6" />,
+      description: 'Restores 1 health point',
+      color: 'text-green-400'
+    },
+    {
       name: 'Shield Powerup',
       icon: <Shield className="w-6 h-6" />,
-      description: 'Protects from bad blocks for 5 seconds',
+      description: 'Provides invincibility for 10 seconds',
       color: 'text-purple-400'
     },
     {
-      name: 'Speed Boost',
+      name: 'Rapid Fire',
       icon: <Zap className="w-6 h-6" />,
-      description: 'Increases player movement speed by 50% for 3 seconds',
+      description: 'Triples shooting speed for 15 seconds',
       color: 'text-yellow-400'
-    },
-    {
-      name: 'Score Multiplier',
-      icon: <Sparkles className="w-6 h-6" />,
-      description: 'Doubles your score for 5 seconds',
-      color: 'text-orange-400'
-    },
-    {
-      name: 'Combo System',
-      icon: <Code className="w-6 h-6" />,
-      description: 'Collect 5 consecutive good blocks to activate 2x multiplier',
-      color: 'text-cyan-400'
     }
   ];
 
   // BYTECLUB: Submit score to backend
-  const submitScore = async (score: number, level: number) => {
+  const submitScore = async (score: number, wave: number) => {
     try {
-      console.log('🎮 ByteRush: Submitting score...', score, 'level:', level);
+      console.log('🎮 ByteRush: Submitting score...', score, 'wave:', wave);
       const scoreData = {
         score,
-        level,
-        powerupsUsed: [] as string[], // Track powerups if needed
-        gameVersion: '1.0.0'
+        wave,
+        gameVersion: '2.0.0'
       };
       
       const result = await apiService.submitByteRushScore(scoreData);
@@ -140,21 +127,20 @@ export default function ByteRush() {
     console.log('🎮 ByteRush: Game state changed:', {
       score: newGameState.score,
       lives: newGameState.lives,
-      level: newGameState.level,
+      wave: newGameState.wave,
       isRunning: newGameState.isRunning,
-      isPaused: newGameState.isPaused,
-      multiplier: newGameState.multiplier
+      isPaused: newGameState.isPaused
     });
     setGameState(newGameState);
 
     // BYTECLUB: Check for game over
     if (!newGameState.isRunning && gameStarted && newGameState.lives === 0) {
-      console.log('🎮 ByteRush: Game Over! Score:', newGameState.score);
+      console.log('🎮 ByteRush: Game Over! Score:', newGameState.score, 'Wave:', newGameState.wave);
       setShowGameOver(true);
       setRunDuration(Date.now() - gameStartTime);
       
       // BYTECLUB: Submit score to backend
-      submitScore(newGameState.score, newGameState.level);
+      submitScore(newGameState.score, newGameState.wave);
     }
   };
 
@@ -190,14 +176,10 @@ export default function ByteRush() {
     setGameState({
       score: 0,
       lives: 3,
-      level: 1,
+      wave: 1,
       isRunning: false,
       isPaused: false,
-      speed: 2,
-      blockSpawnRate: 60,
-      gameTime: 0,
-      multiplier: 1,
-      consecutiveGood: 0
+      gameTime: 0
     });
     // Restart the game canvas
     if (gameCanvasRef.current) {
@@ -314,8 +296,8 @@ export default function ByteRush() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-                         Fast-paced falling blocks game with ByteClub neon aesthetic. Collect good blocks, avoid bad ones, 
-             use powerups strategically, and climb the global leaderboard!
+                         Intense top-down shooter with ByteClub neon aesthetic. Battle waves of enemies, collect powerups, 
+              and compete for the top spot on the leaderboard!
           </motion.p>
 
           <motion.div
