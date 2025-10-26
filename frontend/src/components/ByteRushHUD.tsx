@@ -14,16 +14,14 @@ import {
   Heart
 } from 'lucide-react';
 import { Button } from './ui/button';
-import { GameState } from '@/hooks/useGameEngine';
+import { ByteRushGameState } from '@/hooks/useByteRushGameEngine';
 
 // BYTECLUB: Leaderboard entry interface
 interface LeaderboardEntry {
   rank: number;
   displayName: string;
   score: number;
-  bricksBroken: number;
-  runDurationMs: number;
-  powerupsUsed: string[];
+  wave: number;
   createdAt: Date;
 }
 
@@ -60,7 +58,7 @@ const POWERUP_DEFINITIONS = {
 };
 
 interface ByteRushHUDProps {
-  gameState: GameState;
+  gameState: ByteRushGameState;
   leaderboard: LeaderboardEntry[];
   onPause: () => void;
   onResume: () => void;
@@ -90,10 +88,8 @@ export function ByteRushHUD({
   // BYTECLUB: Console messages for ByteClub theme
   const getConsoleMessage = () => {
     if (gameState.isPaused) return '[SYS] Game paused. Press P to resume.';
-    if (!gameState.isRunning && gameState.lives === 0) return '[BYTECLUB] Game over! Breaking code is hard work.';
-    if (gameState.activePowerups.length > 0) return '[DEBUG] Powerup active! Breaking bricks with style.';
-    if (gameState.combos > 0) return '[SYS] Combo streak! Keep breaking those bugs!';
-    return '[BYTECLUB] Breaking deprecated code...';
+    if (!gameState.isRunning && gameState.lives === 0) return '[BYTECLUB] Game over! Mission failed.';
+    return `[BYTECLUB] Wave ${gameState.wave} - Engage!`;
   };
 
   return (
