@@ -51,7 +51,7 @@ export default function ByteRush() {
             <Play className="mr-2 h-6 w-6" />
             Start Game
           </Button>
-        </div>
+            </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* BYTECLUB: Left Column - Game Info */}
@@ -76,9 +76,9 @@ export default function ByteRush() {
                       <p className="text-sm text-muted-foreground">
                         Use <kbd className="px-2 py-1 bg-background rounded border">D</kbd> or <kbd className="px-2 py-1 bg-background rounded border">→</kbd> to move right
                       </p>
-                    </div>
-                  </div>
-                  
+        </div>
+      </div>
+
                   <div className="flex items-start gap-3">
                     <Rocket className="h-5 w-5 text-primary mt-0.5" />
                     <div>
@@ -146,7 +146,7 @@ export default function ByteRush() {
                     <p className="text-sm text-muted-foreground">High health • <span className="text-primary font-bold">50 points</span></p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-green-500/30">
                   <div className="w-12 h-12 bg-green-500/20 rounded flex items-center justify-center">
                     <span className="text-2xl">💫</span>
@@ -155,7 +155,7 @@ export default function ByteRush() {
                     <p className="font-semibold text-green-400">Zigzag Enemy</p>
                     <p className="text-sm text-muted-foreground">Zigzag pattern • <span className="text-primary font-bold">30 points</span></p>
                   </div>
-                </div>
+              </div>
               </CardContent>
             </Card>
 
@@ -217,7 +217,7 @@ export default function ByteRush() {
                   <div className="space-y-2">
                     {leaderboard.map((entry, index) => (
                       <div
-                        key={index}
+                key={index}
                         className={`flex items-center justify-between p-3 rounded-lg border ${
                           index === 0
                             ? 'bg-primary/10 border-primary'
@@ -241,15 +241,15 @@ export default function ByteRush() {
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-bold text-primary">{entry.score}</div>
-                        </div>
-                      </div>
-                    ))}
+                    </div>
                   </div>
+            ))}
+          </div>
                 )}
               </CardContent>
             </Card>
-          </div>
-        </div>
+                </div>
+              </div>
       </div>
     </div>
   );

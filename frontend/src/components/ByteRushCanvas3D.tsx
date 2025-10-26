@@ -52,9 +52,9 @@ export function ByteRushCanvas3D({
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // BYTECLUB: Create realistic starfield
+    // BYTECLUB: Create optimized starfield - reduced count for performance
     const starGeometry = new THREE.BufferGeometry();
-    const starCount = 5000;
+    const starCount = 1500; // Reduced from 5000 for better performance
     const positions = new Float32Array(starCount * 3);
     const colors = new Float32Array(starCount * 3);
     
@@ -79,10 +79,10 @@ export function ByteRushCanvas3D({
     starGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     
     const starMaterial = new THREE.PointsMaterial({
-      size: 2,
+      size: 2.5, // Slightly larger to compensate for fewer stars
       vertexColors: true,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.9
     });
     
     const stars = new THREE.Points(starGeometry, starMaterial);
@@ -139,51 +139,37 @@ export function ByteRushCanvas3D({
     const render = () => {
       ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
       
-      // BYTECLUB: Draw particles (explosions)
+      // BYTECLUB: Draw particles (explosions) - optimized
       particles.forEach(particle => {
         const alpha = particle.life / particle.maxLife;
         const size = 8 + (1 - alpha) * 15;
         
-        // BYTECLUB: Multi-layer explosion
-        const gradient = ctx.createRadialGradient(
-          particle.position.x, particle.position.y, 0,
-          particle.position.x, particle.position.y, size * 2
-        );
-        gradient.addColorStop(0, `rgba(255, 255, 100, ${alpha})`);
-        gradient.addColorStop(0.3, `rgba(255, 165, 0, ${alpha * 0.8})`);
-        gradient.addColorStop(0.6, `rgba(255, 100, 0, ${alpha * 0.5})`);
-        gradient.addColorStop(1, 'transparent');
-        
-        ctx.fillStyle = gradient;
+        // BYTECLUB: Simplified explosion with solid colors for better performance
+        ctx.fillStyle = `rgba(255, ${165 + Math.floor(alpha * 50)}, 0, ${alpha * 0.7})`;
         ctx.beginPath();
-        ctx.arc(particle.position.x, particle.position.y, size * 2, 0, Math.PI * 2);
+        ctx.arc(particle.position.x, particle.position.y, size * 1.8, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // BYTECLUB: Inner bright core
+        ctx.fillStyle = `rgba(255, 255, 100, ${alpha * 0.9})`;
+        ctx.beginPath();
+        ctx.arc(particle.position.x, particle.position.y, size * 0.6, 0, Math.PI * 2);
         ctx.fill();
       });
       
-      // BYTECLUB: Draw bullets with laser trail
+      // BYTECLUB: Draw bullets - optimized without gradients
       bullets.forEach(bullet => {
-        // BYTECLUB: Laser trail gradient
-        const trailGradient = ctx.createLinearGradient(
-          bullet.position.x, bullet.position.y,
-          bullet.position.x, bullet.position.y + bullet.height + 15
-        );
-        trailGradient.addColorStop(0, 'rgba(0, 255, 255, 0.9)');
-        trailGradient.addColorStop(0.5, 'rgba(100, 200, 255, 0.6)');
-        trailGradient.addColorStop(1, 'transparent');
+        // BYTECLUB: Laser trail with solid colors
+        ctx.fillStyle = 'rgba(100, 200, 255, 0.5)';
+        ctx.fillRect(bullet.position.x - 1, bullet.position.y, bullet.width + 2, bullet.height + 10);
         
-        ctx.fillStyle = trailGradient;
-        ctx.fillRect(bullet.position.x - 2, bullet.position.y, bullet.width + 4, bullet.height + 15);
-        
-        // BYTECLUB: Bullet core
+        // BYTECLUB: Bullet core with simple glow
         ctx.fillStyle = '#00ffff';
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#00ffff';
         ctx.fillRect(bullet.position.x, bullet.position.y, bullet.width, bullet.height);
-        ctx.shadowBlur = 0;
         
         // BYTECLUB: Bright center
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(bullet.position.x + 1, bullet.position.y + 2, bullet.width - 2, bullet.height - 4);
+        ctx.fillRect(bullet.position.x + 1, bullet.position.y + 1, bullet.width - 2, bullet.height - 2);
       });
       
       // BYTECLUB: Draw distinctive enemy ships
@@ -230,18 +216,11 @@ export function ByteRushCanvas3D({
           ctx.arc(centerX, centerY, size + 8, 0, Math.PI * 2);
           ctx.fill();
           
-          // BYTECLUB: Main circle
-          const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, size);
-          gradient.addColorStop(0, powerUpData.main);
-          gradient.addColorStop(1, powerUpData.glow);
-          
-          ctx.fillStyle = gradient;
-          ctx.shadowBlur = 20;
-          ctx.shadowColor = powerUpData.glow;
+          // BYTECLUB: Main circle - solid color for performance
+          ctx.fillStyle = powerUpData.main;
           ctx.beginPath();
           ctx.arc(centerX, centerY, size, 0, Math.PI * 2);
           ctx.fill();
-          ctx.shadowBlur = 0;
           
           // BYTECLUB: Symbol
           ctx.fillStyle = '#ffffff';
@@ -252,10 +231,8 @@ export function ByteRushCanvas3D({
         }
       });
       
-      // BYTECLUB: Draw player ship (always classic triangle)
+      // BYTECLUB: Draw player ship (always classic triangle) - optimized
       ctx.fillStyle = '#00ffff';
-      ctx.shadowBlur = 25;
-      ctx.shadowColor = '#00ccff';
       
       ctx.beginPath();
       ctx.moveTo(player.position.x + player.width / 2, player.position.y);
@@ -281,22 +258,13 @@ export function ByteRushCanvas3D({
       ctx.arc(player.position.x + player.width / 2, player.position.y + player.height * 0.9, player.width * 0.15, 0, Math.PI * 2);
       ctx.fill();
       
-      ctx.shadowBlur = 0;
-      
-      // BYTECLUB: Draw exhaust trail
-      const exhaustGradient = ctx.createLinearGradient(
-        player.position.x + player.width / 2, player.position.y + player.height,
-        player.position.x + player.width / 2, player.position.y + player.height + 40
-      );
-      exhaustGradient.addColorStop(0, '#ffff00');
-      exhaustGradient.addColorStop(0.3, '#ff9900');
-      exhaustGradient.addColorStop(1, 'transparent');
-      ctx.fillStyle = exhaustGradient;
+      // BYTECLUB: Draw exhaust trail - solid color for performance
+      ctx.fillStyle = 'rgba(255, 153, 0, 0.7)';
       ctx.fillRect(
         player.position.x + player.width / 2 - 6,
         player.position.y + player.height,
         12,
-        40
+        30
       );
       
       requestAnimationFrame(render);
@@ -323,8 +291,7 @@ export function ByteRushCanvas3D({
     glowColor: string
   ) => {
     ctx.fillStyle = color;
-    ctx.shadowBlur = 25;
-    ctx.shadowColor = glowColor;
+    // Removed shadowBlur for better performance
     
     ctx.beginPath();
     
@@ -384,8 +351,6 @@ export function ByteRushCanvas3D({
     ctx.beginPath();
     ctx.arc(x + width / 2, y + height * 0.9, width * 0.15, 0, Math.PI * 2);
     ctx.fill();
-    
-    ctx.shadowBlur = 0;
   };
 
   return (
@@ -398,7 +363,7 @@ export function ByteRushCanvas3D({
         border: '2px solid rgba(0, 255, 255, 0.3)',
         borderRadius: '8px',
         overflow: 'hidden',
-        background: '#000020'
+        background: '#000000'
       }}
     />
   );
