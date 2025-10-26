@@ -30,6 +30,7 @@ import Test from "./pages/Test";
 import CodeHeist from "./pages/CodeHeist";
 import CodeHeistLobby from "./pages/CodeHeistLobby";
 import CodeHeistGame from "./pages/CodeHeistGame";
+import ByteRush from "./pages/ByteRush";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -75,6 +76,8 @@ const App = () => {
                       <Route path="/code-heist/lobby" element={<CodeHeistLobby />} />
                       <Route path="/code-heist/join" element={<CodeHeistLobby />} />
                       <Route path="/code-heist/game" element={<CodeHeistGame />} />
+                      {/* Byte Rush Game Route */}
+                      <Route path="/byte-rush" element={<ByteRush />} />
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                       <Route path="*" element={<NotFound />} />
                     </Routes>
