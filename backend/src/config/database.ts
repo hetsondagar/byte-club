@@ -14,11 +14,13 @@ const connectDB = async (): Promise<void> => {
       ? `${mongoUri}byte_club` 
       : `${mongoUri}/byte_club`;
 
-    await mongoose.connect(connectionString, {
+    const options = {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-    });
+    } as mongoose.ConnectOptions;
+
+    await mongoose.connect(connectionString, options);
 
     logger.info('MongoDB Atlas connected successfully');
     logger.info(`Database: byte_club`);

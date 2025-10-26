@@ -12,8 +12,15 @@ export interface IByteRushScore extends Document {
   createdAt: Date;
 }
 
+// BYTECLUB: Interface for model static methods
+interface IByteRushScoreModel extends mongoose.Model<IByteRushScore> {
+  getLeaderboard(limit?: number): Promise<IByteRushScore[]>;
+  getUserBestScore(userId: string): Promise<IByteRushScore | null>;
+  getUserRecentScores(userId: string, limit?: number): Promise<IByteRushScore[]>;
+}
+
 // BYTECLUB: Schema for storing Byte Rush brick-breaker scores with anti-cheat validation
-const ByteRushScoreSchema = new Schema<IByteRushScore>({
+const ByteRushScoreSchema = new Schema<IByteRushScore, IByteRushScoreModel>({
   userId: {
     type: String,
     sparse: true, // Allow null values but ensure uniqueness when present
@@ -101,7 +108,7 @@ ByteRushScoreSchema.statics.getLeaderboard = async function(limit: number = 50) 
   return this.find({})
     .sort({ score: -1, runDurationMs: 1, createdAt: -1 })
     .limit(limit)
-    .select('displayName score distance commits runDurationMs powerupsUsed createdAt')
+    .select('displayName score bricksBroken runDurationMs powerupsUsed createdAt')
     .lean();
 };
 
@@ -109,7 +116,7 @@ ByteRushScoreSchema.statics.getLeaderboard = async function(limit: number = 50) 
 ByteRushScoreSchema.statics.getUserBestScore = async function(userId: string) {
   return this.findOne({ userId })
     .sort({ score: -1, runDurationMs: 1 })
-    .select('displayName score distance commits runDurationMs powerupsUsed createdAt')
+    .select('displayName score bricksBroken runDurationMs powerupsUsed createdAt')
     .lean();
 };
 
@@ -118,11 +125,11 @@ ByteRushScoreSchema.statics.getUserRecentScores = async function(userId: string,
   return this.find({ userId })
     .sort({ createdAt: -1 })
     .limit(limit)
-    .select('displayName score distance commits runDurationMs powerupsUsed createdAt')
+    .select('displayName score bricksBroken runDurationMs powerupsUsed createdAt')
     .lean();
 };
 
-export const ByteRushScore = mongoose.model<IByteRushScore>('ByteRushScore', ByteRushScoreSchema);
+export const ByteRushScore = mongoose.model<IByteRushScore, IByteRushScoreModel>('ByteRushScore', ByteRushScoreSchema);
 
 // BYTECLUB: Powerup definitions for brick-breaker game logic
 export const POWERUP_DEFINITIONS = {
