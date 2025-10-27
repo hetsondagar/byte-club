@@ -59,10 +59,12 @@ export function Footer() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex items-center gap-4"
+            className="flex items-center gap-6"
           >
             {/* Het's Links */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-xs text-muted-foreground font-medium">Het</span>
+              <div className="flex items-center gap-2">
               <motion.a
                 href="https://github.com/hetsondagar"
                 target="_blank"
@@ -83,10 +85,13 @@ export function Footer() {
               >
                 <Linkedin className="w-3.5 h-3.5 text-secondary" />
               </motion.a>
+              </div>
             </div>
 
             {/* Sanvi's Links */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-xs text-muted-foreground font-medium">Sanvi</span>
+              <div className="flex items-center gap-2">
               <motion.a
                 href="https://github.com/sanvi-s"
                 target="_blank"
@@ -107,6 +112,7 @@ export function Footer() {
               >
                 <Linkedin className="w-3.5 h-3.5 text-primary" />
               </motion.a>
+              </div>
             </div>
           </motion.div>
 

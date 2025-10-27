@@ -44,12 +44,39 @@ const ByteRushScoreSchema = new Schema<IByteRushScore>({
   }
 });
 
-// BYTECLUB: Static method to get leaderboard
+// BYTECLUB: Static method to get leaderboard (best score per username)
 ByteRushScoreSchema.statics.getLeaderboard = async function(limit: number = 10) {
-  return this.find()
-    .sort({ score: -1, createdAt: -1 })
-    .limit(limit)
-    .select('username score wave enemiesKilled createdAt');
+  return this.aggregate([
+    {
+      $sort: { score: -1, createdAt: -1 }
+    },
+    {
+      $group: {
+        _id: '$username',
+        bestScore: { $first: '$$ROOT' }
+      }
+    },
+    {
+      $replaceRoot: { newRoot: '$bestScore' }
+    },
+    {
+      $sort: { score: -1, createdAt: -1 }
+    },
+    {
+      $limit: limit
+    },
+    {
+      $project: {
+        _id: 1,
+        userId: 1,
+        username: 1,
+        score: 1,
+        wave: 1,
+        enemiesKilled: 1,
+        createdAt: 1
+      }
+    }
+  ]);
 };
 
 // BYTECLUB: Static method to get user's best score
