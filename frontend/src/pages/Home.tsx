@@ -23,6 +23,8 @@ import {
   Lightbulb,
   Sparkles,
   Calendar,
+  Zap,
+  Gamepad2,
 } from "lucide-react";
 
 const navCards = [
@@ -34,6 +36,7 @@ const navCards = [
   { title: "Tutorial", icon: BookOpen, path: "/tutorial", color: "blue", description: "Learn the ropes" },
   { title: "Settings", icon: Settings, path: "/settings", color: "cyan", description: "Customize" },
   { title: "Quests", icon: Scroll, path: "/quests", color: "violet", description: "Story missions" },
+  { title: "ByteRush", icon: Zap, path: "/byte-rush", color: "blue", description: "Fast-paced arcade game" },
 ];
 
 interface UserData {
