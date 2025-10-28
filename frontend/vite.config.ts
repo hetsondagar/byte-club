@@ -24,6 +24,8 @@ export default defineConfig({
         format: "es",
       },
     },
+    // Ensure index.html is the entry point
+    emptyOutDir: true,
   },
   preview: {
     port: 4173,
