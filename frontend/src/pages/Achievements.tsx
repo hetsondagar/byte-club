@@ -227,11 +227,12 @@ export default function Achievements() {
         console.log('Auto-checking badges on page load...');
         await triggerBadgeCheck();
         
-        const response = await apiService.getMeta('badge');
-        console.log('Achievements response:', response);
-        
-        if (response.success && response.data?.items) {
-          const achievementsData = response.data.items;
+        try {
+          const response = await apiService.getMeta('badge');
+          console.log('Achievements response:', response);
+          
+          if (response.success && response.data?.items) {
+            const achievementsData = response.data.items;
           
           // Get user's unlocked badges
           const userData = localStorage.getItem("byteclub_user");
@@ -834,8 +835,13 @@ export default function Achievements() {
         } else {
           throw new Error('Invalid response format');
         }
+          } catch (apiError) {
+            console.error('Error fetching achievements from API:', apiError);
+            setError('Failed to load achievements from server. Please try again later.');
+            setAchievements([]); // Set empty array to prevent crashes
+          }
       } catch (error) {
-        console.error('Error fetching achievements:', error);
+        console.error('Error in fetchAchievements:', error);
         setError('Failed to load achievements. Please try again.');
       } finally {
         setLoading(false);

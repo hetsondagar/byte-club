@@ -6,6 +6,8 @@ export const getMeta = async (req: Request, res: Response) => {
   try {
     const { type } = req.params;
     
+    logger.info(`📋 Fetching meta data for type: ${type}`);
+    
     if (!['badge', 'reward', 'quest'].includes(type)) {
       return res.status(400).json({
         success: false,
@@ -14,6 +16,8 @@ export const getMeta = async (req: Request, res: Response) => {
     }
 
     const metaItems = await Meta.find({ type }).sort({ name: 1 });
+    
+    logger.info(`✅ Found ${metaItems.length} meta items for type: ${type}`);
 
     return res.json({
       success: true,

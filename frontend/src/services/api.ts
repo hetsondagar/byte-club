@@ -257,12 +257,22 @@ class ApiService {
 
   // Meta methods
   async getMeta(type: 'badge' | 'reward' | 'quest'): Promise<any> {
-    const response = await this.request<any>(`/meta/${type}`);
-    // Handle both response structures: { data: [...] } and { data: { items: [...] } }
-    if (response.data?.items) {
+    try {
+      const response = await this.request<any>(`/meta/${type}`);
+      // Handle both response structures: { data: [...] } and { data: { items: [...] } }
+      if (response.data?.items) {
+        return response;
+      }
       return response;
+    } catch (error) {
+      console.error(`Error fetching meta data for type ${type}:`, error);
+      // Return empty response structure to prevent crashes
+      return {
+        success: false,
+        data: { items: [] },
+        message: error instanceof Error ? error.message : 'Failed to fetch meta data'
+      };
     }
-    return response;
   }
 
   // Rewards

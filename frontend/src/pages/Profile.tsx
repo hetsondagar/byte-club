@@ -49,11 +49,24 @@ export default function Profile() {
   const username = getUserData();
 
   useEffect(() => {
-    const loadUserData = () => {
+    const loadUserData = async () => {
       try {
         setLoading(true);
         
-        // Get user data from localStorage
+        // Fetch fresh user data from backend with validated streak (same as Home/Leaderboard)
+        console.log('Profile - Fetching validated streak from backend...');
+        try {
+          const response = await apiService.getCurrentUser();
+          const freshUserData = (response as any).user || response;
+          
+          // Update localStorage with backend-validated data
+          localStorage.setItem("byteclub_user", JSON.stringify(freshUserData));
+          console.log('✅ Profile - Updated with backend-validated streak:', freshUserData.currentStreak);
+        } catch (error) {
+          console.error('Profile - Error fetching from backend, using localStorage:', error);
+        }
+        
+        // Get user data from localStorage (now contains backend-validated streak)
         const localUser = localStorage.getItem("byteclub_user");
         if (localUser) {
           try {
@@ -64,12 +77,9 @@ export default function Profile() {
             if (!userData.rewards) userData.rewards = [];
             if (!userData.completedChallenges) userData.completedChallenges = [];
             
-            // Get actual streak status (checks if broken based on dates)
-            const streakStatus = getActualStreakStatus();
-            console.log('Profile - getActualStreakStatus() returned:', streakStatus);
-            console.log('Profile - userData before streak update:', userData);
-            userData.currentStreak = streakStatus.currentStreak;
-            console.log('Profile - userData after streak update:', userData);
+            // Use backend-validated streak (same as Home page and Leaderboard)
+            // Don't override with getActualStreakStatus() - use the validated streak from backend
+            console.log('Profile - Using backend-validated streak:', userData.currentStreak);
             
             setUserData(userData);
             
@@ -287,8 +297,8 @@ export default function Profile() {
                     <NeonBadge variant="success" className="animate-pulse">
                       <Flame className="w-3 h-3 mr-1" />
                       {(() => {
-                        const streakStatus = getActualStreakStatus();
-                        const streak = streakStatus.currentStreak;
+                        // Use backend-validated streak from userData (same as Home/Leaderboard)
+                        const streak = userData?.currentStreak || 0;
                         return streak === 0 ? "No Streak" : `${streak} Day Streak`;
                       })()}
                     </NeonBadge>
