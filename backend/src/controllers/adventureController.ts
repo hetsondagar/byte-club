@@ -52,6 +52,10 @@ export const completeAdventureNode = async (req: any, res: Response) => {
       (user as any).completedAdventureNodes = [];
     }
     (user as any).completedAdventureNodes.push(nodeId.toString());
+    
+    // Update lastChallengeDate for streak tracking (adventure activities count!)
+    (user as any).lastChallengeDate = new Date();
+    
     await user.save();
 
     // Check for badge unlocks

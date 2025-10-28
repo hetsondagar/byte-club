@@ -187,8 +187,38 @@ export default function AdventureMap() {
 
     if (isCorrect) {
       // Update streak on successful adventure completion
-      const streakOutcome = updateStreakOnActivity();
-      console.log('Adventure streak update result:', streakOutcome);
+      console.log('🔥 ACTIVITY COMPLETED - Calling updateStreakOnActivity...');
+      let streakOutcome;
+      try {
+        streakOutcome = updateStreakOnActivity();
+        console.log('🔍 Adventure streak update result:', streakOutcome);
+        console.log('🔍 Streak outcome state:', streakOutcome.state);
+        console.log('🔍 Streak state has dates?', {
+          hasDate: !!streakOutcome.state.lastActiveDate,
+          hasTime: !!streakOutcome.state.lastActiveTime,
+          date: streakOutcome.state.lastActiveDate,
+          time: streakOutcome.state.lastActiveTime
+        });
+      } catch (error) {
+        console.error('❌ ERROR calling updateStreakOnActivity:', error);
+        // Fallback: manually set dates
+        const today = new Date().toISOString().slice(0, 10);
+        const now = new Date().toISOString();
+        try {
+          const userData = localStorage.getItem("byteclub_user");
+          if (userData) {
+            const user = JSON.parse(userData);
+            user.lastActiveDate = today;
+            user.lastActiveTime = now;
+            user.currentStreak = (user.currentStreak || 0) + 1;
+            localStorage.setItem("byteclub_user", JSON.stringify(user));
+            console.log('✅ Manual date save after error:', { date: today, time: now });
+          }
+        } catch (e) {
+          console.error('❌ Failed manual save:', e);
+        }
+        streakOutcome = { updated: true, state: { currentStreak: 1, longestStreak: 1, lastActiveDate: today, lastActiveTime: now }, bonusXP: 0, streakBroken: false, isFirstActivity: true };
+      }
       
       // Show streak notifications (only show streak broken for existing users)
       if (streakOutcome.streakBroken) {
@@ -221,20 +251,63 @@ export default function AdventureMap() {
       
       console.log(`✅ Node ${activeNode.id} completed! Unlocking connected nodes:`, activeNode.connections);
 
-      // Update user XP and streak in localStorage
+      // Update user XP and PRESERVE streak dates in localStorage
       try {
         const userData = localStorage.getItem("byteclub_user");
         if (userData) {
           const user = JSON.parse(userData);
+          
+          // Verify what updateStreakOnActivity actually saved
+          console.log('🔍 After updateStreakOnActivity - localStorage user:', {
+            currentStreak: user.currentStreak,
+            lastActiveDate: user.lastActiveDate,
+            lastActiveTime: user.lastActiveTime
+          });
+          
+          // Update XP
           user.totalXP = (user.totalXP || 0) + activeNode.xp;
-          // Update streak data from frontend system
-          user.currentStreak = streakOutcome.state.currentStreak;
-          user.lastActiveDate = streakOutcome.state.lastActiveDate;
-          user.lastActiveTime = streakOutcome.state.lastActiveTime;
+          
+          // CRITICAL: Always preserve dates from streak outcome, even if they seem to be missing
+          // The dates SHOULD have been saved by updateStreakOnActivity, but let's ensure they're there
+          if (streakOutcome.state.lastActiveDate) {
+            user.currentStreak = streakOutcome.state.currentStreak;
+            user.lastActiveDate = streakOutcome.state.lastActiveDate;
+            user.lastActiveTime = streakOutcome.state.lastActiveTime;
+            console.log('✅ Setting dates from streak outcome:', {
+              date: streakOutcome.state.lastActiveDate,
+              time: streakOutcome.state.lastActiveTime
+            });
+          } else {
+            // Fallback: Set dates manually if they're missing
+            const today = new Date().toISOString().slice(0, 10);
+            const now = new Date().toISOString();
+            user.lastActiveDate = today;
+            user.lastActiveTime = now;
+            user.currentStreak = streakOutcome.state.currentStreak || 1;
+            console.log('⚠️ Dates missing from streak outcome, setting manually:', {
+              date: today,
+              time: now
+            });
+          }
+          
           localStorage.setItem("byteclub_user", JSON.stringify(user));
+          
+          // Verify they were saved
+          const verify = JSON.parse(localStorage.getItem("byteclub_user") || '{}');
+          console.log('✅ Final localStorage verification:', {
+            currentStreak: verify.currentStreak,
+            lastActiveDate: verify.lastActiveDate,
+            lastActiveTime: verify.lastActiveTime
+          });
+          
+          // Sync updated streak and date to backend (async, don't wait)
+          apiService.updateProfile({ 
+            currentStreak: verify.currentStreak || streakOutcome.state.currentStreak,
+            lastChallengeDate: verify.lastActiveDate ? new Date(verify.lastActiveDate) : new Date()
+          }).catch(err => console.error('Failed to sync streak to backend:', err));
         }
       } catch (e) {
-        console.error("Failed to update XP and streak:", e);
+        console.error("❌ Failed to update XP and streak:", e);
       }
 
       // Try to sync with backend if user is authenticated
@@ -248,8 +321,31 @@ export default function AdventureMap() {
             const userData = localStorage.getItem("byteclub_user");
             if (userData) {
               const user = JSON.parse(userData);
+              // CRITICAL: Preserve streak dates when updating from backend
+              const existingDates = {
+                lastActiveDate: user.lastActiveDate,
+                lastActiveTime: user.lastActiveTime,
+                currentStreak: user.currentStreak,
+                longestStreak: user.longestStreak
+              };
+              
               user.totalXP = result.data?.totalXP || result.totalXP;
+              
+              // Restore dates if they were set earlier
+              if (existingDates.lastActiveDate) {
+                user.lastActiveDate = existingDates.lastActiveDate;
+                user.lastActiveTime = existingDates.lastActiveTime;
+                user.currentStreak = existingDates.currentStreak;
+                user.longestStreak = existingDates.longestStreak;
+              }
+              
               localStorage.setItem("byteclub_user", JSON.stringify(user));
+              
+              console.log("✅ Adventure progress synced with backend, dates preserved:", {
+                lastActiveDate: user.lastActiveDate,
+                lastActiveTime: user.lastActiveTime,
+                currentStreak: user.currentStreak
+              });
             }
             console.log("✅ Adventure progress synced with backend");
             

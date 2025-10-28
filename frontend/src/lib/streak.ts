@@ -23,9 +23,20 @@ function hoursBetweenISO(a: string, b: string): number {
 }
 
 function daysBetweenISO(a: string, b: string): number {
+  // Handle empty or invalid dates
+  if (!a || !b) {
+    return NaN;
+  }
+  
   const d1 = new Date(a + 'T00:00:00Z');
   const d2 = new Date(b + 'T00:00:00Z');
-  const ms = Math.abs(d2.getTime() - d1.getTime());
+  
+  // Check if dates are valid
+  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) {
+    return NaN;
+  }
+  
+  const ms = d2.getTime() - d1.getTime(); // Don't use abs - we need signed difference
   return Math.floor(ms / (1000 * 60 * 60 * 24));
 }
 
@@ -35,55 +46,27 @@ export function loadUserStreak(): StreakState {
     if (!raw) return { currentStreak: 0, longestStreak: 0 };
     const user = JSON.parse(raw);
     
-    // Migration: If we have old streak data but no lastActiveTime, reset to 1 day
-    if (user.currentStreak > 0 && !user.lastActiveTime) {
-      console.log('🔄 Migrating old streak data to new system');
-      const now = new Date().toISOString();
-      const today = now.slice(0, 10);
-      
-      // Reset streak to 1 day and set yesterday as last active date
-      // This allows the next activity to increment the streak to 2 days
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayISO = yesterday.toISOString().slice(0, 10);
-      
-      user.currentStreak = 1;
-      user.lastActiveTime = now;
-      user.lastActiveDate = yesterdayISO; // Set to yesterday so next activity increments streak
-      
-      // Save the migrated data
-      localStorage.setItem('byteclub_user', JSON.stringify(user));
-      
-      // Trigger a custom event to notify components of the migration
-      window.dispatchEvent(new CustomEvent('streakMigrated', { 
-        detail: { newStreak: user.currentStreak } 
-      }));
-      
-      console.log('✅ Streak migrated: old streak reset to 1 day with yesterday as last active date');
+    // Validate dates - clear invalid/future dates but DO NOT set fake ones
+    const today = new Date().toISOString().slice(0, 10);
+    if (user.lastActiveDate) {
+      // If date is in the future or invalid format, clear it
+      if (user.lastActiveDate > today || !/^\d{4}-\d{2}-\d{2}$/.test(user.lastActiveDate)) {
+        console.log('⚠️ Invalid lastActiveDate in loadUserStreak, clearing:', user.lastActiveDate);
+        user.lastActiveDate = undefined;
+        user.lastActiveTime = undefined;
+        localStorage.setItem('byteclub_user', JSON.stringify(user));
+      }
     }
     
-    // Additional migration: If streak is 3 and we have lastActiveTime, it might be old data
-    if (user.currentStreak === 3 && user.lastActiveTime) {
-      console.log('🔄 Detected old 3-day streak, resetting to 1 day');
-      const now = new Date().toISOString();
-      const today = now.slice(0, 10);
-      
-      // Set yesterday as last active date so next activity increments streak
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayISO = yesterday.toISOString().slice(0, 10);
-      
-      user.currentStreak = 1;
-      user.lastActiveTime = now;
-      user.lastActiveDate = yesterdayISO; // Set to yesterday so next activity increments streak
-      
+    // Migration: Reset streak if we have a streak but no dates
+    // Without dates, we can't verify the streak is valid, so reset to 0
+    if (user.currentStreak > 0 && !user.lastActiveDate && !user.lastActiveTime) {
+      console.log('🔄 Old streak data detected without dates - resetting streak to 0 (will start fresh on next activity)');
+      user.currentStreak = 0;
+      user.longestStreak = Math.max(user.longestStreak || 0, 0);
+      // Don't set dates here - they'll be set when user completes an activity
       localStorage.setItem('byteclub_user', JSON.stringify(user));
-      
-      window.dispatchEvent(new CustomEvent('streakMigrated', { 
-        detail: { newStreak: user.currentStreak } 
-      }));
-      
-      console.log('✅ Old 3-day streak reset to 1 day with yesterday as last active date');
+      console.log('✅ Reset streak to 0 (no dates available to validate streak)');
     }
     
     return {
@@ -156,25 +139,40 @@ export function updateStreakOnActivity(): { updated: boolean; state: StreakState
     streakBroken = false;
     isFirstActivity = true;
     console.log('🔥 NEW USER PATH - streak started: 1 day, streakBroken = false');
-  } else if (!lastTime) {
+  } else if (!lastTime || !state.lastActiveDate) {
     // This should not happen now since new users are handled above, but keeping as fallback
-    console.log('🔍 Streak Debug - FALLBACK PATH: no lastTime but not detected as new user');
-    state.currentStreak = 1;
-    state.longestStreak = Math.max(state.longestStreak, state.currentStreak);
+    console.log('🔍 Streak Debug - FALLBACK PATH: no lastTime/lastActiveDate but not detected as new user');
+    console.log('🔍 Setting dates manually - today:', today, 'now:', now);
+    const existingStreak = state.currentStreak || 0;
+    state.currentStreak = existingStreak > 0 ? existingStreak : 1;
+    state.longestStreak = Math.max(state.longestStreak || 0, state.currentStreak);
     state.lastActiveDate = today;
     state.lastActiveTime = now;
     state.isFirstActivity = false; // Not first activity since not detected as new user
     updated = true;
     streakBroken = false;
     isFirstActivity = false;
-    console.log('🔥 FALLBACK PATH - streak started: 1 day');
+    console.log('🔥 FALLBACK PATH - streak set to:', state.currentStreak, 'day(s), dates set to:', state.lastActiveDate, state.lastActiveTime);
+    console.log('🔍 State after fallback:', state);
   } else {
     console.log('🔍 Streak Debug - EXISTING USER PATH: User has lastTime, checking days difference');
     const lastDate = state.lastActiveDate;
     const daysDiff = daysBetweenISO(lastDate || '', today);
     console.log(`📅 EXISTING USER PATH - Days since last activity: ${daysDiff} (last: ${lastDate}, today: ${today})`);
     
-    if (daysDiff > 2) {
+    // Handle case where lastActiveDate is missing or invalid
+    if (!lastDate || isNaN(daysDiff) || daysDiff < 0) {
+      console.log('⚠️ Invalid or missing lastActiveDate - resetting streak to 1');
+      state.currentStreak = 1;
+      state.longestStreak = Math.max(state.longestStreak, state.currentStreak);
+      state.lastActiveDate = today;
+      state.lastActiveTime = now;
+      state.isFirstActivity = false;
+      updated = true;
+      streakBroken = false; // Don't show broken message for invalid data
+      console.log(`🔄 Reset streak due to invalid date data - starting at 1 day`);
+    } else if (daysDiff >= 2) {
+      // 2 or more days gap - streak broken (missed at least one day)
       // Check if this is a new user to avoid showing "Streak Broken!" inappropriately
       const userData = localStorage.getItem('byteclub_user');
       let isNewUser = false;
@@ -192,14 +190,16 @@ export function updateStreakOnActivity(): { updated: boolean; state: StreakState
         isNewUser = true; // No user data = new user
       }
       
-      // More than 2 days - streak broken (but don't show for new users)
-      streakBroken = !isNewUser; // Only show streak broken for existing users
+      // Streak broken - start new streak at 1 (but don't show for new users)
+      const hadExistingStreak = state.currentStreak > 0; // Check BEFORE resetting
+      streakBroken = !isNewUser && hadExistingStreak; // Only show if they had an existing streak
       state.currentStreak = 1; // Start new streak
+      state.longestStreak = Math.max(state.longestStreak, state.currentStreak);
       state.lastActiveDate = today;
       state.lastActiveTime = now;
       state.isFirstActivity = false; // Not first activity, just streak reset
       updated = true;
-      console.log(`💔 Streak broken (>2 days) - starting new streak: 1 day (new user: ${isNewUser}, streakBroken: ${streakBroken})`);
+      console.log(`💔 Streak broken (${daysDiff} days gap) - starting new streak: 1 day (had existing streak: ${hadExistingStreak}, streakBroken: ${streakBroken})`);
     } else if (daysDiff === 1) {
       // Exactly 1 day difference - increment streak (consecutive days)
       state.currentStreak += 1;
@@ -216,11 +216,12 @@ export function updateStreakOnActivity(): { updated: boolean; state: StreakState
       updated = true;
       console.log(`⏳ Same day activity - no streak update, just updating last active time`);
     } else {
-      // daysDiff < 0 (shouldn't happen) or other edge cases
+      // daysDiff < 0 (future date) - shouldn't happen normally, but handle gracefully
       state.lastActiveTime = now;
-      state.isFirstActivity = false; // Not first activity
+      state.lastActiveDate = today;
+      state.isFirstActivity = false;
       updated = true;
-      console.log(`⚠️ Edge case: daysDiff=${daysDiff} - just updating last active time`);
+      console.log(`⚠️ Edge case: daysDiff=${daysDiff} (future date) - resetting to today`);
     }
   }
 
@@ -232,18 +233,106 @@ export function updateStreakOnActivity(): { updated: boolean; state: StreakState
   try {
     const raw = localStorage.getItem('byteclub_user');
     const user = raw ? JSON.parse(raw) : {};
+    
+    // FORCE set dates ALWAYS - this is critical for streak tracking
+    const today = getTodayISO();
+    const now = getNowISO();
+    
     user.currentStreak = state.currentStreak;
     user.longestStreak = state.longestStreak;
-    user.lastActiveDate = state.lastActiveDate;
-    user.lastActiveTime = state.lastActiveTime;
+    
+    // CRITICAL: ALWAYS set dates when streak is updated, regardless of state
+    // If the state has dates, use them. If not, use today (this is an activity happening NOW)
+    if (state.lastActiveDate && state.lastActiveTime) {
+      user.lastActiveDate = state.lastActiveDate;
+      user.lastActiveTime = state.lastActiveTime;
+    } else {
+      // If state doesn't have dates but we're updating streak (activity happening), set to now
+      user.lastActiveDate = today;
+      user.lastActiveTime = now;
+      state.lastActiveDate = today;
+      state.lastActiveTime = now;
+      console.log('⚠️ State had no dates, but activity detected - setting to now:', { today, now });
+    }
+    
     if (bonusXP > 0) {
       const currentXP = Number(user.totalXP || 0);
       user.totalXP = currentXP + bonusXP;
     }
+    
     localStorage.setItem('byteclub_user', JSON.stringify(user));
-  } catch {}
+    console.log('💾 Streak saved to localStorage:', {
+      currentStreak: user.currentStreak,
+      lastActiveDate: user.lastActiveDate,
+      lastActiveTime: user.lastActiveTime,
+      stateHadDate: !!state.lastActiveDate,
+      stateHadTime: !!state.lastActiveTime
+    });
+    
+    // Triple-check it was actually saved
+    const verify = JSON.parse(localStorage.getItem('byteclub_user') || '{}');
+    if (!verify.lastActiveDate || !verify.lastActiveTime) {
+      console.error('❌ CRITICAL: Dates were NOT saved after write! Forcing save...');
+      verify.lastActiveDate = today;
+      verify.lastActiveTime = now;
+      verify.currentStreak = state.currentStreak;
+      localStorage.setItem('byteclub_user', JSON.stringify(verify));
+      console.log('✅ Forced date save:', { 
+        lastActiveDate: verify.lastActiveDate, 
+        lastActiveTime: verify.lastActiveTime,
+        currentStreak: verify.currentStreak
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error saving streak to localStorage:', error);
+    // Even on error, try to save dates
+    try {
+      const raw = localStorage.getItem('byteclub_user');
+      const user = raw ? JSON.parse(raw) : {};
+      const today = getTodayISO();
+      const now = getNowISO();
+      user.lastActiveDate = today;
+      user.lastActiveTime = now;
+      user.currentStreak = state.currentStreak || 1;
+      localStorage.setItem('byteclub_user', JSON.stringify(user));
+      console.log('✅ Emergency date save on error:', { lastActiveDate: today });
+    } catch (e) {
+      console.error('❌ Failed emergency save:', e);
+    }
+  }
 
-  console.log('🔍 Streak Debug - Final return values:', { updated, streakBroken, isFirstActivity, currentStreak: state.currentStreak });
+  console.log('🔍 Streak Debug - Final return values:', { 
+    updated, 
+    streakBroken, 
+    isFirstActivity, 
+    currentStreak: state.currentStreak,
+    lastActiveDate: state.lastActiveDate,
+    lastActiveTime: state.lastActiveTime
+  });
+  
+  // FINAL VERIFICATION: Make absolutely sure dates are in the returned state
+  if (updated && (!state.lastActiveDate || !state.lastActiveTime)) {
+    const today = getTodayISO();
+    const now = getNowISO();
+    state.lastActiveDate = today;
+    state.lastActiveTime = now;
+    console.log('⚠️ CRITICAL: Dates missing in final state! Forcing them:', { today, now });
+    
+    // Save again with forced dates
+    try {
+      const raw = localStorage.getItem('byteclub_user');
+      if (raw) {
+        const user = JSON.parse(raw);
+        user.lastActiveDate = today;
+        user.lastActiveTime = now;
+        user.currentStreak = state.currentStreak;
+        localStorage.setItem('byteclub_user', JSON.stringify(user));
+        console.log('✅ Forced dates saved in final verification');
+      }
+    } catch (e) {
+      console.error('❌ Failed to force save dates:', e);
+    }
+  }
   
   // Dispatch event to notify components of streak changes
   if (updated) {
@@ -282,6 +371,63 @@ export function checkStreakStatus(): {
     hoursSinceLastActivity: hoursDiff,
     streakWillBreak: hoursDiff > 48,
     currentStreak: state.currentStreak
+  };
+}
+
+// Get the actual current streak status based on dates (for display purposes)
+// This checks if the streak should be considered broken even if stored value says otherwise
+export function getActualStreakStatus(): {
+  currentStreak: number;
+  isBroken: boolean;
+  daysSinceLastActivity: number;
+} {
+  const state = loadUserStreak();
+  const today = getTodayISO();
+  const lastDate = state.lastActiveDate;
+  
+  // If no last active date, streak is broken/new
+  if (!lastDate || !state.lastActiveTime) {
+    return {
+      currentStreak: 0,
+      isBroken: true,
+      daysSinceLastActivity: Infinity
+    };
+  }
+  
+  // Validate date format
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(lastDate)) {
+    return {
+      currentStreak: 0,
+      isBroken: true,
+      daysSinceLastActivity: Infinity
+    };
+  }
+  
+  const daysDiff = daysBetweenISO(lastDate, today);
+  
+  // If invalid or future date
+  if (isNaN(daysDiff) || daysDiff < 0) {
+    return {
+      currentStreak: 0,
+      isBroken: true,
+      daysSinceLastActivity: Infinity
+    };
+  }
+  
+  // If more than 2 days have passed, streak is broken
+  if (daysDiff >= 2) {
+    return {
+      currentStreak: 0,
+      isBroken: true,
+      daysSinceLastActivity: daysDiff
+    };
+  }
+  
+  // Streak is still valid
+  return {
+    currentStreak: state.currentStreak,
+    isBroken: false,
+    daysSinceLastActivity: daysDiff
   };
 }
 
@@ -364,120 +510,40 @@ export function migrateOldStreakData(): void {
   }
 }
 
+// DEPRECATED: Do not automatically fix streaks on page load
+// Streaks should only update when actual activity occurs
+// This function is kept for migration purposes only
 export function fixBrokenStreakForActiveUser(): void {
-  try {
-    const raw = localStorage.getItem('byteclub_user');
-    if (!raw) {
-      console.log('🔧 fixBrokenStreakForActiveUser: No user data found');
-      return;
-    }
-    
-    const user = JSON.parse(raw);
-    const hasAnyXP = (user.totalXP || 0) > 0;
-    const hasCompletedChallenges = (user.completedChallenges?.length || 0) > 0;
-    const hasCompletedAdventureNodes = (user.completedAdventureNodes?.length || 0) > 0;
-    const hasZeroStreak = (user.currentStreak || 0) === 0;
-    
-    console.log('🔧 fixBrokenStreakForActiveUser: Checking user data:', {
-      totalXP: user.totalXP,
-      completedChallenges: user.completedChallenges?.length || 0,
-      completedAdventureNodes: user.completedAdventureNodes?.length || 0,
-      currentStreak: user.currentStreak,
-      hasAnyXP,
-      hasCompletedChallenges,
-      hasCompletedAdventureNodes,
-      hasZeroStreak
-    });
-    
-    // Check if user has any activities (XP, challenges, adventure nodes)
-    const hasAnyActivities = hasAnyXP || hasCompletedChallenges || hasCompletedAdventureNodes;
-    
-    console.log('🔧 fixBrokenStreakForActiveUser: hasAnyActivities =', hasAnyActivities);
-    
-    // If user has any activities but zero streak, fix it
-    if (hasAnyActivities && hasZeroStreak) {
-      console.log('🔧 Fixing broken streak for active user:', {
-        totalXP: user.totalXP,
-        completedChallenges: user.completedChallenges?.length || 0,
-        completedAdventureNodes: user.completedAdventureNodes?.length || 0,
-        currentStreak: user.currentStreak
-      });
-      
-      user.currentStreak = 1;
-      user.longestStreak = Math.max(user.longestStreak || 0, 1);
-      user.lastActiveDate = new Date().toISOString().slice(0, 10);
-      user.lastActiveTime = new Date().toISOString();
-      
-      localStorage.setItem('byteclub_user', JSON.stringify(user));
-      
-      // Trigger event to notify components
-      window.dispatchEvent(new CustomEvent('streakMigrated', { 
-        detail: { newStreak: 1 } 
-      }));
-      
-      console.log('✅ Fixed broken streak for active user');
-    } else {
-      console.log('🔍 No streak fix needed:', {
-        hasAnyActivities,
-        hasZeroStreak,
-        totalXP: user.totalXP,
-        completedChallenges: user.completedChallenges?.length || 0,
-        completedAdventureNodes: user.completedAdventureNodes?.length || 0
-      });
-    }
-  } catch (error) {
-    console.error('Error fixing broken streak:', error);
-  }
+  // No-op - streaks should only update on actual activity
+  // This prevents incorrect date updates when just visiting the page
+  console.log('🔧 fixBrokenStreakForActiveUser: Deprecated - streaks now only update on activity');
 }
 
-// Fix the current user's streak by setting lastActiveDate to yesterday
-// This allows the next activity to properly increment the streak
-export function fixCurrentUserStreakForNextActivity(): void {
+// Validate lastActiveDate - DO NOT modify it, only validate it's not corrupted
+// This function should NEVER update dates on page load - only validate data integrity
+export function validateStreakDates(): void {
   try {
     const raw = localStorage.getItem('byteclub_user');
     if (!raw) {
-      console.log('🔧 fixCurrentUserStreakForNextActivity: No user data found');
       return;
     }
     
     const user = JSON.parse(raw);
-    const currentStreak = user.currentStreak || 0;
     const lastActiveDate = user.lastActiveDate;
     const today = new Date().toISOString().slice(0, 10);
     
-    console.log('🔧 fixCurrentUserStreakForNextActivity: Current state:', {
-      currentStreak,
-      lastActiveDate,
-      today
-    });
-    
-    // If user has a streak but lastActiveDate is today, fix it by setting to yesterday
-    if (currentStreak > 0 && lastActiveDate === today) {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayISO = yesterday.toISOString().slice(0, 10);
-      
-      user.lastActiveDate = yesterdayISO;
-      user.lastActiveTime = new Date().toISOString();
-      
-      localStorage.setItem('byteclub_user', JSON.stringify(user));
-      
-      // Trigger event to notify components
-      window.dispatchEvent(new CustomEvent('streakMigrated', { 
-        detail: { newStreak: currentStreak } 
-      }));
-      
-      console.log('✅ Fixed current user streak - set lastActiveDate to yesterday so next activity will increment streak');
-    } else {
-      console.log('🔍 No fix needed for current user streak:', {
-        currentStreak,
-        lastActiveDate,
-        today,
-        needsFix: currentStreak > 0 && lastActiveDate === today
-      });
+    // Only clear invalid/future dates - DO NOT set fake dates
+    if (lastActiveDate) {
+      // Check if date is in the future or invalid format
+      if (lastActiveDate > today || !/^\d{4}-\d{2}-\d{2}$/.test(lastActiveDate)) {
+        console.log('⚠️ Invalid lastActiveDate detected, clearing:', lastActiveDate);
+        user.lastActiveDate = undefined;
+        user.lastActiveTime = undefined;
+        localStorage.setItem('byteclub_user', JSON.stringify(user));
+      }
     }
   } catch (error) {
-    console.error('Error fixing current user streak:', error);
+    console.error('Error validating streak dates:', error);
   }
 }
 

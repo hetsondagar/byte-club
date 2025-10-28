@@ -9,7 +9,7 @@ import { FloatingParticles } from "@/components/ui/floating-particles";
 import { Navbar } from "@/components/Navbar";
 import { getDailyFact } from "@/data/cseFacts";
 import { apiService } from "@/services/api";
-import { checkStreakStatus, updateStreakOnActivity, loadUserStreak, fixBrokenStreakForActiveUser, fixCurrentUserStreakForNextActivity } from "@/lib/streak";
+import { checkStreakStatus, updateStreakOnActivity, loadUserStreak, validateStreakDates, getActualStreakStatus } from "@/lib/streak";
 import "@/lib/streak-debug"; // Import debug function
 import {
   Map,
@@ -72,14 +72,17 @@ export default function Home() {
         email: freshUserData.email || "user@example.com",
         totalXP: freshUserData.totalXP || 0,
         currentLevel: freshUserData.currentLevel || 1,
-        currentStreak: freshUserData.currentStreak || 0,
+        currentStreak: freshUserData.currentStreak || 0, // Use backend validated streak
         badges: freshUserData.badges || [],
         rewards: freshUserData.rewards || [],
-        role: freshUserData.role || "user"
+        role: freshUserData.role || "user",
+        lastChallengeDate: freshUserData.lastChallengeDate, // Preserve date from backend
+        completedChallenges: freshUserData.completedChallenges || []
       };
       
-      // Update localStorage with fresh data
+      // Update localStorage with fresh backend-validated data
       localStorage.setItem("byteclub_user", JSON.stringify(safeUserData));
+      console.log('✅ Updated localStorage with backend-validated streak:', freshUserData.currentStreak);
       
       // Update state
       setUserData(safeUserData);
@@ -91,7 +94,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const loadUserData = () => {
+    const loadUserData = async () => {
       try {
         setLoading(true);
         
@@ -100,17 +103,39 @@ export default function Home() {
         console.log('Home page - Loading fresh data from localStorage');
         console.log('Home page - Raw localStorage data:', localUser);
         
-        // Trigger migration by calling loadUserStreak
-        console.log('Home page - Triggering streak migration...');
-        loadUserStreak();
+        // Fetch fresh user data from backend with validated streak (same as leaderboard)
+        console.log('Home page - Fetching validated streak from backend...');
+        await refreshUserData();
         
-        // Auto-fix broken streaks for users with XP
-        console.log('Home page - Auto-fixing broken streaks...');
-        fixBrokenStreakForActiveUser();
-        
-        // Fix current user's streak if lastActiveDate is today (allows next activity to increment)
-        console.log('Home page - Fixing current user streak for next activity...');
-        fixCurrentUserStreakForNextActivity();
+        // Validate and fix corrupted date data (only fix invalid/future dates, don't update actual last activity)
+        if (localUser) {
+          try {
+            const user = JSON.parse(localUser);
+            const today = new Date().toISOString().slice(0, 10);
+            const lastActiveDate = user.lastActiveDate;
+            
+            console.log('🔍 Date validation - Today:', today, 'lastActiveDate:', lastActiveDate);
+            
+            // Fix if lastActiveDate is in the future or invalid
+            if (lastActiveDate) {
+              const isValidFormat = /^\d{4}-\d{2}-\d{2}$/.test(lastActiveDate);
+              const isFutureDate = lastActiveDate > today;
+              
+              if (!isValidFormat || isFutureDate) {
+                console.log('⚠️ Invalid lastActiveDate detected (format:', isValidFormat, 'future:', isFutureDate, ') - clearing:', lastActiveDate);
+                // Don't set a fake date - just clear it so the next activity will properly set it
+                user.lastActiveDate = undefined;
+                user.lastActiveTime = undefined;
+                localStorage.setItem('byteclub_user', JSON.stringify(user));
+                console.log('✅ Cleared invalid dates');
+              } else {
+                console.log('✅ lastActiveDate is valid');
+              }
+            }
+          } catch (e) {
+            console.error('Error validating dates:', e);
+          }
+        }
         
         // Also check if user has activities but zero streak and fix it
         if (localUser) {
@@ -119,21 +144,8 @@ export default function Home() {
             const hasActivities = (user.totalXP > 0) || (user.completedChallenges?.length > 0) || (user.completedAdventureNodes?.length > 0);
             const hasZeroStreak = (user.currentStreak || 0) === 0;
             
-            if (hasActivities && hasZeroStreak) {
-              console.log('🔧 Home page - User has activities but zero streak, fixing...');
-              user.currentStreak = 1;
-              user.longestStreak = Math.max(user.longestStreak || 0, 1);
-              user.lastActiveDate = new Date().toISOString().slice(0, 10);
-              user.lastActiveTime = new Date().toISOString();
-              localStorage.setItem('byteclub_user', JSON.stringify(user));
-              
-              // Dispatch event to notify components
-              window.dispatchEvent(new CustomEvent('streakMigrated', { 
-                detail: { newStreak: 1 } 
-              }));
-              
-              console.log('✅ Home page - Fixed broken streak for active user');
-            }
+            // Don't auto-fix - let getActualStreakStatus() handle display correctly
+            // Streaks should only update when user completes actual activities
           } catch (error) {
             console.log('Error fixing streak in Home page:', error);
           }
@@ -145,15 +157,15 @@ export default function Home() {
             // Handle both nested and direct user data structures
             const userData = parsedData.user || parsedData;
             // Ensure required fields exist
-            // Get streak from frontend system instead of backend
-            // Always read fresh from localStorage, not from backend data
-            let frontendStreak = 0;
+            // Use backend-validated streak (same validation as leaderboard)
+            // Get the updated data after backend refresh
+            let validatedStreak = userData.currentStreak || 0;
             try { 
               const raw = localStorage.getItem("byteclub_user");
               if (raw) {
                 const localUserData = JSON.parse(raw);
-                frontendStreak = localUserData.currentStreak || 0;
-                console.log('Home page - Using localStorage streak:', frontendStreak, 'instead of backend:', userData.currentStreak);
+                validatedStreak = localUserData.currentStreak || 0;
+                console.log('Home page - Using backend-validated streak:', validatedStreak);
               }
             } catch {}
             
@@ -163,7 +175,7 @@ export default function Home() {
               email: userData.email || "user@example.com",
               totalXP: userData.totalXP || 0,
               currentLevel: userData.currentLevel || 1,
-              currentStreak: frontendStreak, // Use frontend streak system
+              currentStreak: validatedStreak, // Use backend-validated streak
               badges: userData.badges || [],
               rewards: userData.rewards || [],
               role: userData.role || "user"
@@ -330,20 +342,11 @@ export default function Home() {
             })()}
             <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
               {(() => {
-                // Always read fresh data from localStorage on every render
-                const raw = localStorage.getItem("byteclub_user");
-                let currentStreak = 0;
+                // Use backend-validated streak from userData (same as leaderboard)
+                // Backend validates streak based on lastChallengeDate across challenges/quests/adventures
+                const currentStreak = userData?.currentStreak || 0;
                 
-                try { 
-                  if (raw) {
-                    const localUserData = JSON.parse(raw);
-                    currentStreak = localUserData.currentStreak || 0;
-                    console.log('Streak display - Fresh localStorage data:', currentStreak);
-                    console.log('Streak display - Raw localStorage:', raw);
-                  }
-                } catch (error) {
-                  console.error('Error reading streak from localStorage:', error);
-                }
+                console.log('Streak display - Using backend-validated streak:', currentStreak);
                 
                 if (currentStreak === 0) {
                   // Check if this is a new user vs a user with broken streak

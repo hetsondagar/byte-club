@@ -107,7 +107,7 @@ class ApiService {
     }
   }
 
-  async updateProfile(data: { username?: string; email?: string; password?: string; badges?: string[]; totalXP?: number; triggerBadgeCheck?: boolean }): Promise<User> {
+  async updateProfile(data: { username?: string; email?: string; password?: string; badges?: string[]; totalXP?: number; triggerBadgeCheck?: boolean; currentStreak?: number; lastChallengeDate?: Date }): Promise<User> {
     const response = await this.request<User>('/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -239,7 +239,11 @@ class ApiService {
 
   // User methods
   async getUser(userId: string): Promise<User> {
-    const response = await this.request<User>(`/users/${userId}`);
+    const response = await this.request<any>(`/users/${userId}`);
+    // Handle both response structures: { data: { user: {...} } } and { data: {...} }
+    if (response.data?.user) {
+      return response.data.user;
+    }
     return response.data!;
   }
 

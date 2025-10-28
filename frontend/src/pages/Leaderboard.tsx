@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Trophy, Medal, Award, Flame, Star } from "lucide-react";
 import { apiService } from "@/services/api";
 import { toast } from "sonner";
-import { loadUserStreak } from "@/lib/streak";
+import { loadUserStreak, getActualStreakStatus } from "@/lib/streak";
 import { computeLevelProgress } from "@/lib/xp";
 
 interface LeaderboardEntry {
@@ -66,12 +66,12 @@ export default function Leaderboard() {
         if (localUser) {
           try {
             const userData = JSON.parse(localUser);
-            // Get streak from frontend streak system
-            const streakData = loadUserStreak();
+            // Get actual streak status (checks if broken based on dates)
+            const streakStatus = getActualStreakStatus();
             // Calculate level from XP
             const levelData = computeLevelProgress(userData.totalXP || 0);
             
-            userData.currentStreak = streakData.currentStreak;
+            userData.currentStreak = streakStatus.currentStreak;
             userData.currentLevel = levelData.level;
             
             // Update localStorage with the correct data
@@ -118,6 +118,7 @@ export default function Leaderboard() {
                 currentLevel: entry.currentLevel || 1,
                 currentStreak: entry.currentStreak || 0,
                 badges: Array.isArray(entry.badges) ? entry.badges : [],
+                completedChallenges: Array.isArray(entry.completedChallenges) ? entry.completedChallenges : [],
                 rank: entry.rank || index + 1
               };
               
@@ -134,12 +135,12 @@ export default function Leaderboard() {
               const xpForLevel = entry.lifetimeXP || entry.totalXP || 0;
               const levelData = computeLevelProgress(xpForLevel);
               
-              // For current user, get data from localStorage
+              // For current user, get actual streak status (checks if broken)
               if (entry.username === currentUser) {
-                const streakData = loadUserStreak();
+                const streakStatus = getActualStreakStatus();
                 
                 console.log(`Updating current user data:`);
-                console.log(`  Streak: ${entry.currentStreak} -> ${streakData.currentStreak}`);
+                console.log(`  Streak: ${entry.currentStreak} -> ${streakStatus.currentStreak} (isBroken: ${streakStatus.isBroken})`);
                 console.log(`  Level: ${entry.currentLevel} -> ${levelData.level} (from ${xpForLevel} XP)`);
                 
                 // Get badges from localStorage
@@ -158,7 +159,7 @@ export default function Leaderboard() {
                 // Force update the entry with frontend data
                 const updatedEntry = {
                   ...entry,
-                  currentStreak: streakData.currentStreak,
+                  currentStreak: streakStatus.currentStreak,
                   currentLevel: levelData.level,
                   badges: frontendBadges
                 };
@@ -167,7 +168,7 @@ export default function Leaderboard() {
                 if (localUser) {
                   try {
                     const userData = JSON.parse(localUser);
-                    userData.currentStreak = streakData.currentStreak;
+                    userData.currentStreak = streakStatus.currentStreak;
                     userData.currentLevel = levelData.level;
                     userData.badges = frontendBadges;
                     localStorage.setItem("byteclub_user", JSON.stringify(userData));
@@ -178,15 +179,16 @@ export default function Leaderboard() {
                 
                 return updatedEntry;
               } else {
-                // For other users, force 1-day streak and calculate level from XP
-                console.log(`Updating other user ${entry.username}:`);
-                console.log(`  Streak: ${entry.currentStreak} -> 1 (forced)`);
-                console.log(`  Level: ${entry.currentLevel} -> ${levelData.level} (from ${xpForLevel} XP)`);
+                // For other users, use their actual data from backend
+                // Don't modify their streaks - use what the backend provides
+                console.log(`Using other user ${entry.username} data from backend:`);
+                console.log(`  Streak: ${entry.currentStreak || 0}`);
+                console.log(`  Level: ${entry.currentLevel || levelData.level}`);
                 
                 return {
                   ...entry,
-                  currentStreak: 1, // Force all users to show 1-day streak
-                  currentLevel: levelData.level,
+                  currentStreak: entry.currentStreak || 0, // Use actual backend value
+                  currentLevel: entry.currentLevel || levelData.level,
                   badges: Array.isArray(entry.badges) ? entry.badges : []
                 };
               }
@@ -373,7 +375,12 @@ export default function Leaderboard() {
                       variant={getRankColor(entry.rank || 1) as any}
                       glow={(entry.rank || 1) <= 3}
                       className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] ${entry.username === currentUser ? "border-primary border-2 shadow-lg shadow-primary/20" : ""}`}
-                      onClick={() => navigate(`/leaderboard/${entry.username || 'unknown'}`)}
+                      onClick={() => {
+                        // Pass both username and userId for profile lookup
+                        navigate(`/leaderboard/${entry.username || 'unknown'}`, { 
+                          state: { userId: entry._id, entryData: entry } 
+                        });
+                      }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 flex-1">

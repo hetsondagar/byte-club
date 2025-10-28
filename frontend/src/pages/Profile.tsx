@@ -11,7 +11,7 @@ import { ArrowLeft, User, Mail, Calendar, Flame, Target, Award } from "lucide-re
 import { apiService } from "@/services/api";
 import { toast } from "sonner";
 import { computeLevelProgress } from "@/lib/xp";
-import { loadUserStreak, fixBrokenStreakForActiveUser } from "@/lib/streak";
+import { loadUserStreak, getActualStreakStatus } from "@/lib/streak";
 
 interface UserData {
   _id?: string;
@@ -64,14 +64,11 @@ export default function Profile() {
             if (!userData.rewards) userData.rewards = [];
             if (!userData.completedChallenges) userData.completedChallenges = [];
             
-            // Fix broken streak for active users before loading streak data
-            fixBrokenStreakForActiveUser();
-            
-            // Get streak from frontend streak system
-            const streakData = loadUserStreak();
-            console.log('Profile - loadUserStreak() returned:', streakData);
+            // Get actual streak status (checks if broken based on dates)
+            const streakStatus = getActualStreakStatus();
+            console.log('Profile - getActualStreakStatus() returned:', streakStatus);
             console.log('Profile - userData before streak update:', userData);
-            userData.currentStreak = streakData.currentStreak;
+            userData.currentStreak = streakStatus.currentStreak;
             console.log('Profile - userData after streak update:', userData);
             
             setUserData(userData);
@@ -162,9 +159,6 @@ export default function Profile() {
 
     // Listen for streak migration events to refresh the display
     const handleStreakMigration = () => {
-      // Fix broken streak for active users before loading streak data
-      fixBrokenStreakForActiveUser();
-      
       const streakData = loadUserStreak();
       setUserData(prev => prev ? {
         ...prev,
@@ -292,7 +286,11 @@ export default function Profile() {
                   <div className="flex gap-2 mt-4 flex-wrap">
                     <NeonBadge variant="success" className="animate-pulse">
                       <Flame className="w-3 h-3 mr-1" />
-                      {userData?.currentStreak || 0} Day Streak
+                      {(() => {
+                        const streakStatus = getActualStreakStatus();
+                        const streak = streakStatus.currentStreak;
+                        return streak === 0 ? "No Streak" : `${streak} Day Streak`;
+                      })()}
                     </NeonBadge>
                     {badges && badges.length > 0 ? (
                       badges.slice(0, 3).map((badge, index) => (

@@ -152,6 +152,11 @@ export default function QuestDetailPage() {
             u.lastActiveDate = streakOutcome.state.lastActiveDate;
             u.lastActiveTime = streakOutcome.state.lastActiveTime;
             localStorage.setItem("byteclub_user", JSON.stringify(u));
+            
+            // Sync updated streak to backend (async, don't wait)
+            apiService.updateProfile({ 
+              currentStreak: streakOutcome.state.currentStreak 
+            }).catch(err => console.error('Failed to sync streak to backend:', err));
           }
         } catch {}
         setShowConfetti(true);

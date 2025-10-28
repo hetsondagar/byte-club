@@ -1,5 +1,5 @@
 // Debug utility for streak system
-import { checkStreakStatus, loadUserStreak, migrateOldStreakData, fixCurrentUserStreakForNextActivity } from './streak';
+import { checkStreakStatus, loadUserStreak, migrateOldStreakData, validateStreakDates } from './streak';
 
 export function debugStreakSystem() {
   console.log('🔍 Debugging Streak System...');
@@ -49,11 +49,11 @@ if (typeof window !== 'undefined') {
   (window as any).debugStreakSystem = debugStreakSystem;
   (window as any).migrateOldStreakData = migrateOldStreakData;
   (window as any).forceRefreshHomePage = forceRefreshHomePage;
-  (window as any).fixCurrentUserStreakForNextActivity = fixCurrentUserStreakForNextActivity;
+  (window as any).validateStreakDates = validateStreakDates;
   console.log('💡 Run debugStreakSystem() in the browser console to debug the streak system');
   console.log('💡 Run migrateOldStreakData() to manually migrate old streak data');
   console.log('💡 Run forceRefreshHomePage() to force Home page to refresh');
-  console.log('💡 Run fixCurrentUserStreakForNextActivity() to fix streak for next activity');
+  console.log('💡 Run validateStreakDates() to validate and fix corrupted dates');
 }
 
 

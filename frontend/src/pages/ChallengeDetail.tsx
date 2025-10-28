@@ -134,15 +134,35 @@ export default function ChallengeDetail() {
       setSubmitted(true);
       setCorrect(result.isCorrect);
       setXpEarned(result.xpEarned);
-      setNewStreak(result.streak);
 
       if (result.isCorrect) {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 3000);
-        
-        // Update streak on successful challenge completion
+        // Update streak AFTER confirming answer is correct, but BEFORE showing notifications
+        // This ensures the backend gets the updated streak value
         const streakOutcome = updateStreakOnActivity();
         console.log('Streak update result:', streakOutcome);
+        
+        // Sync updated streak to backend immediately
+        try {
+          const userData = localStorage.getItem('byteclub_user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            user.currentStreak = streakOutcome.state.currentStreak;
+            user.lastActiveDate = streakOutcome.state.lastActiveDate;
+            user.lastActiveTime = streakOutcome.state.lastActiveTime;
+            localStorage.setItem('byteclub_user', JSON.stringify(user));
+            
+            // Update backend streak via profile update (async, don't wait)
+            apiService.updateProfile({ 
+              currentStreak: streakOutcome.state.currentStreak 
+            }).catch(err => console.error('Failed to sync streak to backend:', err));
+          }
+        } catch (err) {
+          console.error('Error syncing streak:', err);
+        }
+        
+        setNewStreak(streakOutcome.state.currentStreak);
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
         
         // Show streak break notification if applicable
         if (streakOutcome.streakBroken) {
@@ -181,10 +201,7 @@ export default function ChallengeDetail() {
           });
           
           userData.totalXP = result.totalXP;
-          // Use frontend streak system instead of backend
-          userData.currentStreak = streakOutcome.state.currentStreak;
-          userData.lastActiveDate = streakOutcome.state.lastActiveDate;
-          userData.lastActiveTime = streakOutcome.state.lastActiveTime;
+          // Streak data already updated above, just sync badges and completions
           if (Array.isArray(result.completedChallenges)) userData.completedChallenges = result.completedChallenges;
           if (Array.isArray(result.badges)) userData.badges = result.badges;
           

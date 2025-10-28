@@ -41,7 +41,12 @@ export const getUser = async (req: Request, res: Response) => {
     return res.json({
       success: true,
       message: 'User retrieved successfully',
-      data: { user }
+      data: { 
+        user: {
+          ...(user as any).toObject(),
+          completedChallenges: (user as any).completedChallenges || []
+        }
+      }
     });
   } catch (error) {
     logger.error('Get user error:', error);
@@ -158,7 +163,7 @@ export const getLeaderboard = async (req: Request, res: Response) => {
       
       // Include all users (with 0 challenge XP if they haven't completed any)
       const allUsers = await User.find()
-        .select('username totalXP currentLevel currentStreak badges completedChallenges')
+        .select('username totalXP currentLevel currentStreak badges completedChallenges lastChallengeDate')
         .sort({ totalXP: -1 })
         .limit(50);
       
@@ -171,6 +176,9 @@ export const getLeaderboard = async (req: Request, res: Response) => {
         const userId = user._id.toString();
         const challengeActivity = challengeActivityMap.get(userId);
         
+        const lastChallengeDate = (user as any).lastChallengeDate;
+        const rawStreak = (user as any).currentStreak || 0;
+        
         if (challengeActivity) {
           return {
             _id: user._id,
@@ -178,8 +186,10 @@ export const getLeaderboard = async (req: Request, res: Response) => {
             totalXP: challengeActivity.totalXP,
             lifetimeXP: (user as any).totalXP || 0,
             currentLevel: (user as any).currentLevel || 1,
-            currentStreak: (user as any).currentStreak || 0,
+            currentStreak: rawStreak, // Will be validated later
+            lastChallengeDate: lastChallengeDate,
             badges: (user as any).badges || [],
+            completedChallenges: (user as any).completedChallenges || [],
             challengesCompleted: challengeActivity.challengesCompleted || 0
           };
         } else {
@@ -189,8 +199,10 @@ export const getLeaderboard = async (req: Request, res: Response) => {
             totalXP: 0,
             lifetimeXP: (user as any).totalXP || 0,
             currentLevel: (user as any).currentLevel || 1,
-            currentStreak: (user as any).currentStreak || 0,
+            currentStreak: rawStreak, // Will be validated later
+            lastChallengeDate: lastChallengeDate,
             badges: (user as any).badges || [],
+            completedChallenges: (user as any).completedChallenges || [],
             challengesCompleted: 0
           };
         }
@@ -203,7 +215,7 @@ export const getLeaderboard = async (req: Request, res: Response) => {
       // Since adventure completions are stored in User.completedAdventureNodes,
       // we'll calculate XP based on the number of completed nodes
       const allUsers = await User.find()
-        .select('username totalXP currentLevel currentStreak badges completedAdventureNodes')
+        .select('username totalXP currentLevel currentStreak badges completedAdventureNodes completedChallenges lastChallengeDate')
         .sort({ totalXP: -1 })
         .limit(50);
       
@@ -220,7 +232,9 @@ export const getLeaderboard = async (req: Request, res: Response) => {
           lifetimeXP: (user as any).totalXP || 0,
           currentLevel: (user as any).currentLevel || 1,
           currentStreak: (user as any).currentStreak || 0,
+          lastChallengeDate: (user as any).lastChallengeDate,
           badges: (user as any).badges || [],
+          completedChallenges: (user as any).completedChallenges || [],
           adventureNodesCompleted: adventureNodesCompleted
         };
       });
@@ -231,7 +245,7 @@ export const getLeaderboard = async (req: Request, res: Response) => {
       // Quests leaderboard - Based on quest progress
       // Get all users and their quest progress
       const allUsers = await User.find()
-        .select('username totalXP currentLevel currentStreak badges')
+        .select('username totalXP currentLevel currentStreak badges completedChallenges lastChallengeDate')
         .sort({ totalXP: -1 })
         .limit(50);
       
@@ -267,7 +281,9 @@ export const getLeaderboard = async (req: Request, res: Response) => {
           lifetimeXP: (user as any).totalXP || 0,
           currentLevel: (user as any).currentLevel || 1,
           currentStreak: (user as any).currentStreak || 0,
+          lastChallengeDate: (user as any).lastChallengeDate,
           badges: (user as any).badges || [],
+          completedChallenges: (user as any).completedChallenges || [],
           questMissionsCompleted: questMissionsCompleted
         };
       });
@@ -276,7 +292,7 @@ export const getLeaderboard = async (req: Request, res: Response) => {
     } else {
       // All-time leaderboard
       const allTimeUsers = await User.find()
-        .select('username totalXP currentLevel currentStreak badges')
+        .select('username totalXP currentLevel currentStreak badges completedChallenges lastChallengeDate')
         .sort({ totalXP: -1 })
         .limit(50);
       
@@ -288,27 +304,90 @@ export const getLeaderboard = async (req: Request, res: Response) => {
         lifetimeXP: (user as any).totalXP, // Same as totalXP for all-time
         currentLevel: (user as any).currentLevel,
         currentStreak: (user as any).currentStreak,
-        badges: (user as any).badges
+        lastChallengeDate: (user as any).lastChallengeDate,
+        badges: (user as any).badges,
+        completedChallenges: (user as any).completedChallenges || []
       }));
     }
 
-    // Add rank to each entry and ensure data integrity
-    const leaderboardWithRank = leaderboard.map((entry, index) => {
-      const totalXP = entry.totalXP || 0;
-      // For weekly/monthly, use lifetimeXP for level calculation, otherwise use totalXP
-      const xpForLevel = entry.lifetimeXP || totalXP;
-      const calculatedLevel = calculateLevel(xpForLevel);
+    // Helper function to find most recent activity date across challenges, quests, and adventures
+    const getMostRecentActivityDate = async (userId: string, lastChallengeDate: Date | undefined) => {
+      let mostRecentDate = lastChallengeDate;
       
-      return {
-        _id: entry._id || `unknown-${index}`,
-        username: entry.username || 'Unknown User',
-        totalXP: totalXP,
-        currentLevel: calculatedLevel, // Use calculated level from lifetime XP
-        currentStreak: entry.currentStreak || 0,
-        badges: Array.isArray(entry.badges) ? entry.badges : [],
-        rank: index + 1
-      };
-    });
+      try {
+        // Check quest progress for most recent update
+        const latestQuestProgress = await QuestProgress.findOne({ userId: userId as any })
+          .sort({ updatedAt: -1 })
+          .select('updatedAt');
+        
+        if (latestQuestProgress?.updatedAt) {
+          const questDate = new Date(latestQuestProgress.updatedAt);
+          if (!mostRecentDate || questDate > mostRecentDate) {
+            mostRecentDate = questDate;
+          }
+        }
+        
+        // Note: Adventure nodes don't have timestamps in the User model
+        // We rely on lastChallengeDate which should be updated when adventure nodes are completed
+        // This is handled on the frontend
+        
+      } catch (error) {
+        logger.error('Error getting most recent activity date:', error);
+      }
+      
+      return mostRecentDate;
+    };
+    
+    // Helper function to validate if streak is broken based on most recent activity
+    const validateStreak = async (streak: number, userId: string, lastChallengeDate: Date | undefined) => {
+      if (!streak || streak === 0) return 0;
+      
+      // Get most recent activity across all types (challenges, quests, adventures)
+      const mostRecentDate = await getMostRecentActivityDate(userId, lastChallengeDate);
+      
+      if (!mostRecentDate) return streak; // If no activity date, return as-is
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const lastDate = new Date(mostRecentDate);
+      lastDate.setHours(0, 0, 0, 0);
+      
+      const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // If more than 2 days have passed, streak is broken
+      if (daysDiff >= 2) {
+        return 0; // Streak broken
+      }
+      
+      return streak; // Streak is still valid
+    };
+    
+    // Add rank to each entry and ensure data integrity
+    const leaderboardWithRank = await Promise.all(
+      leaderboard.map(async (entry, index) => {
+        const totalXP = entry.totalXP || 0;
+        // For weekly/monthly, use lifetimeXP for level calculation, otherwise use totalXP
+        const xpForLevel = entry.lifetimeXP || totalXP;
+        const calculatedLevel = calculateLevel(xpForLevel);
+        
+        // Validate streak - check if it should be broken based on dates
+        const rawStreak = entry.currentStreak || 0;
+        const lastChallengeDate = entry.lastChallengeDate;
+        const userId = entry._id?.toString();
+        const validatedStreak = userId ? await validateStreak(rawStreak, userId, lastChallengeDate) : rawStreak;
+        
+        return {
+          _id: entry._id || `unknown-${index}`,
+          username: entry.username || 'Unknown User',
+          totalXP: totalXP,
+          currentLevel: calculatedLevel, // Use calculated level from lifetime XP
+          currentStreak: validatedStreak, // Use validated streak (0 if broken)
+          badges: Array.isArray(entry.badges) ? entry.badges : [],
+          completedChallenges: Array.isArray(entry.completedChallenges) ? entry.completedChallenges : [],
+          rank: index + 1
+        };
+      })
+    );
 
     logger.info(`✅ Leaderboard retrieved: ${leaderboardWithRank.length} entries`, {
       type,

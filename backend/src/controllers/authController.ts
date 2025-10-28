@@ -304,11 +304,11 @@ export const updateProfile = async (req: any, res: Response) => {
   
   try {
     const user = req.user;
-    const { username, email, password, badges, totalXP, triggerBadgeCheck } = req.body;
+    const { username, email, password, badges, totalXP, triggerBadgeCheck, currentStreak, lastChallengeDate } = req.body;
     
     logger.info(`🔄 Profile update for user: ${user.username}`, {
       userId: user._id,
-      updatingFields: { username: !!username, email: !!email, password: !!password, badges: !!badges, totalXP: totalXP !== undefined }
+      updatingFields: { username: !!username, email: !!email, password: !!password, badges: !!badges, totalXP: totalXP !== undefined, currentStreak: currentStreak !== undefined }
     });
 
     // Check if username or email already taken (by another user)
@@ -341,6 +341,8 @@ export const updateProfile = async (req: any, res: Response) => {
     }
     if (badges) user.badges = badges;
     if (totalXP !== undefined) user.totalXP = totalXP;
+    if (currentStreak !== undefined) (user as any).currentStreak = currentStreak;
+    if (lastChallengeDate !== undefined) (user as any).lastChallengeDate = new Date(lastChallengeDate);
 
     await user.save();
 
@@ -394,6 +396,30 @@ export const getMe = async (req: any, res: Response) => {
     
     logger.info(`👤 ${(user as any).username} data retrieved`);
 
+    // Validate streak based on lastChallengeDate (same logic as leaderboard)
+    const validateStreak = (streak: number, lastChallengeDate: Date | undefined) => {
+      if (!streak || streak === 0) return 0;
+      if (!lastChallengeDate) return streak; // If no date, return as-is
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const lastDate = new Date(lastChallengeDate);
+      lastDate.setHours(0, 0, 0, 0);
+      
+      const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // If more than 2 days have passed, streak is broken
+      if (daysDiff >= 2) {
+        return 0; // Streak broken
+      }
+      
+      return streak; // Streak is still valid
+    };
+
+    const lastChallengeDate = (user as any).lastChallengeDate;
+    const rawStreak = (user as any).currentStreak || 0;
+    const validatedStreak = validateStreak(rawStreak, lastChallengeDate);
+    
     return res.json({
       success: true,
       message: 'User data retrieved successfully',
@@ -404,11 +430,12 @@ export const getMe = async (req: any, res: Response) => {
           email: (user as any).email,
           totalXP: (user as any).totalXP,
           currentLevel: calculateLevel((user as any).totalXP),
-          currentStreak: (user as any).currentStreak,
+          currentStreak: validatedStreak, // Use validated streak (same as leaderboard)
           badges: (user as any).badges,
           rewards: (user as any).rewards,
           role: (user as any).role,
-          completedChallenges: (user as any).completedChallenges
+          completedChallenges: (user as any).completedChallenges,
+          lastChallengeDate: lastChallengeDate // Include for frontend use
         }
       }
     });

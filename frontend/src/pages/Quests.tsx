@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { NeonCard } from "@/components/ui/neon-card";
 import { XPBar } from "@/components/ui/xp-bar";
 import { computeLevelProgress } from "@/lib/xp";
-import { loadUserStreak } from "@/lib/streak";
+import { getActualStreakStatus } from "@/lib/streak";
 import { NeonBadge } from "@/components/ui/neon-badge";
 import { Button } from "@/components/ui/button";
 import { FloatingParticles } from "@/components/ui/floating-particles";
@@ -192,40 +192,12 @@ export default function Quests() {
                 <Flame className="w-5 h-5 text-orange-400" />
                 <span className="text-orange-400 font-bold">
                   {(() => {
-                    // Use frontend streak system for accurate streak data
-                    const streakData = loadUserStreak();
-                    let currentStreak = streakData.currentStreak;
-                    console.log('🔍 Quests page - Streak data:', streakData);
+                    // Use actual streak status (checks if broken based on dates)
+                    const streakStatus = getActualStreakStatus();
+                    const currentStreak = streakStatus.currentStreak;
+                    console.log('🔍 Quests page - Streak status:', streakStatus);
                     
-                    // If user has activities but streak is 0, fix it
-                    const userData = localStorage.getItem('byteclub_user');
-                    if (userData && currentStreak === 0) {
-                      try {
-                        const user = JSON.parse(userData);
-                        const hasActivities = (user.totalXP > 0) || (user.completedChallenges?.length > 0) || (user.completedAdventureNodes?.length > 0);
-                        
-                        if (hasActivities) {
-                          console.log('🔧 Quests page - User has activities but streak is 0, fixing...');
-                          user.currentStreak = 1;
-                          user.longestStreak = Math.max(user.longestStreak || 0, 1);
-                          user.lastActiveDate = new Date().toISOString().slice(0, 10);
-                          user.lastActiveTime = new Date().toISOString();
-                          localStorage.setItem('byteclub_user', JSON.stringify(user));
-                          
-                          // Dispatch event to notify components
-                          window.dispatchEvent(new CustomEvent('streakMigrated', { 
-                            detail: { newStreak: 1 } 
-                          }));
-                          
-                          currentStreak = 1;
-                          console.log('✅ Quests page - Fixed broken streak for active user');
-                        }
-                      } catch (error) {
-                        console.log('Error fixing streak in Quests page:', error);
-                      }
-                    }
-                    
-                    return currentStreak === 0 ? "No Streak" : `${currentStreak} Day Streak`;
+                    return streakStatus.currentStreak === 0 ? "No Streak" : `${currentStreak} Day Streak`;
                   })()}
                 </span>
               </div>
