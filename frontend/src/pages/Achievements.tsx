@@ -24,10 +24,20 @@ interface Achievement {
 }
 
 export default function Achievements() {
+  console.log('🎬 ACHIEVEMENTS PAGE: Component rendering');
   const navigate = useNavigate();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Debug: Log component state changes
+  useEffect(() => {
+    console.log('📊 ACHIEVEMENTS PAGE: State update -', {
+      loading,
+      error,
+      achievementsCount: achievements.length
+    });
+  }, [loading, error, achievements.length]);
 
   // Function to manually trigger badge checking
   const triggerBadgeCheck = async () => {
@@ -219,17 +229,24 @@ export default function Achievements() {
   useEffect(() => {
     const fetchAchievements = async () => {
       try {
+        console.log('🎯 ACHIEVEMENTS PAGE: Initializing...');
         setLoading(true);
         setError(null);
-        console.log('Fetching achievements from API...');
+        console.log('✅ ACHIEVEMENTS PAGE: State set, fetching data...');
         
         // Auto-check badges when page loads
-        console.log('Auto-checking badges on page load...');
-        await triggerBadgeCheck();
+        console.log('🔄 ACHIEVEMENTS PAGE: Auto-checking badges...');
+        try {
+          await triggerBadgeCheck();
+          console.log('✅ ACHIEVEMENTS PAGE: Badge check completed');
+        } catch (badgeError) {
+          console.error('❌ ACHIEVEMENTS PAGE: Badge check failed:', badgeError);
+        }
         
         try {
+          console.log('🌐 ACHIEVEMENTS PAGE: Calling API for badges...');
           const response = await apiService.getMeta('badge');
-          console.log('Achievements response:', response);
+          console.log('✅ ACHIEVEMENTS PAGE: API response received:', response);
           
           if (response.success && response.data?.items) {
             const achievementsData = response.data.items;
@@ -844,20 +861,35 @@ export default function Achievements() {
         } else {
           throw new Error('Invalid response format');
         }
-          } catch (apiError) {
-            console.error('Error fetching achievements from API:', apiError);
-            setError('Failed to load achievements from server. Please try again later.');
+          } catch (apiError: any) {
+            console.error('❌ ACHIEVEMENTS PAGE: API Error Details:', {
+              message: apiError?.message,
+              stack: apiError?.stack,
+              response: apiError?.response,
+              status: apiError?.status,
+              fullError: apiError
+            });
+            setError(`Failed to load achievements from server: ${apiError?.message || 'Unknown error'}`);
             setAchievements([]); // Set empty array to prevent crashes
           }
-      } catch (error) {
-        console.error('Error in fetchAchievements:', error);
-        setError('Failed to load achievements. Please try again.');
+      } catch (error: any) {
+        console.error('❌ ACHIEVEMENTS PAGE: Fatal Error:', {
+          message: error?.message,
+          stack: error?.stack,
+          name: error?.name,
+          fullError: error
+        });
+        setError(`Failed to load achievements: ${error?.message || 'Unknown error'}`);
       } finally {
+        console.log('🏁 ACHIEVEMENTS PAGE: Loading complete');
         setLoading(false);
       }
     };
 
-    fetchAchievements();
+    console.log('🚀 ACHIEVEMENTS PAGE: Starting fetchAchievements...');
+    fetchAchievements().catch(err => {
+      console.error('❌ ACHIEVEMENTS PAGE: Unhandled error in fetchAchievements:', err);
+    });
   }, []);
 
   // Listen for streak updates and badge updates
