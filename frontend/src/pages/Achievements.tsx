@@ -234,26 +234,26 @@ export default function Achievements() {
           if (response.success && response.data?.items) {
             const achievementsData = response.data.items;
           
-          // Get user's unlocked badges
-          const userData = localStorage.getItem("byteclub_user");
-          let unlockedBadges: string[] = [];
-          
-          if (userData) {
-            try {
-              const parsedData = JSON.parse(userData);
-              // Handle both nested and direct user data structures
-              const user = parsedData.user || parsedData;
-              unlockedBadges = user.badges || [];
-              console.log('User unlocked badges:', unlockedBadges);
-            } catch (error) {
-              console.log('Error parsing user data:', error);
+            // Get user's unlocked badges
+            const userDataFromStorage = localStorage.getItem("byteclub_user");
+            let unlockedBadges: string[] = [];
+            
+            if (userDataFromStorage) {
+              try {
+                const parsedData = JSON.parse(userDataFromStorage);
+                // Handle both nested and direct user data structures
+                const user = parsedData.user || parsedData;
+                unlockedBadges = user.badges || [];
+                console.log('User unlocked badges:', unlockedBadges);
+              } catch (error) {
+                console.log('Error parsing user data:', error);
+              }
+            } else {
+              console.log('No user data found in localStorage');
             }
-          } else {
-            console.log('No user data found in localStorage');
-          }
-          
-          // Function to analyze completed challenges and calculate detailed stats
-          const analyzeCompletedChallenges = async (completedChallenges: string[]) => {
+            
+            // Function to analyze completed challenges and calculate detailed stats
+            const analyzeCompletedChallenges = async (completedChallenges: string[]) => {
             const stats = {
               easyChallengesCompleted: 0,
               mediumChallengesCompleted: 0,
@@ -269,88 +269,97 @@ export default function Achievements() {
             };
 
             // Analyze each completed challenge
-            for (const slug of completedChallenges) {
-              try {
-                const challenge = await apiService.getChallenge(slug);
-                if (challenge) {
-                  // Count by difficulty
-                  switch (challenge.difficulty?.toLowerCase()) {
-                    case 'easy':
+            // Process challenges in smaller batches to avoid overwhelming the API
+            const BATCH_SIZE = 5;
+            for (let i = 0; i < completedChallenges.length; i += BATCH_SIZE) {
+              const batch = completedChallenges.slice(i, i + BATCH_SIZE);
+              
+              // Process batch in parallel but with error handling for each
+              await Promise.allSettled(
+                batch.map(async (slug) => {
+                  try {
+                    const challenge = await apiService.getChallenge(slug);
+                    if (challenge) {
+                      // Count by difficulty
+                      switch (challenge.difficulty?.toLowerCase()) {
+                        case 'easy':
+                          stats.easyChallengesCompleted++;
+                          break;
+                        case 'medium':
+                          stats.mediumChallengesCompleted++;
+                          break;
+                        case 'hard':
+                          stats.hardChallengesCompleted++;
+                          break;
+                        case 'very hard':
+                        case 'very-hard':
+                        case 'veryhard':
+                          stats.veryHardChallengesCompleted++;
+                          break;
+                      }
+
+                      // Count by topic/tags
+                      const tags = challenge.tags || [];
+                      const title = challenge.title?.toLowerCase() || '';
+                      const description = challenge.description?.toLowerCase() || '';
+
+                      if (tags.includes('array') || title.includes('array') || description.includes('array')) {
+                        stats.arrayChallengesCompleted++;
+                      }
+                      if (tags.includes('string') || title.includes('string') || description.includes('string')) {
+                        stats.stringChallengesCompleted++;
+                      }
+                      if (tags.includes('graph') || title.includes('graph') || description.includes('graph')) {
+                        stats.graphChallengesCompleted++;
+                      }
+                      if (tags.includes('crypto') || title.includes('crypto') || description.includes('crypto')) {
+                        stats.cryptoChallengesCompleted++;
+                      }
+                      if (tags.includes('dsa') || tags.includes('dsa-99') || title.includes('dsa')) {
+                        stats.dsaChallengesCompleted++;
+                      }
+
+                      // Count fast challenges (completed in under 5 minutes)
+                      // This would need to be tracked separately, for now assume some are fast
+                      if (Math.random() > 0.7) { // Mock: 30% are considered "fast"
+                        stats.fastChallengesCompleted++;
+                      }
+
+                      // Count perfect challenges (completed without hints)
+                      // This would need to be tracked separately, for now assume some are perfect
+                      if (Math.random() > 0.8) { // Mock: 20% are considered "perfect"
+                        stats.perfectChallengesCompleted++;
+                      }
+                    }
+                  } catch (error) {
+                    console.log(`Could not fetch details for challenge ${slug}:`, error);
+                    // For challenges we can't fetch, make educated guesses based on slug
+                    if (slug.includes('easy') || slug.includes('simple')) {
                       stats.easyChallengesCompleted++;
-                      break;
-                    case 'medium':
+                    } else if (slug.includes('medium')) {
                       stats.mediumChallengesCompleted++;
-                      break;
-                    case 'hard':
+                    } else if (slug.includes('hard')) {
                       stats.hardChallengesCompleted++;
-                      break;
-                    case 'very hard':
-                    case 'very-hard':
-                    case 'veryhard':
-                      stats.veryHardChallengesCompleted++;
-                      break;
+                    }
+                    
+                    if (slug.includes('array')) {
+                      stats.arrayChallengesCompleted++;
+                    }
+                    if (slug.includes('string')) {
+                      stats.stringChallengesCompleted++;
+                    }
+                    if (slug.includes('graph')) {
+                      stats.graphChallengesCompleted++;
+                    }
+                    if (slug.includes('crypto')) {
+                      stats.cryptoChallengesCompleted++;
+                    }
+                    if (slug.includes('dsa')) {
+                      stats.dsaChallengesCompleted++;
+                    }
                   }
-
-                  // Count by topic/tags
-                  const tags = challenge.tags || [];
-                  const title = challenge.title?.toLowerCase() || '';
-                  const description = challenge.description?.toLowerCase() || '';
-
-                  if (tags.includes('array') || title.includes('array') || description.includes('array')) {
-                    stats.arrayChallengesCompleted++;
-                  }
-                  if (tags.includes('string') || title.includes('string') || description.includes('string')) {
-                    stats.stringChallengesCompleted++;
-                  }
-                  if (tags.includes('graph') || title.includes('graph') || description.includes('graph')) {
-                    stats.graphChallengesCompleted++;
-                  }
-                  if (tags.includes('crypto') || title.includes('crypto') || description.includes('crypto')) {
-                    stats.cryptoChallengesCompleted++;
-                  }
-                  if (tags.includes('dsa') || tags.includes('dsa-99') || title.includes('dsa')) {
-                    stats.dsaChallengesCompleted++;
-                  }
-
-                  // Count fast challenges (completed in under 5 minutes)
-                  // This would need to be tracked separately, for now assume some are fast
-                  if (Math.random() > 0.7) { // Mock: 30% are considered "fast"
-                    stats.fastChallengesCompleted++;
-                  }
-
-                  // Count perfect challenges (completed without hints)
-                  // This would need to be tracked separately, for now assume some are perfect
-                  if (Math.random() > 0.8) { // Mock: 20% are considered "perfect"
-                    stats.perfectChallengesCompleted++;
-                  }
-                }
-              } catch (error) {
-                console.log(`Could not fetch details for challenge ${slug}:`, error);
-                // For challenges we can't fetch, make educated guesses based on slug
-                if (slug.includes('easy') || slug.includes('simple')) {
-                  stats.easyChallengesCompleted++;
-                } else if (slug.includes('medium')) {
-                  stats.mediumChallengesCompleted++;
-                } else if (slug.includes('hard')) {
-                  stats.hardChallengesCompleted++;
-                }
-                
-                if (slug.includes('array')) {
-                  stats.arrayChallengesCompleted++;
-                }
-                if (slug.includes('string')) {
-                  stats.stringChallengesCompleted++;
-                }
-                if (slug.includes('graph')) {
-                  stats.graphChallengesCompleted++;
-                }
-                if (slug.includes('crypto')) {
-                  stats.cryptoChallengesCompleted++;
-                }
-                if (slug.includes('dsa')) {
-                  stats.dsaChallengesCompleted++;
-                }
-              }
+                })
+              );
             }
 
             return stats;
@@ -376,9 +385,9 @@ export default function Achievements() {
             perfectChallengesCompleted: 0
           };
           
-          if (userData) {
+          if (userDataFromStorage) {
             try {
-              const parsedData = JSON.parse(userData);
+              const parsedData = JSON.parse(userDataFromStorage);
               // Handle both nested and direct user data structures
               const parsedUser = parsedData.user || parsedData;
               const completedChallenges = parsedUser.completedChallenges || [];
